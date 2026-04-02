@@ -1,1 +1,73 @@
-<p>login works!</p>
+<div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+  
+  <div class="sm:mx-auto sm:w-full sm:max-w-md text-center">
+    <div class="mx-auto h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center shadow-lg">
+      <iconify-icon icon="ph:heartbeat-bold" class="text-white text-3xl"></iconify-icon>
+    </div>
+    <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+      ProntuSMART
+    </h2>
+    <p class="mt-2 text-center text-sm text-gray-600">
+      Clínica Escola de Fisioterapia - UCB
+    </p>
+  </div>
+
+  <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+    <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-gray-100">
+      
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-6">
+        
+        <div *ngIf="errorMessage" class="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+          <div class="flex items-center">
+            <iconify-icon icon="ph:warning-circle" class="text-red-500 mr-2 text-lg"></iconify-icon>
+            <p class="text-sm text-red-700">{{ errorMessage }}</p>
+          </div>
+        </div>
+
+        <div>
+          <label for="matricula" class="block text-sm font-medium text-gray-700">
+            Matrícula
+          </label>
+          <div class="mt-1 relative rounded-md shadow-sm">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <iconify-icon icon="ph:user" class="text-gray-400 text-lg"></iconify-icon>
+            </div>
+            <input id="matricula" type="text" formControlName="matricula"
+              class="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2 border"
+              placeholder="Ex: admin01" [ngClass]="{'border-red-300': loginForm.get('matricula')?.invalid && loginForm.get('matricula')?.touched}">
+          </div>
+        </div>
+
+        <div>
+          <label for="senha" class="block text-sm font-medium text-gray-700">
+            Senha
+          </label>
+          <div class="mt-1 relative rounded-md shadow-sm">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <iconify-icon icon="ph:lock-key" class="text-gray-400 text-lg"></iconify-icon>
+            </div>
+            <input id="senha" type="password" formControlName="senha"
+              class="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2 border"
+              placeholder="••••••••" [ngClass]="{'border-red-300': loginForm.get('senha')?.invalid && loginForm.get('senha')?.touched}">
+          </div>
+        </div>
+
+        <div>
+          <button type="submit" [disabled]="loginForm.invalid || isLoading"
+            class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            
+            <ng-container *ngIf="!isLoading">
+              Entrar no Sistema
+            </ng-container>
+            
+            <ng-container *ngIf="isLoading">
+              <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-xl mr-2"></iconify-icon>
+              Autenticando...
+            </ng-container>
+
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
