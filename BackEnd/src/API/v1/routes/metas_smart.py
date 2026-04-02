@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from typing import List
 from src.schemas.meta_smart import MetaSmartCreate, MetaSmartResponse
 from src.services import meta_smart_service
-from src.API.v1.routes.auth import get_current_user
+from src.core.security import get_current_user
 
 router = APIRouter()
 

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from src.schemas.medicao import MedicaoCreate, MedicaoResponse
 from src.services import medicao_service
-from src.API.v1.routes.auth import get_current_user
+from src.core.security import get_current_user
 
 router = APIRouter()
 
