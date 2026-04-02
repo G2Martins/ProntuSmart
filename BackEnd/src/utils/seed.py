@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from src.core.config import settings
-from src.services.auth_service import get_password_hash
+from src.core.security import get_password_hash
 from src.models.dim_usuario import TipoPerfil
 from src.models.dim_indicador import DirecaoMelhora
 
@@ -44,28 +44,42 @@ async def rodar_seed():
     else:
         print("⚡ Indicadores funcionais já existiam no banco.")
 
-    # 3. Povoar Docente Padrão (Administrador inicial)
-    matricula_admin = "docente01"
+    # 3. Povoar Administrador e Docente Padrão
     senha_plana = "ucb@1234"
+    senha_hash = get_password_hash(senha_plana)
     
+    # Criando o Super Admin
+    admin_base = {
+        "nome_completo": "Administrador do Sistema",
+        "matricula": "admin01",
+        "email": "admin.ti@ucb.br",
+        "senha_hash": senha_hash,
+        "perfil": TipoPerfil.ADMINISTRADOR,
+        "is_ativo": True,
+        "criado_em": datetime.now(timezone.utc),
+        "atualizado_em": datetime.now(timezone.utc)
+    }
+
+    # Criando o Docente
     docente_base = {
-        "nome_completo": "Docente Supervisor (Padrão)",
-        "matricula": matricula_admin,
+        "nome_completo": "Docente Supervisor",
+        "matricula": "docente01",
         "email": "docente.ucb@exemplo.com",
-        "senha_hash": get_password_hash(senha_plana),
+        "senha_hash": senha_hash,
         "perfil": TipoPerfil.DOCENTE,
         "is_ativo": True,
         "criado_em": datetime.now(timezone.utc),
         "atualizado_em": datetime.now(timezone.utc)
     }
 
-    if await db.dim_usuario.count_documents({"matricula": matricula_admin}) == 0:
+    # Inserindo no banco caso não existam
+    if await db.dim_usuario.count_documents({"matricula": "admin01"}) == 0:
+        await db.dim_usuario.insert_one(admin_base)
+        print("✅ Administrador padrão criado! (admin01 / ucb@1234)")
+        
+    if await db.dim_usuario.count_documents({"matricula": "docente01"}) == 0:
         await db.dim_usuario.insert_one(docente_base)
-        print("✅ Docente padrão criado com sucesso!")
-        print(f"   -> Matrícula: {matricula_admin}")
-        print(f"   -> Senha: {senha_plana}")
-    else:
-        print("⚡ Docente padrão já existia no banco.")
+        print("✅ Docente padrão criado! (docente01 / ucb@1234)")
 
     print("Finalizado!")
     client.close()

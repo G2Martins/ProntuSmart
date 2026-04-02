@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from typing import List
-from src.schemas.paciente import PacienteCreate, PacienteResponse
+from src.schemas.paciente import PacienteCreate, PacienteResponse, PacienteUpdate
 from src.services import paciente_service
 from src.core.security import get_current_user
 
@@ -17,3 +17,10 @@ async def read_pacientes(skip: int = 0, limit: int = 100, current_user: dict = D
 @router.get("/{id}", response_model=PacienteResponse)
 async def read_paciente(id: str, current_user: dict = Depends(get_current_user)):
     return await paciente_service.buscar_paciente_por_id(id)
+
+@router.patch("/{id}", response_model=PacienteResponse)
+async def update_paciente(id: str, paciente_in: PacienteUpdate, current_user: dict = Depends(get_current_user)):
+    """
+    Atualiza dados de contato ou inativa o paciente (Soft Delete mudando is_ativo para False).
+    """
+    return await paciente_service.atualizar_paciente(id, paciente_in)

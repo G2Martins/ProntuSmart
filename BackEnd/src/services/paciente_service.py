@@ -27,3 +27,22 @@ async def buscar_paciente_por_id(paciente_id: str) -> dict:
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente não encontrado.")
     return paciente
+
+async def atualizar_paciente(paciente_id: str, paciente_in: PacienteUpdate) -> dict:
+    db = get_database()
+    
+    # Remove valores None do dicionário para atualizar apenas o que foi enviado
+    dados_atualizacao = {k: v for k, v in paciente_in.model_dump().items() if v is not None}
+    
+    if not dados_atualizacao:
+        raise HTTPException(status_code=400, detail="Nenhum dado válido para atualização foi enviado.")
+        
+    resultado = await db.dim_paciente.update_one(
+        {"_id": ObjectId(paciente_id)},
+        {"$set": dados_atualizacao}
+    )
+    
+    if resultado.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado.")
+        
+    return await db.dim_paciente.find_one({"_id": ObjectId(paciente_id)})

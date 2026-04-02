@@ -5,6 +5,7 @@ from src.models.base import MongoBaseModel
 class TipoPerfil(str, Enum):
     ESTAGIARIO = "Estagiario"
     DOCENTE = "Docente"
+    ADMINISTRADOR = "Administrador"
 
 class DimUsuario(MongoBaseModel):
     nome_completo: str = Field(..., min_length=3, max_length=150, description="Nome completo do usuário")
