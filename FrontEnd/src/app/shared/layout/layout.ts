@@ -1,11 +1,12 @@
 import { Component, inject, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { RouterOutlet, RouterLink } from '@angular/router';
+import { CommonModule } from '@angular/common'; // <-- FALTAVA ISTO PARA O *ngIf FUNCIONAR!
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink],
+  imports: [CommonModule, RouterOutlet, RouterLink], // <-- ADICIONADO AQUI
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './layout.html'
 })
@@ -15,6 +16,6 @@ export class LayoutComponent {
 
   logout() {
     this.authService.logout();
-    window.location.href = '/login'; // Força o refresh da página e limpa estado
+    window.location.href = '/login'; 
   }
 }

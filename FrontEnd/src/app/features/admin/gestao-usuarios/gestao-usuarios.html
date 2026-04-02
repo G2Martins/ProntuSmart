@@ -1,1 +1,77 @@
-<p>gestao-usuarios works!</p>
+<div class="max-w-4xl mx-auto space-y-6">
+  
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800">Gestão de Usuários</h2>
+      <p class="text-gray-600">Adicione novos membros da clínica ao sistema.</p>
+    </div>
+    <a routerLink="/dashboard" class="flex items-center text-gray-600 hover:text-blue-600 font-medium transition-colors group">
+      <iconify-icon icon="ph:arrow-left-bold" class="mr-2 text-xl group-hover:-translate-x-1 transition-transform"></iconify-icon>
+      Voltar ao Dashboard
+    </a>
+  </div>
+
+  <div class="bg-white shadow rounded-lg border border-gray-100 overflow-hidden">
+    <div class="bg-blue-50 border-b border-blue-100 px-6 py-4 flex items-center">
+      <iconify-icon icon="ph:user-plus-bold" class="text-blue-600 text-xl mr-2"></iconify-icon>
+      <h3 class="text-lg font-semibold text-blue-800">Novo Cadastro</h3>
+    </div>
+
+    <form [formGroup]="usuarioForm" (ngSubmit)="onSubmit()" class="p-6">
+      
+      <div *ngIf="successMessage" class="mb-6 bg-green-50 border-l-4 border-green-500 p-4 flex items-center">
+        <iconify-icon icon="ph:check-circle-bold" class="text-green-500 mr-2 text-xl"></iconify-icon>
+        <p class="text-green-700">{{ successMessage }}</p>
+      </div>
+      <div *ngIf="errorMessage" class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 flex items-center">
+        <iconify-icon icon="ph:warning-circle-bold" class="text-red-500 mr-2 text-xl"></iconify-icon>
+        <p class="text-red-700">{{ errorMessage }}</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
+          <input type="text" formControlName="nome_completo" class="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Ex: João da Silva">
+          <span *ngIf="f['nome_completo'].touched && f['nome_completo'].invalid" class="text-xs text-red-500 mt-1">Nome é obrigatório.</span>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Matrícula</label>
+          <input type="text" formControlName="matricula" class="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Ex: est01">
+          <span *ngIf="f['matricula'].touched && f['matricula'].invalid" class="text-xs text-red-500 mt-1">Matrícula é obrigatória.</span>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+          <input type="email" formControlName="email" class="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="joao@ucb.br">
+          <span *ngIf="f['email'].touched && f['email'].invalid" class="text-xs text-red-500 mt-1">E-mail inválido.</span>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Perfil de Acesso</label>
+          <select formControlName="perfil" class="w-full rounded-md border border-gray-300 p-2 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <option value="Estagiario">Estagiário</option>
+            <option value="Docente">Docente</option>
+            <option value="Administrador">Administrador</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Senha Provisória</label>
+          <input type="password" formControlName="senha" class="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Mínimo 6 caracteres">
+          <span *ngIf="f['senha'].touched && f['senha'].invalid" class="text-xs text-red-500 mt-1">A senha deve ter no mínimo 6 caracteres.</span>
+        </div>
+      </div>
+
+      <div class="mt-8 flex justify-end">
+        <button type="submit" [disabled]="isLoading" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow flex items-center transition disabled:opacity-50">
+          <iconify-icon *ngIf="isLoading" icon="ph:spinner-gap-bold" class="animate-spin mr-2 text-xl"></iconify-icon>
+          <iconify-icon *ngIf="!isLoading" icon="ph:floppy-disk-bold" class="mr-2 text-xl"></iconify-icon>
+          {{ isLoading ? 'Salvando...' : 'Salvar Usuário' }}
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>

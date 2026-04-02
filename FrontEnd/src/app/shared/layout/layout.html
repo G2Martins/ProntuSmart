@@ -9,6 +9,9 @@
       <a routerLink="/dashboard" class="flex items-center p-3 rounded hover:bg-blue-800 transition-colors cursor-pointer bg-blue-800">
         <iconify-icon icon="ph:squares-four" class="text-xl mr-3"></iconify-icon> Dashboard
       </a>
+      <a *ngIf="userProfile === 'Administrador'" routerLink="/usuarios" routerLinkActive="bg-blue-800" class="flex items-center p-3 rounded hover:bg-blue-800 transition-colors cursor-pointer">
+        <iconify-icon icon="ph:users-bold" class="text-xl mr-3"></iconify-icon> Usuários
+      </a>
       </nav>
   </aside>
 

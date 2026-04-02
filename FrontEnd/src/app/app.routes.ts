@@ -12,7 +12,11 @@ export const routes: Routes = [
     children: [
       { 
         path: 'dashboard', 
-        loadComponent: () => import('./features/dashboard/painel-inicial/painel-inicial').then(m => m.PainelInicial) 
+        loadComponent: () => import('./features/dashboard/painel-inicial/painel-inicial').then(m => m.PainelInicialComponent) 
+      },
+      { 
+        path: 'usuarios', 
+        loadComponent: () => import('./features/admin/gestao-usuarios/gestao-usuarios').then(m => m.GestaoUsuariosComponent) 
       },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
