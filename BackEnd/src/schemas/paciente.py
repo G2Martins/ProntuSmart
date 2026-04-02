@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional
-from datetime import date
+from datetime import date, datetime
 from src.models.dim_paciente import AreaEspecializada, SexoBiologico
 
 class PacienteBase(BaseModel):
