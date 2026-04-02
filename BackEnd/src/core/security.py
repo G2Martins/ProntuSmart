@@ -1,25 +1,32 @@
 from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError
-from passlib.context import CryptContext
+import bcrypt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
 from src.core.config import settings
 from src.core.database import get_database
 
-# Configuração do Passlib para o hash de senhas usando bcrypt
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 # Configuração do OAuth2 para o FastAPI saber onde o frontend vai bater para pegar o token
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
 
 def get_password_hash(password: str) -> str:
-    """Gera o hash da senha em texto plano."""
-    return pwd_context.hash(password)
+    """Gera o hash da senha em texto plano usando bcrypt diretamente."""
+    salt = bcrypt.gensalt()
+    # O bcrypt exige bytes, por isso usamos o encode('utf-8')
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed_password.decode('utf-8')
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verifica se a senha em texto plano bate com o hash salvo no banco."""
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return bcrypt.checkpw(
+            plain_password.encode('utf-8'), 
+            hashed_password.encode('utf-8')
+        )
+    except ValueError:
+        # Se houver algum problema de formatação no hash antigo, retorna False por segurança
+        return False
 
 def create_access_token(data: dict) -> str:
     """Gera o token JWT de acesso com tempo de expiração."""

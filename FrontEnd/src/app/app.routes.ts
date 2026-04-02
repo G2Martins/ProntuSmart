@@ -1,8 +1,22 @@
 import { Routes } from '@angular/router';
-import { LoginComponent } from './features/auth/login/login'; // Certifique-se que o caminho está correto
+import { LoginComponent } from './features/auth/login/login';
+import { LayoutComponent } from './shared/layout/layout';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
-  { path: '', redirectTo: '/login', pathMatch: 'full' }, // Redireciona a raiz para o login
-  { path: '**', redirectTo: '/login' } // Qualquer rota não encontrada vai para o login (por enquanto)
+  
+  // Rotas Protegidas (envolvidas pelo Layout)
+  { 
+    path: '', 
+    component: LayoutComponent, 
+    children: [
+      { 
+        path: 'dashboard', 
+        loadComponent: () => import('./features/dashboard/painel-inicial/painel-inicial').then(m => m.PainelInicial) 
+      },
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
+    ]
+  },
+  
+  { path: '**', redirectTo: '/login' } // Qualquer rota não encontrada vai para o login
 ];

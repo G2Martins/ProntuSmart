@@ -1,4 +1,4 @@
-import { Component, inject, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core'; // <-- Importe aqui
+import { Component, inject, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -8,8 +8,8 @@ import { AuthService } from '../../../core/services/auth.service';
   selector: 'app-login',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA], // <-- Adicione esta linha! Diz ao Angular para não reclamar da tag <iconify-icon>
-  templateUrl: './login.html', // (Confirme se a extensão aqui está .html mesmo, baseado no seu print)
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  templateUrl: './login.html',
 })
 export class LoginComponent {
   private fb = inject(FormBuilder);
@@ -22,6 +22,7 @@ export class LoginComponent {
   });
 
   errorMessage = '';
+  successMessage = ''; // Nova variável para a mensagem de sucesso
   isLoading = false;
 
   onSubmit() {
@@ -29,14 +30,23 @@ export class LoginComponent {
 
     this.isLoading = true;
     this.errorMessage = '';
+    this.successMessage = '';
 
     const { matricula, senha } = this.loginForm.value;
 
     this.authService.login(matricula!, senha!).subscribe({
       next: () => {
         this.isLoading = false;
-        console.log('Login efetuado com sucesso!');
-        // this.router.navigate(['/dashboard']); 
+        this.successMessage = 'Autenticação bem-sucedida! A entrar...';
+        
+        // Aguarda 1.5 segundos para o utilizador ler a mensagem de sucesso antes de redirecionar
+        setTimeout(() => {
+          const perfil = this.authService.getUserProfile();
+          console.log('Perfil logado:', perfil);
+          
+          // Redireciona para o Layout base (que contém o dashboard)
+          this.router.navigate(['/dashboard']); 
+        }, 1500);
       },
       error: (err) => {
         this.isLoading = false;

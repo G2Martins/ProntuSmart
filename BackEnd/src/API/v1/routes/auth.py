@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
@@ -16,19 +17,37 @@ async def register(usuario_in: UsuarioCreate):
 @router.post("/login", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     db = get_database()
-    # O form_data.username será preenchido com a matrícula no frontend
+    
+    # 1. Busca o usuário no banco de dados
     user = await db.dim_usuario.find_one({"matricula": form_data.username})
     
-    # Usando a função verify_password importada diretamente do core/security
-    if not user or not verify_password(form_data.password, user["senha_hash"]):
+    # 2. Verifica se o usuário existe ANTES de fazer qualquer outra coisa
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Matrícula ou senha incorretos",
             headers={"WWW-Authenticate": "Bearer"},
         )
         
-    # Usando a função create_access_token importada diretamente do core/security
-    access_token = create_access_token(
-        data={"sub": user["matricula"], "perfil": user["perfil"]}
+    # 3. Validação de senha sem travar o servidor (A Mágica!)
+    # Usamos o user.get() para evitar KeyError (Erro 500) caso o campo não exista.
+    # Usamos asyncio.to_thread para rodar o bcrypt pesado em segundo plano, liberando o FastAPI.
+    senha_valida = await asyncio.to_thread(
+        verify_password, 
+        form_data.password, 
+        user.get("senha_hash", "")
     )
+    
+    if not senha_valida:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Matrícula ou senha incorretos",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        
+    # 4. Gera o Token JWT
+    access_token = create_access_token(
+        data={"sub": user["matricula"], "perfil": user.get("perfil")}
+    )
+    
     return {"access_token": access_token, "token_type": "bearer"}
