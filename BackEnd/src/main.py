@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from src.core.config import settings
 from src.core.database import connect_to_mongo, close_mongo_connection
-# from src.api.v1.router import api_router # Descomentaremos quando o router for criado
+from src.API.v1.router import api_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -30,7 +30,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# app.include_router(api_router, prefix=settings.API_V1_STR)
+app.include_router(api_router, prefix=settings.API_V1_STR)
 
 @app.get("/", tags=["Health Check"])
 async def root():
