@@ -172,3 +172,36 @@ O FastAPI gera a documentação interativa automaticamente. Com o servidor rodan
 | **ReDoc** | http://localhost:8000/redoc |
 
 > Pelo Swagger, você pode testar o fluxo de autenticação inserindo a matrícula e senha do **Docente Padrão** (criado no Seed) clicando no botão **"Authorize"** no topo da página.
+
+
+1. Perfil ADMINISTRADOR (Foco Técnico e Operacional)
+
+Gestão de Usuários: CRUD (Criar, Ler, Atualizar, Inativar/Excluir) de Docentes, Estagiários e outros Administradores. Redefinição de senhas.
+
+Gestão de Parâmetros Clínicos (Tabelas Dimensão): É o Admin quem vai adicionar uma nova Área de Atendimento (ex: "Fisioterapia Esportiva") ou cadastrar novos testes no sistema (ex: adicionar o teste "Escala de Berg" em dim_indicador).
+
+Saúde do Sistema e Conectores: Dashboard técnico mostrando se o banco de dados (MongoDB) está online, quantidade total de requisições, armazenamento em disco utilizado e logs do sistema (ex: saber qual usuário excluiu um registro x, importante para LGPD).
+
+2. Perfil DOCENTE (Foco Estratégico, Acadêmico e Clínico)
+
+Dashboard de Produtividade: Gráficos mostrando o volume de atendimentos por estagiário, permitindo avaliar se a carga de trabalho está bem distribuída.
+
+Monitoramento de Qualidade (Metas SMART): Alertas de pacientes com metas atrasadas há muito tempo ou estagnadas, permitindo intervenção pedagógica do professor.
+
+Inteligência Epidemiológica: Gráficos mostrando o perfil da clínica (ex: 40% dos pacientes estão na Ortopedia, 60% são mulheres, patologias mais comuns via CID).
+
+Gestão de Prontuários: Permissão para ler todos os prontuários de seus alunos supervisionados e, se necessário, fazer apontamentos.
+
+Em sistemas de Prontuário Eletrônico, nós evitamos ao máximo (e muitas vezes é legalmente proibido) implementar rotas de exclusão total (DELETE físico) ou edição livre (PUT/PATCH em dados clínicos).
+
+Vou te explicar como a regra de negócios funciona para cada um e te passar o código da edição de Pacientes (que realmente faltou eu te mandar!).
+
+1. Por que NÃO deletar ou editar dados clínicos?
+Evoluções e Medições (Imutáveis): O que o estagiário registrou no dia do atendimento é um documento legal. Se ele errou algo, na prática clínica, ele não "apaga" nem "edita" a evolução de ontem; ele cria uma nova evolução hoje fazendo uma "Retificação". Por isso, não teremos edição nem exclusão aqui.
+
+Metas SMART: Uma vez traçada, a meta guia o tratamento. A edição do progresso dela já é feita automaticamente pelo sistema quando inserimos uma nova Medição.
+
+Prontuários: Um prontuário nunca é deletado. Se o paciente recebe alta, nós apenas mudamos o status dele para "Alta" (algo que também podemos automatizar ou criar uma rota de encerramento depois).
+
+2. Onde a Edição (PATCH) e a "Exclusão" fazem sentido?
+Faz sentido para dados cadastrais (telefone que mudou, e-mail, etc.). Porém, em vez de deletar do banco (DELETE), nós fazemos o chamado Soft Delete: apenas mudamos a variável is_ativo para False. Assim, o paciente ou usuário some das telas de busca, mas o histórico dele continua preservado no banco para auditoria.
