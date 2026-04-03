@@ -22,7 +22,7 @@ export class LoginComponent {
   });
 
   errorMessage = '';
-  successMessage = ''; // Nova variável para a mensagem de sucesso
+  successMessage = '';
   isLoading = false;
 
   onSubmit() {
@@ -38,14 +38,11 @@ export class LoginComponent {
       next: () => {
         this.isLoading = false;
         this.successMessage = 'Autenticação bem-sucedida! A entrar...';
-        
-        // Aguarda 1.5 segundos para o utilizador ler a mensagem de sucesso antes de redirecionar
+
+        // Token já está salvo no localStorage aqui (pelo tap do AuthService)
+        // O setTimeout serve apenas para mostrar a mensagem de sucesso ao utilizador
         setTimeout(() => {
-          const perfil = this.authService.getUserProfile();
-          console.log('Perfil logado:', perfil);
-          
-          // Redireciona para o Layout base (que contém o dashboard)
-          this.router.navigate(['/dashboard']); 
+          this.router.navigate(['/dashboard']);
         }, 1500);
       },
       error: (err) => {
