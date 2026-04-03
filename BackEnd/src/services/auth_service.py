@@ -19,4 +19,10 @@ async def criar_usuario(usuario_in: UsuarioCreate) -> dict:
     resultado = await db.dim_usuario.insert_one(novo_usuario.model_dump(by_alias=True, exclude_none=True))
     
     usuario_criado = await db.dim_usuario.find_one({"_id": resultado.inserted_id})
+    
+    # --- A MÁGICA DA CORREÇÃO AQUI ---
+    # Converte o ObjectId nativo do Mongo para uma String comum antes de devolver para o FastAPI/Pydantic
+    if usuario_criado and "_id" in usuario_criado:
+        usuario_criado["_id"] = str(usuario_criado["_id"])
+        
     return usuario_criado

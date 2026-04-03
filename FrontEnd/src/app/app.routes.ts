@@ -1,14 +1,15 @@
 import { Routes } from '@angular/router';
 import { LoginComponent } from './features/auth/login/login';
 import { LayoutComponent } from './shared/layout/layout';
+import { authGuard } from './core/guards/auth-guard'; 
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   
-  // Rotas Protegidas (envolvidas pelo Layout)
   { 
     path: '', 
     component: LayoutComponent, 
+    canActivate: [authGuard], 
     children: [
       { 
         path: 'dashboard', 
@@ -22,5 +23,5 @@ export const routes: Routes = [
     ]
   },
   
-  { path: '**', redirectTo: '/login' } // Qualquer rota não encontrada vai para o login
+  { path: '**', redirectTo: '/login' } 
 ];

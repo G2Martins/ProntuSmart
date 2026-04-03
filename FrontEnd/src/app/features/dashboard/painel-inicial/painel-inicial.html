@@ -6,13 +6,26 @@
 
   <ng-container *ngIf="perfil === 'Administrador'">
     
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div *ngIf="isLoadingStats" class="flex flex-col items-center justify-center py-12 bg-white rounded-lg shadow border border-gray-100">
+      <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-4xl text-blue-600 mb-4"></iconify-icon>
+      <p class="text-gray-500 font-medium">A carregar estatísticas do sistema...</p>
+    </div>
+
+    <div *ngIf="!isLoadingStats && erroStats" class="bg-red-50 border-l-4 border-red-500 p-6 rounded-lg shadow mb-6">
+      <div class="flex items-center">
+        <iconify-icon icon="ph:warning-circle-bold" class="text-red-500 mr-3 text-2xl"></iconify-icon>
+        <p class="text-red-700 font-medium">{{ erroStats }}</p>
+      </div>
+      <button (click)="carregarEstatisticasAdmin()" class="mt-4 text-sm bg-red-100 text-red-700 px-4 py-2 rounded hover:bg-red-200 transition">Tentar Novamente</button>
+    </div>
+
+    <div *ngIf="!isLoadingStats && !erroStats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <div class="bg-white rounded-lg shadow p-6 border border-gray-100 flex items-center">
         <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
           <iconify-icon icon="ph:users-three-bold" class="text-2xl"></iconify-icon>
         </div>
         <div>
-          <p class="text-sm text-gray-500 font-medium">Usuários Ativos</p>
+          <p class="text-sm text-gray-500 font-medium">Utilizadores Ativos</p>
           <p class="text-2xl font-bold text-gray-800">{{ adminStats.usuariosAtivos }}</p>
         </div>
       </div>
@@ -43,16 +56,18 @@
         </div>
         <div>
           <p class="text-sm text-gray-500 font-medium">Banco de Dados</p>
-          <p class="text-xl font-bold text-green-600">{{ adminStats.statusServidor }}</p>
+          <p class="text-xl font-bold" [ngClass]="{'text-green-600': adminStats.statusServidor === 'Online', 'text-red-600': adminStats.statusServidor !== 'Online'}">
+            {{ adminStats.statusServidor }}
+          </p>
         </div>
       </div>
     </div>
 
-   <div class="mt-8">
+    <div class="mt-8">
       <h3 class="text-lg font-semibold text-gray-800 mb-4">Ações Rápidas</h3>
       <div class="flex gap-4">
         <button routerLink="/usuarios" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow flex items-center transition">
-          <iconify-icon icon="ph:user-plus-bold" class="mr-2"></iconify-icon> Novo Usuário
+          <iconify-icon icon="ph:user-plus-bold" class="mr-2"></iconify-icon> Novo Utilizador
         </button>
         <button class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded shadow flex items-center transition">
           <iconify-icon icon="ph:gear-bold" class="mr-2"></iconify-icon> Configurar Indicadores
