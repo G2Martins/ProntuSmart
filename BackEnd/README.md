@@ -1,4 +1,4 @@
-# ProntuSMART — Backend API
+# ProntuSMART — Backend API 🚀
 
 **Production-grade REST API** para gerenciamento de prontuários eletrônicos e acompanhamento de tratamento fisioterapêutico em ambiente clínico-acadêmico.
 
@@ -210,9 +210,6 @@ Seed concluído com sucesso!
 ```bash
 # Modo desenvolvimento (com hot-reload ativado)
 uvicorn src.main:app --reload
-
-# Modo produção (sem reload, com workers)
-gunicorn src.main:app -w 4 -k uvicorn.workers.UvicornWorker
 ```
 
 Servidor estará disponível em **http://localhost:8000**
