@@ -1,7 +1,7 @@
-import { Component, inject, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, inject, OnInit, CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { PacienteService } from '../../../core/services/paciente.service';
 
 @Component({
@@ -16,6 +16,7 @@ export class CadastroPacienteComponent implements OnInit {
   private pacienteService = inject(PacienteService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private cdr = inject(ChangeDetectorRef); // <-- A MÁGICA PARA DESTRAVAR A TELA AQUI
 
   pacienteId: string | null = null;
   modoFormulario: 'criar' | 'editar' = 'criar';
@@ -23,10 +24,7 @@ export class CadastroPacienteComponent implements OnInit {
   isFetching = false;
   errorMessage = '';
 
-  // Data atual para travar o limite do calendário
   hoje: string = new Date().toISOString().split('T')[0];
-  
-  // Sugestões dinâmicas de e-mail
   emailSugestoes: string[] = [];
 
   areasDisponiveis = [
@@ -35,14 +33,41 @@ export class CadastroPacienteComponent implements OnInit {
   ];
   sexosDisponiveis = ["Masculino", "Feminino"];
 
-  // Note que atualizamos as validações do CPF e Telefone para acomodar os caracteres da máscara
+  // ==========================================
+  // VALIDADOR CUSTOMIZADO DE DATA EM TEMPO REAL
+  // ==========================================
+  validarDataNascimento(control: AbstractControl): ValidationErrors | null {
+    if (!control.value) return null;
+    
+    const partes = control.value.split('-');
+    if (partes.length !== 3) return { dataInvalida: true };
+    
+    const ano = parseInt(partes[0], 10);
+    const mes = parseInt(partes[1], 10) - 1;
+    const dia = parseInt(partes[2], 10);
+    
+    const dataDigitada = new Date(ano, mes, dia);
+    const dataMinima = new Date(1900, 0, 1);
+    
+    const hojeObj = new Date();
+    hojeObj.setHours(0, 0, 0, 0); // Zera as horas para comparar só o dia justo
+
+    // Se o ano tiver mais de 4 dígitos, for menor que 1900, ou for uma data no futuro: BLOQUEIA!
+    if (ano < 1900 || ano > 9999 || dataDigitada < dataMinima || dataDigitada > hojeObj) {
+      return { dataInvalida: true };
+    }
+    
+    return null;
+  }
+
+  // Vinculamos o novo validador no FormBuilder
   pacienteForm = this.fb.group({
     nome_completo: ['', [Validators.required, Validators.minLength(3)]],
-    cpf: ['', [Validators.required, Validators.minLength(14)]], // 14 com a máscara
-    data_nascimento: ['', Validators.required],
+    cpf: ['', [Validators.required, Validators.minLength(14)]],
+    data_nascimento: ['', [Validators.required, this.validarDataNascimento.bind(this)]], // <-- Validador Aplicado
     sexo: ['Masculino', Validators.required],
-    telefone_contato: ['', [Validators.required, Validators.minLength(14)]], // 14 ou 15 com a máscara
-    email: ['', [Validators.email]], // <-- Valida se tem o @ e formato correto
+    telefone_contato: ['', [Validators.required, Validators.minLength(14)]],
+    email: ['', [Validators.email]],
     endereco_resumido: [''],
     area_atendimento_atual: ['Ortopedia', Validators.required],
     queixa_principal: ['']
@@ -58,15 +83,10 @@ export class CadastroPacienteComponent implements OnInit {
     }
   }
 
-  // ==========================================
-  // MÁSCARAS E FORMATAÇÕES
-  // ==========================================
-
   onCpfInput(event: any) {
-    let valor = event.target.value.replace(/\D/g, ''); // Remove tudo o que não for número
-    if (valor.length > 11) valor = valor.slice(0, 11); // Trava em 11 dígitos reais
+    let valor = event.target.value.replace(/\D/g, ''); 
+    if (valor.length > 11) valor = valor.slice(0, 11); 
 
-    // Aplica a máscara 000.000.000-00
     if (valor.length > 9) {
       valor = valor.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
     } else if (valor.length > 6) {
@@ -74,15 +94,13 @@ export class CadastroPacienteComponent implements OnInit {
     } else if (valor.length > 3) {
       valor = valor.replace(/(\d{3})(\d{1,3})/, '$1.$2');
     }
-
     this.pacienteForm.get('cpf')?.setValue(valor, { emitEvent: false });
   }
 
   onPhoneInput(event: any) {
-    let valor = event.target.value.replace(/\D/g, ''); // Remove tudo o que não for número
-    if (valor.length > 11) valor = valor.slice(0, 11); // Trava em 11 dígitos reais (DDD + 9 dígitos)
+    let valor = event.target.value.replace(/\D/g, ''); 
+    if (valor.length > 11) valor = valor.slice(0, 11); 
 
-    // Aplica a máscara (00) 00000-0000
     if (valor.length > 10) {
       valor = valor.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
     } else if (valor.length > 6) {
@@ -90,35 +108,31 @@ export class CadastroPacienteComponent implements OnInit {
     } else if (valor.length > 2) {
       valor = valor.replace(/(\d{2})(\d{0,5})/, '($1) $2');
     }
-
     this.pacienteForm.get('telefone_contato')?.setValue(valor, { emitEvent: false });
   }
 
   atualizarSugestoesEmail() {
     const valor = this.pacienteForm.get('email')?.value || '';
-    // Se o utilizador começou a digitar mas ainda não colocou o @, sugerimos os domínios
     if (valor.length > 1 && !valor.includes('@')) {
       this.emailSugestoes = [`${valor}@gmail.com`, `${valor}@outlook.com`, `${valor}@hotmail.com`];
     } else {
-      this.emailSugestoes = []; // Limpa se já tiver o @ ou estiver vazio
+      this.emailSugestoes = []; 
     }
   }
-
-  // ==========================================
-  // COMUNICAÇÃO COM A API
-  // ==========================================
 
   carregarPacienteParaEdicao() {
     this.isFetching = true;
     this.pacienteService.buscarPorId(this.pacienteId!).subscribe({
       next: (dados) => {
         this.pacienteForm.patchValue(dados);
-        this.pacienteForm.get('cpf')?.disable(); // Impede a alteração do CPF na edição
+        this.pacienteForm.get('cpf')?.disable(); 
         this.isFetching = false;
+        this.cdr.detectChanges(); // <-- ATUALIZA A TELA (FIM DO LOADING INFINITO)
       },
       error: () => {
         this.errorMessage = 'Erro ao buscar dados do paciente.';
         this.isFetching = false;
+        this.cdr.detectChanges(); // <-- ATUALIZA A TELA
       }
     });
   }
@@ -146,6 +160,7 @@ export class CadastroPacienteComponent implements OnInit {
       error: (err) => {
         this.isLoading = false;
         this.errorMessage = err.error?.detail || 'Erro ao processar a requisição.';
+        this.cdr.detectChanges(); 
       }
     });
   }
