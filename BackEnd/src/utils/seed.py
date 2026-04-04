@@ -13,115 +13,122 @@ async def rodar_seed():
     client = AsyncIOMotorClient(settings.MONGODB_URL)
     db = client[settings.DATABASE_NAME]
 
-    # 1. Áreas Especializadas
+    # ==========================================
+    # 1. ÁREAS DE ATENDIMENTO (Atualizadas com Ícones e Cores)
+    # ==========================================
     areas_base = [
-        {"nome": "Saúde do Homem e da Mulher", "descricao": "Fisioterapia pélvica e saúde preventiva", "is_ativo": True, "criado_em": datetime.now(timezone.utc), "atualizado_em": datetime.now(timezone.utc)},
-        {"nome": "Geriatria", "descricao": "Saúde do idoso e prevenção de quedas", "is_ativo": True, "criado_em": datetime.now(timezone.utc), "atualizado_em": datetime.now(timezone.utc)},
-        {"nome": "Neurologia Adulto", "descricao": "Reabilitação neurofuncional para adultos", "is_ativo": True, "criado_em": datetime.now(timezone.utc), "atualizado_em": datetime.now(timezone.utc)},
-        {"nome": "Neuropediatria", "descricao": "Reabilitação neurofuncional pediátrica", "is_ativo": True, "criado_em": datetime.now(timezone.utc), "atualizado_em": datetime.now(timezone.utc)},
-        {"nome": "Ortopedia", "descricao": "Reabilitação traumato-ortopédica", "is_ativo": True, "criado_em": datetime.now(timezone.utc), "atualizado_em": datetime.now(timezone.utc)},
-        {"nome": "Pediatria", "descricao": "Fisioterapia pediátrica e desenvolvimento motor", "is_ativo": True, "criado_em": datetime.now(timezone.utc), "atualizado_em": datetime.now(timezone.utc)},
+        {
+            "nome": "Saúde da Mulher e do Homem", 
+            "descricao": "Fisioterapia pélvica e saúde preventiva", 
+            "icone": "ph:person-simple-walk-bold",
+            "cor": "rose",
+            "is_ativo": True, 
+            "criado_em": datetime.now(timezone.utc), 
+            "atualizado_em": datetime.now(timezone.utc)
+        },
+        {
+            "nome": "Geriatria", 
+            "descricao": "Saúde do idoso e prevenção de quedas", 
+            "icone": "ph:wheelchair-bold",
+            "cor": "amber",
+            "is_ativo": True, 
+            "criado_em": datetime.now(timezone.utc), 
+            "atualizado_em": datetime.now(timezone.utc)
+        },
+        {
+            "nome": "Neurologia Adulto", 
+            "descricao": "Reabilitação neurofuncional para adultos", 
+            "icone": "ph:brain-bold",
+            "cor": "purple",
+            "is_ativo": True, 
+            "criado_em": datetime.now(timezone.utc), 
+            "atualizado_em": datetime.now(timezone.utc)
+        },
+        {
+            "nome": "Neuropediatria", 
+            "descricao": "Reabilitação neurofuncional pediátrica", 
+            "icone": "ph:baby-bold",
+            "cor": "cyan",
+            "is_ativo": True, 
+            "criado_em": datetime.now(timezone.utc), 
+            "atualizado_em": datetime.now(timezone.utc)
+        },
+        {
+            "nome": "Traumato-Ortopedia", 
+            "descricao": "Reabilitação de fraturas e lesões", 
+            "icone": "ph:bone-bold",
+            "cor": "blue",
+            "is_ativo": True, 
+            "criado_em": datetime.now(timezone.utc), 
+            "atualizado_em": datetime.now(timezone.utc)
+        },
+        {
+            "nome": "Cardiorrespiratória", 
+            "descricao": "Reabilitação cardíaca e pulmonar", 
+            "icone": "ph:lungs-bold",
+            "cor": "emerald",
+            "is_ativo": True, 
+            "criado_em": datetime.now(timezone.utc), 
+            "atualizado_em": datetime.now(timezone.utc)
+        }
     ]
 
-    if await db.dim_area.count_documents({}) == 0:
-        await db.dim_area.insert_many(areas_base)
-        print("✅ Áreas de especialidade populadas com sucesso!")
-    else:
-        print("⚡ Áreas de especialidade já existiam no banco.")
+    for area in areas_base:
+        if await db.dim_area.count_documents({"nome": area["nome"]}) == 0:
+            await db.dim_area.insert_one(area)
+            print(f"✅ Área cadastrada: {area['nome']}")
 
-    # 2. Indicadores Fisioterapêuticos
+    # ==========================================
+    # 2. INDICADORES FUNCIONAIS
+    # ==========================================
     indicadores_base = [
         {
-            "nome": "Escala Visual Analógica de Dor (EVA)",
-            "descricao": "Avalia a intensidade da dor percebida pelo paciente em uma escala de 0 (sem dor) a 10 (pior dor imaginável).",
+            "nome": "Escala Visual Analógica (EVA)",
             "unidade_medida": "pontos (0-10)",
             "direcao_melhora": DirecaoMelhora.MENOR_MELHOR,
+            "descricao": "Mede a intensidade da dor do paciente.",
             "is_ativo": True,
             "criado_em": datetime.now(timezone.utc),
-            "atualizado_em": datetime.now(timezone.utc),
+            "atualizado_em": datetime.now(timezone.utc)
         },
         {
-            "nome": "Força Muscular (Escala de Oxford)",
-            "descricao": "Gradua a força muscular de 0 (sem contração) a 5 (força normal contra resistência total).",
-            "unidade_medida": "graus (0-5)",
-            "direcao_melhora": DirecaoMelhora.MAIOR_MELHOR,
-            "is_ativo": True,
-            "criado_em": datetime.now(timezone.utc),
-            "atualizado_em": datetime.now(timezone.utc),
-        },
-        {
-            "nome": "Amplitude de Movimento (Goniometria)",
-            "descricao": "Mede a amplitude de movimento articular em graus por meio de um goniômetro.",
-            "unidade_medida": "graus (°)",
-            "direcao_melhora": DirecaoMelhora.MAIOR_MELHOR,
-            "is_ativo": True,
-            "criado_em": datetime.now(timezone.utc),
-            "atualizado_em": datetime.now(timezone.utc),
-        },
-        {
-            "nome": "Timed Up and Go (TUG)",
-            "descricao": "Avalia mobilidade funcional e risco de queda. Mede o tempo para levantar, caminhar 3m, voltar e sentar.",
+            "nome": "Time Up and Go (TUG)",
             "unidade_medida": "segundos",
             "direcao_melhora": DirecaoMelhora.MENOR_MELHOR,
+            "descricao": "Avalia mobilidade, equilíbrio e risco de quedas.",
             "is_ativo": True,
             "criado_em": datetime.now(timezone.utc),
-            "atualizado_em": datetime.now(timezone.utc),
+            "atualizado_em": datetime.now(timezone.utc)
         },
         {
-            "nome": "Escala de Equilíbrio de Berg",
-            "descricao": "Avalia o equilíbrio funcional em 14 tarefas do dia a dia, com pontuação de 0 a 56.",
-            "unidade_medida": "pontos (0-56)",
+            "nome": "Força Muscular (Grau 0-5)",
+            "unidade_medida": "grau",
             "direcao_melhora": DirecaoMelhora.MAIOR_MELHOR,
+            "descricao": "Graduação da força muscular.",
             "is_ativo": True,
             "criado_em": datetime.now(timezone.utc),
-            "atualizado_em": datetime.now(timezone.utc),
-        },
-        {
-            "nome": "Teste de Caminhada de 6 Minutos (TC6)",
-            "descricao": "Mede a distância máxima percorrida em 6 minutos, avaliando a capacidade funcional aeróbica.",
-            "unidade_medida": "metros",
-            "direcao_melhora": DirecaoMelhora.MAIOR_MELHOR,
-            "is_ativo": True,
-            "criado_em": datetime.now(timezone.utc),
-            "atualizado_em": datetime.now(timezone.utc),
-        },
-        {
-            "nome": "Índice de Barthel",
-            "descricao": "Avalia a independência funcional nas atividades básicas de vida diária, de 0 (dependência total) a 100 (independência total).",
-            "unidade_medida": "pontos (0-100)",
-            "direcao_melhora": DirecaoMelhora.MAIOR_MELHOR,
-            "is_ativo": True,
-            "criado_em": datetime.now(timezone.utc),
-            "atualizado_em": datetime.now(timezone.utc),
-        },
-        {
-            "nome": "Dinamometria (Força de Preensão)",
-            "descricao": "Mede a força de preensão palmar em quilograma-força (kgf) com uso de dinamômetro.",
-            "unidade_medida": "kgf",
-            "direcao_melhora": DirecaoMelhora.MAIOR_MELHOR,
-            "is_ativo": True,
-            "criado_em": datetime.now(timezone.utc),
-            "atualizado_em": datetime.now(timezone.utc),
-        },
+            "atualizado_em": datetime.now(timezone.utc)
+        }
     ]
 
-    if await db.dim_indicador.count_documents({}) == 0:
-        await db.dim_indicador.insert_many(indicadores_base)
-        print("✅ Indicadores funcionais populados com sucesso!")
-    else:
-        print("⚡ Indicadores funcionais já existiam no banco.")
+    for ind in indicadores_base:
+        if await db.dim_indicador.count_documents({"nome": ind["nome"]}) == 0:
+            await db.dim_indicador.insert_one(ind)
+            print(f"✅ Indicador cadastrado: {ind['nome']}")
 
-    # 3. Usuários Padrão
+    # ==========================================
+    # 3. USUÁRIOS BASE (Com flag precisa_trocar_senha)
+    # ==========================================
     senha_hash = get_password_hash("ucb@1234")
 
     admin_base = {
-        "nome_completo": "Administrador do Sistema",
+        "nome_completo": "Administrador Sistema",
         "matricula": "admin01",
-        "email": "admin.ti@ucb.br",
+        "email": "admin.ucb@exemplo.com",
         "senha_hash": senha_hash,
         "perfil": TipoPerfil.ADMINISTRADOR,
         "is_ativo": True,
-        "precisa_trocar_senha": False,
+        "precisa_trocar_senha": False, # <-- Já nasce liberado para você testar
         "criado_em": datetime.now(timezone.utc),
         "atualizado_em": datetime.now(timezone.utc),
     }
@@ -162,7 +169,7 @@ async def rodar_seed():
         await db.dim_usuario.insert_one(estagiario_base)
         print("✅ Estagiário padrão criado! (estagiario01 / ucb@1234)")
 
-    print("\n🎉 Seed finalizado com sucesso!")
+    print("🚀 Seed finalizado com sucesso!")
     client.close()
 
 if __name__ == "__main__":

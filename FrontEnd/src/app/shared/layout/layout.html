@@ -29,6 +29,13 @@
         <iconify-icon icon="ph:chart-line-bold" class="text-xl mr-3"></iconify-icon> Indicadores
       </a>
 
+      <a *ngIf="userProfile === 'Administrador'"
+         routerLink="/areas"
+         routerLinkActive="bg-blue-800"
+         class="flex items-center p-3 rounded hover:bg-blue-800 transition-colors cursor-pointer">
+        <iconify-icon icon="ph:heartbeat-bold" class="text-xl mr-3"></iconify-icon> Áreas
+      </a>
+
     </nav>
   </aside>
 
