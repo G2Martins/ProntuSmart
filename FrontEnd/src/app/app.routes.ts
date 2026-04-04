@@ -31,6 +31,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/gestao-indicadores/gestao-indicadores')
           .then(m => m.GestaoIndicadoresComponent)
       },
+      { 
+        path: 'areas', 
+        loadComponent: () => import('./features/admin/gestao-areas/gestao-areas').then(m => m.GestaoAreasComponent) 
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   },
