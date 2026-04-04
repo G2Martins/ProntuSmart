@@ -26,6 +26,11 @@ export const routes: Routes = [
         path: 'usuarios', 
         loadComponent: () => import('./features/admin/gestao-usuarios/gestao-usuarios').then(m => m.GestaoUsuariosComponent) 
       },
+      {
+        path: 'indicadores',
+        loadComponent: () => import('./features/admin/gestao-indicadores/gestao-indicadores')
+          .then(m => m.GestaoIndicadoresComponent)
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   },
