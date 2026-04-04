@@ -1,0 +1,150 @@
+<!-- src/app/features/admin/gestao-indicadores/gestao-indicadores.html -->
+<div class="max-w-4xl mx-auto space-y-6">
+
+  <!-- Cabeçalho -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800">Gestão de Indicadores</h2>
+      <p class="text-gray-600">Gerencie os testes e escalas funcionais disponíveis no sistema.</p>
+    </div>
+    <a routerLink="/dashboard" class="flex items-center text-gray-600 hover:text-blue-600 font-medium transition-colors group">
+      <iconify-icon icon="ph:arrow-left-bold" class="mr-2 text-xl group-hover:-translate-x-1 transition-transform"></iconify-icon>
+      Voltar ao Dashboard
+    </a>
+  </div>
+
+  <!-- Formulário Criar / Editar -->
+  <div class="bg-white shadow rounded-lg border border-gray-100 overflow-hidden">
+    <div class="bg-blue-50 border-b border-blue-100 px-6 py-4 flex items-center">
+      <iconify-icon icon="ph:chart-line-bold" class="text-blue-600 text-xl mr-2"></iconify-icon>
+      <h3 class="text-lg font-semibold text-blue-800">
+        {{ modoFormulario === 'criar' ? 'Novo Indicador' : 'Editar Indicador' }}
+      </h3>
+    </div>
+
+    <form [formGroup]="indicadorForm" (ngSubmit)="onSubmit()" class="p-6">
+
+      <div *ngIf="successMessage" class="mb-6 bg-green-50 border-l-4 border-green-500 p-4 flex items-center">
+        <iconify-icon icon="ph:check-circle-bold" class="text-green-500 mr-2 text-xl"></iconify-icon>
+        <p class="text-green-700">{{ successMessage }}</p>
+      </div>
+      <div *ngIf="errorMessage" class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 flex items-center">
+        <iconify-icon icon="ph:warning-circle-bold" class="text-red-500 mr-2 text-xl"></iconify-icon>
+        <p class="text-red-700">{{ errorMessage }}</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Indicador</label>
+          <input type="text" formControlName="nome"
+            class="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            placeholder="Ex: Escala Visual Analógica de Dor (EVA)">
+          <span *ngIf="f['nome'].touched && f['nome'].invalid" class="text-xs text-red-500 mt-1">Nome é obrigatório.</span>
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Descrição <span class="text-gray-400">(opcional)</span></label>
+          <textarea formControlName="descricao" rows="2"
+            class="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            placeholder="O que este teste avalia..."></textarea>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Unidade de Medida</label>
+          <input type="text" formControlName="unidade_medida"
+            class="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            placeholder="Ex: pontos (0-10), graus, segundos">
+          <span *ngIf="f['unidade_medida'].touched && f['unidade_medida'].invalid" class="text-xs text-red-500 mt-1">Unidade é obrigatória.</span>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Direção de Melhora</label>
+          <select formControlName="direcao_melhora"
+            class="w-full rounded-md border border-gray-300 p-2 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <option value="maior_melhor">↑ Maior é melhor (ex: Força Muscular)</option>
+            <option value="menor_melhor">↓ Menor é melhor (ex: Escala de Dor)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-8 flex justify-end gap-3">
+        <button *ngIf="modoFormulario === 'editar'" type="button" (click)="cancelarEdicao()"
+          class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2 rounded shadow flex items-center transition">
+          <iconify-icon icon="ph:x-bold" class="mr-2 text-xl"></iconify-icon> Cancelar
+        </button>
+        <button type="submit" [disabled]="isLoading"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow flex items-center transition disabled:opacity-50">
+          <iconify-icon *ngIf="isLoading" icon="ph:spinner-gap-bold" class="animate-spin mr-2 text-xl"></iconify-icon>
+          <iconify-icon *ngIf="!isLoading" icon="ph:floppy-disk-bold" class="mr-2 text-xl"></iconify-icon>
+          {{ isLoading ? 'Salvando...' : (modoFormulario === 'criar' ? 'Salvar Indicador' : 'Atualizar Indicador') }}
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Tabela de listagem -->
+  <div class="bg-white shadow rounded-lg border border-gray-100 overflow-hidden">
+    <div class="bg-gray-50 border-b border-gray-200 px-6 py-4 flex items-center">
+      <iconify-icon icon="ph:list-bullets-bold" class="text-gray-600 text-xl mr-2"></iconify-icon>
+      <h3 class="text-lg font-semibold text-gray-800">Indicadores Cadastrados</h3>
+    </div>
+
+    <div *ngIf="isLoadingLista" class="p-12 text-center text-gray-500">
+      <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-3xl text-blue-500 mb-2"></iconify-icon>
+      <p>Carregando indicadores...</p>
+    </div>
+
+    <div *ngIf="!isLoadingLista && indicadores.length === 0" class="p-12 text-center text-gray-400">
+      <iconify-icon icon="ph:chart-line-bold" class="text-4xl mb-3"></iconify-icon>
+      <p class="font-medium">Nenhum indicador cadastrado ainda.</p>
+    </div>
+
+    <div *ngIf="!isLoadingLista && indicadores.length > 0" class="overflow-x-auto">
+      <table class="w-full text-sm text-left">
+        <thead class="bg-gray-50 text-xs text-gray-500 uppercase tracking-wider">
+          <tr>
+            <th class="px-6 py-3">Nome</th>
+            <th class="px-6 py-3">Unidade</th>
+            <th class="px-6 py-3">Direção</th>
+            <th class="px-6 py-3">Status</th>
+            <th class="px-6 py-3 text-right">Ações</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <tr *ngFor="let ind of indicadores" class="hover:bg-gray-50 transition-colors">
+            <td class="px-6 py-4 font-medium text-gray-800">
+              {{ ind.nome }}
+              <p *ngIf="ind.descricao" class="text-xs text-gray-400 font-normal mt-0.5">{{ ind.descricao }}</p>
+            </td>
+            <td class="px-6 py-4 text-gray-600">{{ ind.unidade_medida }}</td>
+            <td class="px-6 py-4">
+              <span [class]="ind.direcao_melhora === 'maior_melhor'
+                ? 'bg-green-100 text-green-700 text-xs font-medium px-2 py-1 rounded-full'
+                : 'bg-orange-100 text-orange-700 text-xs font-medium px-2 py-1 rounded-full'">
+                {{ ind.direcao_melhora === 'maior_melhor' ? '↑ Maior melhor' : '↓ Menor melhor' }}
+              </span>
+            </td>
+            <td class="px-6 py-4">
+              <span [class]="ind.is_ativo
+                ? 'bg-green-100 text-green-700 text-xs font-medium px-2 py-1 rounded-full'
+                : 'bg-gray-100 text-gray-500 text-xs font-medium px-2 py-1 rounded-full'">
+                {{ ind.is_ativo ? 'Ativo' : 'Inativo' }}
+              </span>
+            </td>
+            <td class="px-6 py-4 text-right space-x-2">
+              <button (click)="iniciarEdicao(ind)"
+                class="text-blue-600 hover:text-blue-800 transition-colors" title="Editar">
+                <iconify-icon icon="ph:pencil-simple-bold" class="text-lg"></iconify-icon>
+              </button>
+              <button (click)="deletar(ind._id, ind.nome)"
+                class="text-red-500 hover:text-red-700 transition-colors" title="Excluir">
+                <iconify-icon icon="ph:trash-bold" class="text-lg"></iconify-icon>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
