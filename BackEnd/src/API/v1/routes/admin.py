@@ -89,6 +89,9 @@ async def resetar_senha_usuario(usuario_id: str, db = Depends(get_database)):
     senha_hash = get_password_hash(nova_senha_temp)
     
     await db.dim_usuario.update_one(
-        {"_id": ObjectId(usuario_id)}, {"$set": {"senha_hash": senha_hash}}
+        {"_id": ObjectId(usuario_id)}, {"$set": {
+            "senha_hash": senha_hash,
+            "precisa_trocar_senha": True
+        }}
     )
     return {"nova_senha": nova_senha_temp}

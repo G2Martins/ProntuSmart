@@ -1,0 +1,53 @@
+<div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+  <div class="max-w-md w-full bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+    
+    <div class="bg-blue-600 p-6 text-center">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/20 mb-4">
+        <iconify-icon icon="ph:lock-key-bold" class="text-white text-3xl"></iconify-icon>
+      </div>
+      <h2 class="text-2xl font-bold text-white">Segurança ProntuSMART</h2>
+      <p class="text-blue-100 mt-2 text-sm">É necessária uma alteração obrigatória da palavra-passe para continuar a aceder ao sistema.</p>
+    </div>
+
+    <form [formGroup]="trocarForm" (ngSubmit)="onSubmit()" class="p-8">
+      
+      <div *ngIf="errorMessage" class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 flex items-center">
+        <iconify-icon icon="ph:warning-circle-bold" class="text-red-500 mr-2 text-xl"></iconify-icon>
+        <p class="text-red-700 text-sm font-medium">{{ errorMessage }}</p>
+      </div>
+
+      <div class="space-y-5">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Palavra-Passe Atual / Temporária</label>
+          <input type="password" formControlName="senha_temporaria" class="w-full rounded-md border border-gray-300 p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-gray-50" placeholder="Insira a palavra-passe atual">
+          <span *ngIf="f['senha_temporaria'].touched && f['senha_temporaria'].invalid" class="text-xs text-red-500 mt-1">Este campo é obrigatório.</span>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nova Palavra-Passe</label>
+          <input type="password" formControlName="nova_senha" class="w-full rounded-md border border-gray-300 p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Mínimo 6 caracteres">
+          <span *ngIf="f['nova_senha'].touched && f['nova_senha'].errors?.['required']" class="text-xs text-red-500 mt-1">A nova palavra-passe é obrigatória.</span>
+          <span *ngIf="f['nova_senha'].touched && f['nova_senha'].errors?.['minlength']" class="text-xs text-red-500 mt-1">A palavra-passe deve ter pelo menos 6 caracteres.</span>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Confirmar Nova Palavra-Passe</label>
+          <input type="password" formControlName="confirmar_senha" class="w-full rounded-md border border-gray-300 p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Repita a nova palavra-passe">
+          <span *ngIf="trocarForm.errors?.['passwordsMismatch'] && (f['confirmar_senha'].touched || f['nova_senha'].touched)" class="text-xs text-red-500 mt-1">As palavras-passe não coincidem.</span>
+        </div>
+      </div>
+
+      <button type="submit" [disabled]="isLoading" class="w-full mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-md shadow flex items-center justify-center transition disabled:opacity-50">
+        <iconify-icon *ngIf="isLoading" icon="ph:spinner-gap-bold" class="animate-spin mr-2 text-xl"></iconify-icon>
+        {{ isLoading ? 'A alterar...' : 'Alterar e Aceder' }}
+      </button>
+
+      <div class="mt-6 text-center">
+        <button type="button" (click)="authService.logout(); router.navigate(['/login'])" class="text-sm text-gray-500 hover:text-gray-700 underline">
+          Voltar para o Login
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>

@@ -121,6 +121,7 @@ async def rodar_seed():
         "senha_hash": senha_hash,
         "perfil": TipoPerfil.ADMINISTRADOR,
         "is_ativo": True,
+        "precisa_trocar_senha": False,
         "criado_em": datetime.now(timezone.utc),
         "atualizado_em": datetime.now(timezone.utc),
     }
@@ -132,6 +133,19 @@ async def rodar_seed():
         "senha_hash": senha_hash,
         "perfil": TipoPerfil.DOCENTE,
         "is_ativo": True,
+        "precisa_trocar_senha": False,
+        "criado_em": datetime.now(timezone.utc),
+        "atualizado_em": datetime.now(timezone.utc),
+    }
+
+    estagiario_base = {
+        "nome_completo": "Estagiário Padrão",
+        "matricula": "estagiario01",
+        "email": "estagiario.ucb@exemplo.com",
+        "senha_hash": senha_hash,
+        "perfil": TipoPerfil.ESTAGIARIO,
+        "is_ativo": True,
+        "precisa_trocar_senha": False,
         "criado_em": datetime.now(timezone.utc),
         "atualizado_em": datetime.now(timezone.utc),
     }
@@ -143,6 +157,10 @@ async def rodar_seed():
     if await db.dim_usuario.count_documents({"matricula": "docente01"}) == 0:
         await db.dim_usuario.insert_one(docente_base)
         print("✅ Docente padrão criado! (docente01 / ucb@1234)")
+
+    if await db.dim_usuario.count_documents({"matricula": "estagiario01"}) == 0:
+        await db.dim_usuario.insert_one(estagiario_base)
+        print("✅ Estagiário padrão criado! (estagiario01 / ucb@1234)")
 
     print("\n🎉 Seed finalizado com sucesso!")
     client.close()
