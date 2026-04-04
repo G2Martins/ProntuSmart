@@ -1,0 +1,110 @@
+<div class="max-w-5xl mx-auto space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800">Classificação de Doenças (CID)</h2>
+      <p class="text-gray-600">Gerencie a base de códigos CID utilizados nos prontuários da clínica.</p>
+    </div>
+    <a routerLink="/dashboard" class="flex items-center text-gray-600 hover:text-blue-600 font-medium transition-colors group">
+      <iconify-icon icon="ph:arrow-left-bold" class="mr-2 text-xl group-hover:-translate-x-1 transition-transform"></iconify-icon>
+      Voltar ao Dashboard
+    </a>
+  </div>
+
+  <div class="bg-white shadow rounded-lg border border-gray-100 overflow-hidden">
+    <div class="bg-blue-50 border-b border-blue-100 px-6 py-4 flex items-center">
+      <iconify-icon icon="ph:book-bookmark-bold" class="text-blue-600 text-xl mr-2"></iconify-icon>
+      <h3 class="text-lg font-semibold text-blue-800">{{ modoFormulario === 'criar' ? 'Adicionar Novo CID' : 'Editar CID' }}</h3>
+    </div>
+
+    <form [formGroup]="cidForm" (ngSubmit)="onSubmit()" class="p-6">
+      <div *ngIf="successMessage" class="mb-6 bg-green-50 border-l-4 border-green-500 p-4 flex items-center"><p class="text-green-700">{{ successMessage }}</p></div>
+      <div *ngIf="errorMessage" class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 flex items-center"><p class="text-red-700">{{ errorMessage }}</p></div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Código CID</label>
+          <input type="text" formControlName="codigo" class="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 font-mono uppercase" placeholder="Ex: M54.5">
+          <span *ngIf="f['codigo'].touched && f['codigo'].invalid" class="text-xs text-red-500 mt-1">Código inválido.</span>
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Descrição Técnica</label>
+          <input type="text" formControlName="descricao" class="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500" placeholder="Ex: Dor lombar baixa">
+          <span *ngIf="f['descricao'].touched && f['descricao'].invalid" class="text-xs text-red-500 mt-1">Descrição obrigatória.</span>
+        </div>
+
+        <div *ngIf="modoFormulario === 'editar'" class="md:col-span-3">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Status no Sistema</label>
+          <select formControlName="is_ativo" class="w-full md:w-1/3 rounded-md border border-gray-300 p-2 bg-white focus:ring-2 focus:ring-blue-500">
+            <option [ngValue]="true">🟢 Ativo (Permitido nos Prontuários)</option>
+            <option [ngValue]="false">🔴 Inativo (Bloqueado)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-8 flex justify-end gap-3">
+        <button *ngIf="modoFormulario === 'editar'" type="button" (click)="cancelarEdicao()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2 rounded shadow flex items-center transition">Cancelar</button>
+        <button type="submit" [disabled]="isLoading" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow flex items-center transition disabled:opacity-50">
+          <iconify-icon *ngIf="isLoading" icon="ph:spinner-gap-bold" class="animate-spin mr-2"></iconify-icon>
+          {{ isLoading ? 'Salvando...' : (modoFormulario === 'criar' ? 'Gravar CID' : 'Atualizar CID') }}
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="bg-white shadow rounded-lg border border-gray-100 overflow-hidden">
+    <div class="bg-gray-50 border-b border-gray-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex items-center">
+        <iconify-icon icon="ph:list-dashes-bold" class="text-gray-600 text-xl mr-2"></iconify-icon>
+        <h3 class="text-lg font-semibold text-gray-800">Base de CIDs</h3>
+        <span *ngIf="!isLoadingLista" class="ml-3 bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-0.5 rounded-full shadow-sm">{{ cids.length }}</span>
+      </div>
+      
+      <div class="relative w-full sm:w-72">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <iconify-icon icon="ph:magnifying-glass-bold" class="text-gray-400"></iconify-icon>
+        </div>
+        <input type="text" [(ngModel)]="termoBusca" class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors" placeholder="Buscar por código ou nome...">
+      </div>
+    </div>
+
+    <div *ngIf="isLoadingLista" class="p-12 text-center text-gray-500">
+      <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-3xl text-blue-500 mb-2"></iconify-icon><p>Carregando base...</p>
+    </div>
+
+    <div *ngIf="!isLoadingLista && cidsFiltrados.length === 0" class="p-12 text-center text-gray-400">
+      <iconify-icon icon="ph:magnifying-glass-minus-bold" class="text-4xl mb-3"></iconify-icon>
+      <p class="font-medium">Nenhum CID encontrado.</p>
+    </div>
+
+    <div *ngIf="!isLoadingLista && cidsFiltrados.length > 0" class="overflow-x-auto max-h-[500px]">
+      <table class="w-full text-sm text-left">
+        <thead class="bg-gray-50 text-xs text-gray-500 uppercase tracking-wider sticky top-0 shadow-sm z-10">
+          <tr>
+            <th class="px-6 py-3 w-32">Código</th>
+            <th class="px-6 py-3">Descrição Técnica</th>
+            <th class="px-6 py-3 w-32">Status</th>
+            <th class="px-6 py-3 text-right w-24">Ações</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <tr *ngFor="let c of cidsFiltrados" class="hover:bg-gray-50 transition-colors">
+            <td class="px-6 py-4 font-mono font-bold text-blue-800">{{ c.codigo }}</td>
+            <td class="px-6 py-4 font-medium text-gray-700">{{ c.descricao }}</td>
+            <td class="px-6 py-4">
+              <span [class]="c.is_ativo ? 'text-green-600' : 'text-red-500 font-medium'"><iconify-icon [icon]="c.is_ativo ? 'ph:check-circle-fill' : 'ph:x-circle-fill'" class="mr-1 align-middle"></iconify-icon> {{ c.is_ativo ? 'Ativo' : 'Inativo' }}</span>
+            </td>
+            <td class="px-6 py-4 text-right space-x-3">
+              <button (click)="toggleStatus(c)" [title]="c.is_ativo ? 'Bloquear' : 'Ativar'" [class]="c.is_ativo ? 'text-red-500 hover:text-red-700' : 'text-green-600 hover:text-green-800'" class="transition-colors">
+                <iconify-icon icon="ph:power-bold" class="text-xl align-middle"></iconify-icon>
+              </button>
+              <button (click)="iniciarEdicao(c)" class="text-blue-600 hover:text-blue-800 transition-colors" title="Editar">
+                <iconify-icon icon="ph:pencil-simple-bold" class="text-xl align-middle"></iconify-icon>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
