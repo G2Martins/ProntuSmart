@@ -7,7 +7,8 @@ from src.API.v1.routes import (
     metas_smart,
     evolucoes,
     medicoes,
-    admin
+    admin,
+    indicadores
 )
 
 api_router = APIRouter()
@@ -19,3 +20,4 @@ api_router.include_router(metas_smart.router, prefix="/metas-smart", tags=["Meta
 api_router.include_router(evolucoes.router, prefix="/evolucoes", tags=["Evoluções"])
 api_router.include_router(medicoes.router, prefix="/medicoes", tags=["Medições"])
 api_router.include_router(admin.router, prefix="/admin", tags=["Administração"])
+api_router.include_router(indicadores.router, prefix="/indicadores", tags=["Indicadores"])

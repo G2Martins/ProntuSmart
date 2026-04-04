@@ -1,0 +1,24 @@
+from pydantic import BaseModel, Field, ConfigDict
+from typing import Optional
+from datetime import datetime
+from src.models.dim_indicador import DirecaoMelhora
+
+class IndicadorBase(BaseModel):
+    nome: str = Field(..., min_length=2, max_length=100)
+    unidade_medida: str = Field(..., min_length=1, max_length=50)
+    direcao_melhora: DirecaoMelhora
+
+class IndicadorCreate(IndicadorBase):
+    pass
+
+class IndicadorUpdate(BaseModel):
+    nome: Optional[str] = Field(None, min_length=2, max_length=100)
+    unidade_medida: Optional[str] = Field(None, min_length=1, max_length=50)
+    direcao_melhora: Optional[DirecaoMelhora] = None
+
+class IndicadorResponse(IndicadorBase):
+    id: str = Field(alias="_id")
+    criado_em: datetime
+    atualizado_em: datetime
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
