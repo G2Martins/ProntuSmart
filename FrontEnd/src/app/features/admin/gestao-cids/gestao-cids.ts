@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
 import { CidService } from '../../../core/services/cid.service';
+import { AdminService } from '../../../core/services/admin.service';
 
 @Component({
   selector: 'app-gestao-cids',
@@ -15,10 +16,12 @@ export class GestaoCidsComponent implements OnInit {
   private fb = inject(FormBuilder);
   private cidService = inject(CidService);
   private cdr = inject(ChangeDetectorRef);
+  private adminService = inject(AdminService);
 
   cids: any[] = [];
   termoBusca: string = ''; // Barra de pesquisa em tempo real
-  
+  totalCidsBanco: number = 0;
+
   cidEditando: any = null;
   isLoading = false;
   isLoadingLista = true;
@@ -34,7 +37,21 @@ export class GestaoCidsComponent implements OnInit {
 
   get f() { return this.cidForm.controls; }
 
-  ngOnInit() { this.carregarCids(); }
+  ngOnInit() {
+    this.carregarCids();
+    this.carregarEstatisticas(); // <-- CHAME A NOVA FUNÇÃO AQUI
+  }
+
+  carregarEstatisticas() {
+    this.adminService.getEstatisticas().subscribe({
+      next: (res) => {
+        if (res && res.totalCids !== undefined) {
+          this.totalCidsBanco = res.totalCids;
+          this.cdr.detectChanges();
+        }
+      }
+    });
+  }
 
   carregarCids() {
     this.isLoadingLista = true;
@@ -70,7 +87,7 @@ export class GestaoCidsComponent implements OnInit {
     this.isLoading = true; this.successMessage = ''; this.errorMessage = '';
 
     const dados = this.cidForm.value;
-    const request = this.modoFormulario === 'criar' 
+    const request = this.modoFormulario === 'criar'
       ? this.cidService.criar({ codigo: dados.codigo, descricao: dados.descricao })
       : this.cidService.atualizar(this.cidEditando._id, dados);
 
@@ -89,15 +106,15 @@ export class GestaoCidsComponent implements OnInit {
     });
   }
 
-    // Transforma 14500 em "14.5k" e 1000 em "1k"
+  // Transforma 14500 em "14.5k" e 1000 em "1k"
   formatarMilhar(valor: number | undefined): string {
     if (!valor) return '0';
-    
+
     if (valor >= 1000) {
       // Divide por 1000, fixa 1 casa decimal e remove o ".0" se for exato
       return (valor / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
     }
-    
+
     return valor.toString();
   }
 
@@ -115,11 +132,11 @@ export class GestaoCidsComponent implements OnInit {
 
     this.isLoadingLista = true; // Mostra o loading na tabela
     const reader = new FileReader();
-    
+
     reader.onload = (e) => {
       try {
         const jsonAberto = JSON.parse(e.target?.result as string);
-        
+
         // Mapeia o seu JSON ("Cod_CID" e "Desc_CID") para o formato do nosso BackEnd ("codigo" e "descricao")
         const cidsFormatados = jsonAberto.map((item: any) => ({
           codigo: item.Cod_CID,
@@ -146,7 +163,7 @@ export class GestaoCidsComponent implements OnInit {
         this.cdr.detectChanges();
       }
     };
-    
+
     reader.readAsText(file);
     event.target.value = ''; // Limpa o input para permitir enviar o mesmo arquivo novamente se der erro
   }

@@ -22,11 +22,15 @@ export class PainelInicialComponent implements OnInit {
   isLoadingStats = true;
   erroStats = '';
 
-  adminStats = {
+  adminStats: any = {
     usuariosAtivos: 0,
+    totalUsuarios: 0,
     areasCadastradas: 0,
     testesConfigurados: 0,
-    statusServidor: 'A verificar...'
+    totalCids: 0,
+    totalPacientes: 0,
+    statusServidor: 'A verificar...',
+    saudeSistema: null 
   };
 
   docenteStats = { estagiariosSupervisionados: 8, pacientesAtivos: 34, evolucoesPendentesRevisao: 12 };
@@ -70,5 +74,13 @@ export class PainelInicialComponent implements OnInit {
     if (hora < 12) this.saudacao = 'Bom dia';
     else if (hora < 18) this.saudacao = 'Boa tarde';
     else this.saudacao = 'Boa noite';
+  }
+
+  formatarMilhar(valor: number | undefined): string {
+    if (valor === undefined || valor === null) return '0';
+    if (valor >= 1000) {
+      return (valor / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+    }
+    return valor.toString();
   }
 }

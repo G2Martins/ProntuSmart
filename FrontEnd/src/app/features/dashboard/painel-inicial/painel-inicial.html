@@ -63,6 +63,65 @@
       </div>
     </div>
 
+    <div *ngIf="perfil === 'Administrador' && adminStats.saudeSistema" class="mt-10">
+      
+      <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+        <iconify-icon icon="ph:activity-bold" class="mr-2 text-blue-600 text-xl"></iconify-icon> 
+        Monitoramento do Sistema
+      </h3>
+      
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 flex items-center transition-transform hover:-translate-y-1">
+          <div class="w-12 h-12 rounded-full flex items-center justify-center mr-4"
+               [ngClass]="adminStats.statusServidor === 'Online' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'">
+            <iconify-icon [icon]="adminStats.statusServidor === 'Online' ? 'ph:check-circle-bold' : 'ph:warning-bold'" class="text-2xl"></iconify-icon>
+          </div>
+          <div>
+            <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Status da API</p>
+            <p class="text-xl font-bold" [ngClass]="adminStats.statusServidor === 'Online' ? 'text-gray-800' : 'text-red-600'">
+              {{ adminStats.statusServidor }}
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 flex items-center transition-transform hover:-translate-y-1">
+          <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mr-4">
+            <iconify-icon icon="ph:database-bold" class="text-2xl"></iconify-icon>
+          </div>
+          <div>
+            <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Motor de Dados</p>
+            <p class="text-xl font-bold text-gray-800">{{ adminStats.saudeSistema.bancoDados }}</p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 flex items-center transition-transform hover:-translate-y-1">
+          <div class="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mr-4">
+            <iconify-icon icon="ph:hard-drives-bold" class="text-2xl"></iconify-icon>
+          </div>
+          <div>
+            <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Armazenamento</p>
+            <p class="text-xl font-bold text-gray-800">
+              {{ adminStats.saudeSistema.tamanhoDadosMB }} <span class="text-sm font-normal text-gray-500">MB</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 flex items-center transition-transform hover:-translate-y-1">
+          <div class="w-12 h-12 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center mr-4">
+            <iconify-icon icon="ph:folders-bold" class="text-2xl"></iconify-icon>
+          </div>
+          <div>
+            <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Volume Global</p>
+            <p class="text-xl font-bold text-gray-800">
+              {{ formatarMilhar(adminStats.saudeSistema.totalDocumentosGerais) }} <span class="text-sm font-normal text-gray-500">docs</span>
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <div class="mt-8">
       <h3 class="text-lg font-semibold text-gray-800 mb-4">Ações Rápidas</h3>
       <div class="flex gap-4">
