@@ -25,11 +25,13 @@ export class GestaoIndicadoresComponent implements OnInit {
   errorMessage = '';
   modoFormulario: 'criar' | 'editar' = 'criar';
 
+  // 1. Adicionado o is_ativo ao formulário (padrão true para novos)
   indicadorForm = this.fb.group({
     nome: ['', Validators.required],
     descricao: [''],
     unidade_medida: ['', Validators.required],
-    direcao_melhora: ['maior_melhor', Validators.required]
+    direcao_melhora: ['maior_melhor', Validators.required],
+    is_ativo: [true] 
   });
 
   get f() { return this.indicadorForm.controls; }
@@ -58,11 +60,14 @@ export class GestaoIndicadoresComponent implements OnInit {
   iniciarEdicao(indicador: Indicador) {
     this.modoFormulario = 'editar';
     this.indicadorEditando = indicador;
+    
+    // 2. Preenche o is_ativo ao clicar em editar
     this.indicadorForm.patchValue({
       nome: indicador.nome,
       descricao: indicador.descricao ?? '',
       unidade_medida: indicador.unidade_medida,
-      direcao_melhora: indicador.direcao_melhora
+      direcao_melhora: indicador.direcao_melhora,
+      is_ativo: indicador.is_ativo 
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -70,7 +75,9 @@ export class GestaoIndicadoresComponent implements OnInit {
   cancelarEdicao() {
     this.modoFormulario = 'criar';
     this.indicadorEditando = null;
-    this.indicadorForm.reset({ direcao_melhora: 'maior_melhor' });
+    
+    // 3. Reseta garantindo que o is_ativo volte para true na criação
+    this.indicadorForm.reset({ direcao_melhora: 'maior_melhor', is_ativo: true });
     this.successMessage = '';
     this.errorMessage = '';
   }

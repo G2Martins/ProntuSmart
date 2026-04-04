@@ -7,6 +7,7 @@ class IndicadorBase(BaseModel):
     nome: str = Field(..., min_length=2, max_length=100)
     unidade_medida: str = Field(..., min_length=1, max_length=50)
     direcao_melhora: DirecaoMelhora
+    descricao: Optional[str] = None # Garantindo que a descrição trafegue
 
 class IndicadorCreate(IndicadorBase):
     pass
@@ -15,9 +16,12 @@ class IndicadorUpdate(BaseModel):
     nome: Optional[str] = Field(None, min_length=2, max_length=100)
     unidade_medida: Optional[str] = Field(None, min_length=1, max_length=50)
     direcao_melhora: Optional[DirecaoMelhora] = None
+    descricao: Optional[str] = None
+    is_ativo: Optional[bool] = None 
 
 class IndicadorResponse(IndicadorBase):
     id: str = Field(alias="_id")
+    is_ativo: bool 
     criado_em: datetime
     atualizado_em: datetime
 
