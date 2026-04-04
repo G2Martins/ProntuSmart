@@ -1,1 +1,96 @@
-<p>busca-pacientes works!</p>
+<div class="max-w-7xl mx-auto space-y-6">
+  
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800">Prontuários e Pacientes</h2>
+      <p class="text-gray-600">Busque pacientes, consulte históricos ou inicie uma nova triagem.</p>
+    </div>
+    
+    <button *ngIf="perfil === 'Administrador' || perfil === 'Docente'" routerLink="/pacientes/novo" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg shadow flex items-center transition-colors">
+      <iconify-icon icon="ph:user-plus-bold" class="mr-2 text-lg"></iconify-icon> Novo Paciente
+    </button>
+  </div>
+
+  <div class="bg-white shadow rounded-lg border border-gray-100 overflow-hidden">
+    <div class="bg-gray-50 border-b border-gray-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      
+      <div class="flex items-center">
+        <iconify-icon icon="ph:users-three-bold" class="text-gray-600 text-xl mr-2"></iconify-icon>
+        <h3 class="text-lg font-semibold text-gray-800">Base Ativa</h3>
+        <span *ngIf="!isLoading" class="ml-3 bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-0.5 rounded-full">{{ pacientes.length }}</span>
+      </div>
+      
+      <div class="relative w-full sm:w-80">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <iconify-icon icon="ph:magnifying-glass-bold" class="text-gray-400"></iconify-icon>
+        </div>
+        <input type="text" [(ngModel)]="termoBusca" class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors" placeholder="Buscar por nome, CPF ou área...">
+      </div>
+    </div>
+
+    <div *ngIf="isLoading" class="p-12 text-center text-gray-500">
+      <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-4xl text-blue-500 mb-3"></iconify-icon>
+      <p>A carregar prontuários...</p>
+    </div>
+
+    <div *ngIf="!isLoading && pacientesFiltrados.length === 0" class="p-12 text-center text-gray-400">
+      <iconify-icon icon="ph:magnifying-glass-minus-bold" class="text-5xl mb-3"></iconify-icon>
+      <p class="font-medium text-lg">Nenhum paciente localizado.</p>
+    </div>
+
+    <div *ngIf="!isLoading && pacientesFiltrados.length > 0" class="overflow-x-auto">
+      <table class="w-full text-sm text-left">
+        <thead class="bg-gray-50 text-xs text-gray-500 uppercase tracking-wider sticky top-0">
+          <tr>
+            <th class="px-6 py-4">Identificação</th>
+            <th class="px-6 py-4">Contato</th>
+            <th class="px-6 py-4">Área de Triagem</th>
+            <th class="px-6 py-4 text-right">Ações</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <tr *ngFor="let p of pacientesFiltrados" class="hover:bg-blue-50/50 transition-colors group">
+            
+            <td class="px-6 py-4">
+              <div class="flex items-center">
+                <div class="h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold mr-3 uppercase">
+                  {{ p.nome_completo.charAt(0) }}
+                </div>
+                <div>
+                  <p class="font-bold text-gray-800">{{ p.nome_completo }}</p>
+                  <p class="text-xs text-gray-500 font-mono">CPF: {{ p.cpf }}</p>
+                </div>
+              </div>
+            </td>
+
+            <td class="px-6 py-4">
+              <p class="text-gray-700 flex items-center"><iconify-icon icon="ph:phone-bold" class="mr-1.5 text-gray-400"></iconify-icon> {{ p.telefone_contato }}</p>
+            </td>
+
+            <td class="px-6 py-4">
+              <span class="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full text-xs font-semibold flex w-max items-center">
+                <iconify-icon icon="ph:heartbeat-bold" class="mr-1.5 text-blue-500 text-sm"></iconify-icon> {{ p.area_atendimento_atual }}
+              </span>
+            </td>
+
+            <td class="px-6 py-4 text-right space-x-4 whitespace-nowrap">
+              
+              <button *ngIf="perfil === 'Docente'" (click)="abrirTriagem(p)" class="text-orange-500 hover:text-orange-700 font-bold transition-colors inline-flex items-center" title="Iniciar Nova Triagem Clínica">
+                <iconify-icon icon="ph:stethoscope-bold" class="text-xl mr-1"></iconify-icon> Triar
+              </button>
+
+              <button class="text-blue-600 hover:text-blue-800 font-medium transition-colors inline-flex items-center" title="Acessar Prontuário">
+                <iconify-icon icon="ph:folder-user-bold" class="text-xl mr-1"></iconify-icon> Abrir
+              </button>
+
+              <a *ngIf="perfil === 'Administrador' || perfil === 'Docente'" [routerLink]="['/pacientes/editar', p._id]" class="text-gray-400 hover:text-gray-700 transition-colors inline-flex items-center" title="Editar Ficha">
+                <iconify-icon icon="ph:pencil-simple-bold" class="text-xl"></iconify-icon>
+              </a>
+            </td>
+
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

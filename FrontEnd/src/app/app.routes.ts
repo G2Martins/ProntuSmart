@@ -39,6 +39,18 @@ export const routes: Routes = [
         path: 'cids', 
         loadComponent: () => import('./features/admin/gestao-cids/gestao-cids').then(m => m.GestaoCidsComponent) 
       },
+      { 
+        path: 'pacientes', 
+        loadComponent: () => import('./features/pacientes/busca-pacientes/busca-pacientes').then(m => m.BuscaPacientesComponent) 
+      },
+      { 
+        path: 'pacientes/novo', 
+        loadComponent: () => import('./features/pacientes/cadastro-paciente/cadastro-paciente').then(m => m.CadastroPacienteComponent) 
+      },
+      { 
+        path: 'pacientes/editar/:id', 
+        loadComponent: () => import('./features/pacientes/cadastro-paciente/cadastro-paciente').then(m => m.CadastroPacienteComponent) 
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   },
