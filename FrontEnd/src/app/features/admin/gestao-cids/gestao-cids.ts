@@ -89,11 +89,65 @@ export class GestaoCidsComponent implements OnInit {
     });
   }
 
+    // Transforma 14500 em "14.5k" e 1000 em "1k"
+  formatarMilhar(valor: number | undefined): string {
+    if (!valor) return '0';
+    
+    if (valor >= 1000) {
+      // Divide por 1000, fixa 1 casa decimal e remove o ".0" se for exato
+      return (valor / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+    }
+    
+    return valor.toString();
+  }
+
   toggleStatus(cid: any) {
     const novoStatus = !cid.is_ativo;
     this.cidService.atualizar(cid._id, { is_ativo: novoStatus }).subscribe({
       next: () => { this.successMessage = `Status atualizado!`; this.carregarCids(); },
       error: () => { this.errorMessage = `Erro ao alterar status.`; this.cdr.detectChanges(); }
     });
+  }
+
+  onFileSelected(event: any) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    this.isLoadingLista = true; // Mostra o loading na tabela
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      try {
+        const jsonAberto = JSON.parse(e.target?.result as string);
+        
+        // Mapeia o seu JSON ("Cod_CID" e "Desc_CID") para o formato do nosso BackEnd ("codigo" e "descricao")
+        const cidsFormatados = jsonAberto.map((item: any) => ({
+          codigo: item.Cod_CID,
+          descricao: item.Desc_CID
+        }));
+
+        // Envia para o BackEnd
+        this.cidService.importarLote(cidsFormatados).subscribe({
+          next: (res) => {
+            this.successMessage = res.message;
+            this.carregarCids(); // Recarrega a tabela atualizada
+            this.cdr.detectChanges();
+          },
+          error: (err) => {
+            this.errorMessage = err.error?.detail || 'Erro ao importar o arquivo JSON.';
+            this.isLoadingLista = false;
+            this.cdr.detectChanges();
+          }
+        });
+
+      } catch (error) {
+        this.errorMessage = "Erro ao ler o arquivo JSON. Verifique se o formato está correto.";
+        this.isLoadingLista = false;
+        this.cdr.detectChanges();
+      }
+    };
+    
+    reader.readAsText(file);
+    event.target.value = ''; // Limpa o input para permitir enviar o mesmo arquivo novamente se der erro
   }
 }

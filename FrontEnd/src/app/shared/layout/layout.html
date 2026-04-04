@@ -35,6 +35,13 @@
          class="flex items-center p-3 rounded hover:bg-blue-800 transition-colors cursor-pointer">
         <iconify-icon icon="ph:heartbeat-bold" class="text-xl mr-3"></iconify-icon> Áreas
       </a>
+      
+      <a *ngIf="userProfile === 'Administrador'"
+         routerLink="/cids"
+         routerLinkActive="bg-blue-800"
+         class="flex items-center p-3 rounded hover:bg-blue-800 transition-colors cursor-pointer">
+        <iconify-icon icon="ph:book-bookmark-bold" class="text-xl mr-3"></iconify-icon> CIDs
+      </a>
 
     </nav>
   </aside>

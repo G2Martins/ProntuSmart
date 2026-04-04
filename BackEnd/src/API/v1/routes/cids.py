@@ -47,3 +47,26 @@ async def atualizar_cid(cid_id: str, cid_in: CidUpdate, db = Depends(get_databas
     cid = await db.dim_cid.find_one({"_id": ObjectId(cid_id)})
     cid["_id"] = str(cid["_id"])
     return cid
+
+@router.post("/bulk", status_code=status.HTTP_201_CREATED, dependencies=[Depends(verificar_admin)])
+async def importar_cids_lote(cids_in: List[CidCreate], db = Depends(get_database)):
+    if not cids_in:
+        raise HTTPException(status_code=400, detail="A lista de CIDs está vazia.")
+
+    novos_cids = []
+    
+    # 1. Puxa todos os códigos que já existem no banco para não duplicar
+    codigos_existentes = set([c["codigo"] async for c in db.dim_cid.find({}, {"codigo": 1})])
+
+    # 2. Prepara os novos documentos
+    for cid in cids_in:
+        if cid.codigo not in codigos_existentes:
+            novo_cid = DimCid(**cid.model_dump())
+            novos_cids.append(novo_cid.model_dump(by_alias=True, exclude_none=True))
+            codigos_existentes.add(cid.codigo) # Adiciona no set para não duplicar na mesma carga
+
+    # 3. Insere todos de uma vez (MUITO mais rápido que inserir um por um)
+    if novos_cids:
+        await db.dim_cid.insert_many(novos_cids)
+
+    return {"message": f"Upload concluído! {len(novos_cids)} novos CIDs foram adicionados."}

@@ -35,6 +35,10 @@ export const routes: Routes = [
         path: 'areas', 
         loadComponent: () => import('./features/admin/gestao-areas/gestao-areas').then(m => m.GestaoAreasComponent) 
       },
+      { 
+        path: 'cids', 
+        loadComponent: () => import('./features/admin/gestao-cids/gestao-cids').then(m => m.GestaoCidsComponent) 
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   },
