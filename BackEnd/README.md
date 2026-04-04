@@ -734,36 +734,6 @@ Com o servidor rodando, acesse:
 
 ---
 
-## Testing
-
-Execute testes unitários:
-
-```bash
-# Instale pytest (se não tiver)
-pip install pytest pytest-asyncio
-
-# Rode todos os testes
-pytest tests/ -v --tb=short
-
-# Rode teste específico
-pytest tests/test_auth.py -v
-```
-
----
-
-## Roadmap Futuro
-
-- [ ] Integração com e-signature (assinatura digital de prontuários)
-- [ ] Exportação de prontuários em PDF com branding UCB
-- [ ] Relatórios avançados (Plotly, ReportLab)
-- [ ] Notificações via Webhook para eventos clínicos
-- [ ] Rate limiting (FastAPI-Limiter) e caching (Redis)
-- [ ] Testes de carga (k6, Locust)
-- [ ] API de BI/Analytics para dashboards
-- [ ] Integração com sistemas PACS (radiologia)
-
----
-
 ## Referências e Recursos
 
 - **FastAPI Documentation**: https://fastapi.tiangolo.com
@@ -775,20 +745,10 @@ pytest tests/test_auth.py -v
 
 ---
 
-## Suporte e Contribuições
-
-Para dúvidas, issues ou sugestões de melhorias:
-
-1. **Abra uma Issue** no repositório
-2. **Faça um Pull Request** com suas melhorias (branches: `feature/`, `fix/`, `docs/`)
-3. **Follow commit conventions**: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`
-
----
-
 ## Licença
 
 Desenvolvido para a **Clínica Escola de Fisioterapia — Universidade Católica de Brasília (UCB)**
 
 **Versão**: 1.0.0  
-**Última atualização**: Março/2025  
-**Mantido por**: Equipe de Desenvolvimento UCB
+**Última atualização**: Abril/2025  
+**Mantido por**: Gustavo Martins Gripaldi e João Victor Rodrigues Pinto
