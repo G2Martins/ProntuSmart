@@ -1,10 +1,11 @@
-<div class="max-w-4xl mx-auto space-y-6">
+<div class="max-w-5xl mx-auto space-y-6">
   
   <div class="flex items-center justify-between">
     <div>
       <h2 class="text-2xl font-bold text-gray-800">Gestão de Usuários</h2>
-      <p class="text-gray-600">Adicione novos membros da clínica ao sistema.</p>
+      <p class="text-gray-600">Gerencie os acessos de Docentes, Estagiários e Administradores.</p>
     </div>
+    
     <a routerLink="/dashboard" class="flex items-center text-gray-600 hover:text-blue-600 font-medium transition-colors group">
       <iconify-icon icon="ph:arrow-left-bold" class="mr-2 text-xl group-hover:-translate-x-1 transition-transform"></iconify-icon>
       Voltar ao Dashboard
@@ -13,8 +14,10 @@
 
   <div class="bg-white shadow rounded-lg border border-gray-100 overflow-hidden">
     <div class="bg-blue-50 border-b border-blue-100 px-6 py-4 flex items-center">
-      <iconify-icon icon="ph:user-plus-bold" class="text-blue-600 text-xl mr-2"></iconify-icon>
-      <h3 class="text-lg font-semibold text-blue-800">Novo Cadastro</h3>
+      <iconify-icon icon="ph:user-circle-gear-bold" class="text-blue-600 text-xl mr-2"></iconify-icon>
+      <h3 class="text-lg font-semibold text-blue-800">
+        {{ modoFormulario === 'criar' ? 'Novo Cadastro' : 'Editar Usuário' }}
+      </h3>
     </div>
 
     <form [formGroup]="usuarioForm" (ngSubmit)="onSubmit()" class="p-6">
@@ -28,9 +31,9 @@
         <p class="text-red-700">{{ errorMessage }}</p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         
-        <div class="md:col-span-2">
+        <div class="lg:col-span-2">
           <label class="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
           <input type="text" formControlName="nome_completo" class="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Ex: João da Silva">
           <span *ngIf="f['nome_completo'].touched && f['nome_completo'].invalid" class="text-xs text-red-500 mt-1">Nome é obrigatório.</span>
@@ -38,14 +41,15 @@
 
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Matrícula</label>
-          <input type="text" formControlName="matricula" class="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Ex: est01">
+          <input type="text" formControlName="matricula" [readonly]="modoFormulario === 'editar'" [ngClass]="{'bg-gray-100 text-gray-500': modoFormulario === 'editar'}" class="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Ex: est01">
           <span *ngIf="f['matricula'].touched && f['matricula'].invalid" class="text-xs text-red-500 mt-1">Matrícula é obrigatória.</span>
+          <span *ngIf="modoFormulario === 'editar'" class="text-xs text-gray-400 mt-1">A matrícula não pode ser alterada.</span>
         </div>
 
-        <div>
+        <div class="lg:col-span-2">
           <label class="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
           <input type="email" formControlName="email" class="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="joao@ucb.br">
-          <span *ngIf="f['email'].touched && f['email'].invalid" class="text-xs text-red-500 mt-1">E-mail inválido.</span>
+          <span *ngIf="f['email'].touched && f['email'].invalid" class="text-xs text-red-500 mt-1">E-mail válido é obrigatório.</span>
         </div>
 
         <div>
@@ -57,21 +61,112 @@
           </select>
         </div>
 
-        <div>
+        <div *ngIf="modoFormulario === 'criar'">
           <label class="block text-sm font-medium text-gray-700 mb-1">Senha Provisória</label>
           <input type="password" formControlName="senha" class="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Mínimo 6 caracteres">
-          <span *ngIf="f['senha'].touched && f['senha'].invalid" class="text-xs text-red-500 mt-1">A senha deve ter no mínimo 6 caracteres.</span>
+          <span *ngIf="f['senha'].touched && f['senha'].invalid" class="text-xs text-red-500 mt-1">Mínimo 6 caracteres.</span>
+        </div>
+
+        <div *ngIf="modoFormulario === 'editar'">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Status de Acesso</label>
+          <select formControlName="is_ativo" class="w-full rounded-md border border-gray-300 p-2 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <option [ngValue]="true">🟢 Ativo</option>
+            <option [ngValue]="false">🔴 Inativo</option>
+          </select>
         </div>
       </div>
 
-      <div class="mt-8 flex justify-end">
+      <div class="mt-8 flex justify-end gap-3">
+        <button *ngIf="modoFormulario === 'editar'" type="button" (click)="cancelarEdicao()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2 rounded shadow flex items-center transition">
+          <iconify-icon icon="ph:x-bold" class="mr-2 text-xl"></iconify-icon> Cancelar
+        </button>
         <button type="submit" [disabled]="isLoading" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow flex items-center transition disabled:opacity-50">
           <iconify-icon *ngIf="isLoading" icon="ph:spinner-gap-bold" class="animate-spin mr-2 text-xl"></iconify-icon>
           <iconify-icon *ngIf="!isLoading" icon="ph:floppy-disk-bold" class="mr-2 text-xl"></iconify-icon>
-          {{ isLoading ? 'Salvando...' : 'Salvar Usuário' }}
+          {{ isLoading ? 'Processando...' : (modoFormulario === 'criar' ? 'Salvar Usuário' : 'Atualizar Usuário') }}
         </button>
       </div>
 
     </form>
+  </div>
+
+  <div class="bg-white shadow rounded-lg border border-gray-100 overflow-hidden">
+    <div class="bg-gray-50 border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center">
+        <iconify-icon icon="ph:users-bold" class="text-gray-600 text-xl mr-2"></iconify-icon>
+        <h3 class="text-lg font-semibold text-gray-800">Membros da Clínica</h3>
+        <span *ngIf="!isLoadingLista" class="ml-3 bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-0.5 rounded-full shadow-sm">
+          {{ usuarios.length }} cadastrados
+        </span>
+      </div>
+    </div>
+
+    <div *ngIf="isLoadingLista" class="p-12 text-center text-gray-500">
+      <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-3xl text-blue-500 mb-2"></iconify-icon>
+      <p>A carregar base de usuários...</p>
+    </div>
+
+    <div *ngIf="!isLoadingLista && usuarios.length === 0" class="p-12 text-center text-gray-400">
+      <iconify-icon icon="ph:users-slash-bold" class="text-4xl mb-3"></iconify-icon>
+      <p class="font-medium">Nenhum usuário encontrado no sistema.</p>
+    </div>
+
+    <div *ngIf="!isLoadingLista && usuarios.length > 0" class="overflow-x-auto">
+      <table class="w-full text-sm text-left">
+        <thead class="bg-gray-50 text-xs text-gray-500 uppercase tracking-wider">
+          <tr>
+            <th class="px-6 py-3">Colaborador</th>
+            <th class="px-6 py-3">Matrícula</th>
+            <th class="px-6 py-3">Perfil</th>
+            <th class="px-6 py-3">Status</th>
+            <th class="px-6 py-3 text-right">Ações</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <tr *ngFor="let u of usuarios" class="hover:bg-gray-50 transition-colors">
+            
+            <td class="px-6 py-4">
+              <div class="font-medium text-gray-800">{{ u.nome_completo }}</div>
+              <div class="text-xs text-gray-500 mt-0.5">{{ u.email }}</div>
+            </td>
+            
+            <td class="px-6 py-4 font-mono text-gray-600">{{ u.matricula }}</td>
+            
+            <td class="px-6 py-4">
+              <span class="px-2 py-1 rounded-full text-xs font-medium border" 
+                    [ngClass]="{
+                      'bg-purple-50 text-purple-700 border-purple-200': u.perfil === 'Administrador', 
+                      'bg-blue-50 text-blue-700 border-blue-200': u.perfil === 'Docente',
+                      'bg-emerald-50 text-emerald-700 border-emerald-200': u.perfil === 'Estagiario'
+                    }">
+                {{ u.perfil }}
+              </span>
+            </td>
+            
+            <td class="px-6 py-4">
+              <span [class]="u.is_ativo ? 'bg-green-100 text-green-700 text-xs font-medium px-2 py-1 rounded-full' : 'bg-red-100 text-red-700 text-xs font-medium px-2 py-1 rounded-full'">
+                {{ u.is_ativo ? 'Ativo' : 'Inativo' }}
+              </span>
+            </td>
+            
+            <td class="px-6 py-4 text-right space-x-3 whitespace-nowrap">
+              
+              <button (click)="toggleStatus(u)" [title]="u.is_ativo ? 'Bloquear Acesso (Inativar)' : 'Restaurar Acesso (Ativar)'" [class]="u.is_ativo ? 'text-red-500 hover:text-red-700' : 'text-green-600 hover:text-green-800'" class="transition-colors">
+                <iconify-icon [icon]="u.is_ativo ? 'ph:user-minus-bold' : 'ph:user-plus-bold'" class="text-xl align-middle"></iconify-icon>
+              </button>
+
+              <button (click)="resetarSenha(u)" class="text-orange-500 hover:text-orange-700 transition-colors" title="Gerar Nova Senha Temporária">
+                <iconify-icon icon="ph:key-bold" class="text-xl align-middle"></iconify-icon>
+              </button>
+              
+              <button (click)="iniciarEdicao(u)" class="text-blue-600 hover:text-blue-800 transition-colors" title="Editar Informações">
+                <iconify-icon icon="ph:pencil-simple-bold" class="text-xl align-middle"></iconify-icon>
+              </button>
+
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>

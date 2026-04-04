@@ -26,4 +26,20 @@ export class AdminService {
   criarUsuario(usuarioData: any) {
     return this.http.post<any>(`${this.apiUrl}/usuarios`, usuarioData, { headers: this.getHeaders() });
   }
+  
+  listarUsuarios(perfil?: string, ativo?: boolean) {
+    let params = '';
+    if (perfil || ativo !== undefined) {
+      params = `?${perfil ? 'perfil=' + perfil : ''}${ativo !== undefined ? '&is_ativo=' + ativo : ''}`;
+    }
+    return this.http.get<any[]>(`${this.apiUrl}/usuarios${params}`, { headers: this.getHeaders() });
+  }
+
+  atualizarUsuario(id: string, dados: any) {
+    return this.http.put<any>(`${this.apiUrl}/usuarios/${id}`, dados, { headers: this.getHeaders() });
+  }
+
+  resetarSenha(id: string) {
+    return this.http.patch<{nova_senha: string}>(`${this.apiUrl}/usuarios/${id}/reset-password`, {}, { headers: this.getHeaders() });
+  }
 }
