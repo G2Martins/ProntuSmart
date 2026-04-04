@@ -5,18 +5,24 @@ from src.core.database import get_database
 from src.schemas.indicador import IndicadorCreate, IndicadorUpdate
 from src.models.dim_indicador import DimIndicador
 
+def _serializar(doc: dict) -> dict:
+    if doc and "_id" in doc:
+        doc["_id"] = str(doc["_id"])
+    return doc
+
 async def listar_indicadores(apenas_ativos: bool = False) -> list:
     db = get_database()
     filtro = {"is_ativo": True} if apenas_ativos else {}
     cursor = db.dim_indicador.find(filtro).sort("nome", 1)
-    return await cursor.to_list(length=200)
+    docs = await cursor.to_list(length=200)
+    return [_serializar(doc) for doc in docs]
 
 async def buscar_indicador_por_id(indicador_id: str) -> dict:
     db = get_database()
     indicador = await db.dim_indicador.find_one({"_id": ObjectId(indicador_id)})
     if not indicador:
         raise HTTPException(status_code=404, detail="Indicador não encontrado.")
-    return indicador
+    return _serializar(indicador)
 
 async def criar_indicador(indicador_in: IndicadorCreate) -> dict:
     db = get_database()
@@ -31,7 +37,8 @@ async def criar_indicador(indicador_in: IndicadorCreate) -> dict:
     resultado = await db.dim_indicador.insert_one(
         novo.model_dump(by_alias=True, exclude_none=True)
     )
-    return await db.dim_indicador.find_one({"_id": resultado.inserted_id})
+    criado = await db.dim_indicador.find_one({"_id": resultado.inserted_id})
+    return _serializar(criado)
 
 async def atualizar_indicador(indicador_id: str, indicador_in: IndicadorUpdate) -> dict:
     db = get_database()
@@ -49,7 +56,8 @@ async def atualizar_indicador(indicador_id: str, indicador_in: IndicadorUpdate) 
     if resultado.matched_count == 0:
         raise HTTPException(status_code=404, detail="Indicador não encontrado.")
 
-    return await db.dim_indicador.find_one({"_id": ObjectId(indicador_id)})
+    atualizado = await db.dim_indicador.find_one({"_id": ObjectId(indicador_id)})
+    return _serializar(atualizado)
 
 async def deletar_indicador(indicador_id: str) -> bool:
     db = get_database()

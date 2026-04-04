@@ -1,12 +1,12 @@
 import { Component, inject, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
-import { RouterOutlet, RouterLink } from '@angular/router';
-import { CommonModule } from '@angular/common'; // <-- FALTAVA ISTO PARA O *ngIf FUNCIONAR!
+import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { CommonModule } from '@angular/common'; 
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink], // <-- ADICIONADO AQUI
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive], // <-- ADICIONADO AQUI
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './layout.html'
 })

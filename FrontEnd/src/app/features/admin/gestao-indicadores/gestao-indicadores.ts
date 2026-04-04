@@ -1,5 +1,4 @@
-// src/app/features/admin/gestao-indicadores/gestao-indicadores.ts
-import { Component, inject, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, inject, OnInit, CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -16,6 +15,7 @@ import { Indicador } from '../../../shared/models/indicador.model';
 export class GestaoIndicadoresComponent implements OnInit {
   private fb = inject(FormBuilder);
   private indicadorService = inject(IndicadorService);
+  private cdr = inject(ChangeDetectorRef);
 
   indicadores: Indicador[] = [];
   indicadorEditando: Indicador | null = null;
@@ -26,8 +26,8 @@ export class GestaoIndicadoresComponent implements OnInit {
   modoFormulario: 'criar' | 'editar' = 'criar';
 
   indicadorForm = this.fb.group({
-    nome:           ['', Validators.required],
-    descricao:      [''],
+    nome: ['', Validators.required],
+    descricao: [''],
     unidade_medida: ['', Validators.required],
     direcao_melhora: ['maior_melhor', Validators.required]
   });
@@ -36,13 +36,22 @@ export class GestaoIndicadoresComponent implements OnInit {
 
   ngOnInit() {
     this.carregarIndicadores();
-  }
+  } // ✅ FECHA O ngOnInit
 
-  carregarIndicadores() {
+  carregarIndicadores() { // ✅ MÉTODO SEPARADO DA CLASSE
     this.isLoadingLista = true;
     this.indicadorService.listar().subscribe({
-      next: (dados) => { this.indicadores = dados; this.isLoadingLista = false; },
-      error: () => { this.isLoadingLista = false; }
+      next: (dados) => {
+        this.indicadores = dados;
+        this.isLoadingLista = false;
+        this.cdr.detectChanges(); // ✅ força atualização da tela
+      },
+      error: (erro) => {
+        console.error('Erro ao carregar indicadores:', erro);
+        this.errorMessage = 'Não foi possível carregar os indicadores.';
+        this.isLoadingLista = false;
+        this.cdr.detectChanges();
+      }
     });
   }
 
@@ -74,13 +83,10 @@ export class GestaoIndicadoresComponent implements OnInit {
     this.isLoading = true;
     this.successMessage = '';
     this.errorMessage = '';
-
     const dados = this.indicadorForm.value as any;
-
     const acao = this.modoFormulario === 'criar'
       ? this.indicadorService.criar(dados)
       : this.indicadorService.atualizar(this.indicadorEditando!._id, dados);
-
     acao.subscribe({
       next: () => {
         this.isLoading = false;

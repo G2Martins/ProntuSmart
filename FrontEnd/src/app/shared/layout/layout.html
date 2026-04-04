@@ -5,21 +5,35 @@
       <iconify-icon icon="ph:heartbeat-bold" class="inline-block align-middle mr-2"></iconify-icon>
       ProntuSMART
     </div>
+
     <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-      <a routerLink="/dashboard" class="flex items-center p-3 rounded hover:bg-blue-800 transition-colors cursor-pointer bg-blue-800">
+
+      <a routerLink="/dashboard"
+         routerLinkActive="bg-blue-800"
+         [routerLinkActiveOptions]="{ exact: true }"
+         class="flex items-center p-3 rounded hover:bg-blue-800 transition-colors cursor-pointer">
         <iconify-icon icon="ph:squares-four" class="text-xl mr-3"></iconify-icon> Dashboard
       </a>
-      <a *ngIf="userProfile === 'Administrador'" routerLink="/usuarios" routerLinkActive="bg-blue-800" class="flex items-center p-3 rounded hover:bg-blue-800 transition-colors cursor-pointer">
+
+      <a *ngIf="userProfile === 'Administrador'"
+         routerLink="/usuarios"
+         routerLinkActive="bg-blue-800"
+         class="flex items-center p-3 rounded hover:bg-blue-800 transition-colors cursor-pointer">
         <iconify-icon icon="ph:users-bold" class="text-xl mr-3"></iconify-icon> Usuários
       </a>
-      <a *ngIf="userProfile === 'Administrador'" routerLink="/indicadores" routerLinkActive="bg-blue-800" class="flex items-center p-3 rounded hover:bg-blue-800 transition-colors cursor-pointer">
+
+      <a *ngIf="userProfile === 'Administrador'"
+         routerLink="/indicadores"
+         routerLinkActive="bg-blue-800"
+         class="flex items-center p-3 rounded hover:bg-blue-800 transition-colors cursor-pointer">
         <iconify-icon icon="ph:chart-line-bold" class="text-xl mr-3"></iconify-icon> Indicadores
       </a>
-      </nav>
+
+    </nav>
   </aside>
 
   <div class="flex-1 flex flex-col overflow-hidden">
-    
+
     <header class="h-16 bg-white shadow flex items-center justify-between px-6 z-10">
       <h1 class="text-xl font-semibold text-gray-800">Área Clínica</h1>
       <div class="flex items-center space-x-4">
@@ -31,7 +45,8 @@
     </header>
 
     <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
-      <router-outlet></router-outlet> </main>
+      <router-outlet></router-outlet>
+    </main>
 
     <footer class="bg-white border-t border-gray-200 p-4 text-center text-sm text-gray-500">
       &copy; 2026 Clínica Escola de Fisioterapia - UCB. Todos os direitos reservados.

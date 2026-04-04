@@ -180,7 +180,7 @@ Gestão de Usuários: CRUD (Criar, Ler, Atualizar, Inativar/Excluir) de Docentes
 
 Gestão de Parâmetros Clínicos (Tabelas Dimensão): É o Admin quem vai adicionar uma nova Área de Atendimento (ex: "Fisioterapia Esportiva") ou cadastrar novos testes no sistema (ex: adicionar o teste "Escala de Berg" em dim_indicador).
 
-Saúde do Sistema e Conectores: Dashboard técnico mostrando se o banco de dados (MongoDB) está online, quantidade total de requisições, armazenamento em disco utilizado e logs do sistema (ex: saber qual usuário excluiu um registro x, importante para LGPD).
+Saúde do Sistema e Conectores: Dashboard técnico mostrando se o banco de dados (MongoDB) está online, quantidade total de requisições, armazenamento em disco utilizado
 
 2. Perfil DOCENTE (Foco Estratégico, Acadêmico e Clínico)
 
