@@ -16,7 +16,7 @@ export class IndicadorService {
     return new HttpHeaders().set('Authorization', `Bearer ${token}`);
   }
 
-  listar(apenasAtivos = false): Observable<Indicador[]> { 
+  listar(apenasAtivos = false): Observable<Indicador[]> {
     return this.http.get<Indicador[]>(
       `${this.apiUrl}/?apenas_ativos=${apenasAtivos}`,
       { headers: this.getHeaders() }
@@ -29,6 +29,14 @@ export class IndicadorService {
 
   atualizar(id: string, dados: IndicadorUpdate): Observable<Indicador> {
     return this.http.put<Indicador>(`${this.apiUrl}/${id}`, dados, { headers: this.getHeaders() });
+  }
+
+  toggleStatus(id: string, isAtivo: boolean): Observable<Indicador> {
+    return this.http.put<Indicador>(
+      `${this.apiUrl}/${id}`,
+      { is_ativo: isAtivo },
+      { headers: this.getHeaders() }
+    );
   }
 
   deletar(id: string): Observable<void> {

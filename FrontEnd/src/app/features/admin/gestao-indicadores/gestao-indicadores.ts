@@ -36,15 +36,15 @@ export class GestaoIndicadoresComponent implements OnInit {
 
   ngOnInit() {
     this.carregarIndicadores();
-  } // ✅ FECHA O ngOnInit
+  }
 
-  carregarIndicadores() { // ✅ MÉTODO SEPARADO DA CLASSE
+  carregarIndicadores() {
     this.isLoadingLista = true;
     this.indicadorService.listar().subscribe({
       next: (dados) => {
         this.indicadores = dados;
         this.isLoadingLista = false;
-        this.cdr.detectChanges(); // ✅ força atualização da tela
+        this.cdr.detectChanges();
       },
       error: (erro) => {
         console.error('Erro ao carregar indicadores:', erro);
@@ -99,6 +99,19 @@ export class GestaoIndicadoresComponent implements OnInit {
       error: (erro) => {
         this.isLoading = false;
         this.errorMessage = erro.error?.detail || 'Ocorreu um erro. Tente novamente.';
+      }
+    });
+  }
+
+  toggleStatus(indicador: Indicador) {
+    const novoStatus = !indicador.is_ativo;
+    this.indicadorService.toggleStatus(indicador._id, novoStatus).subscribe({
+      next: () => {
+        this.successMessage = `Indicador "${indicador.nome}" ${novoStatus ? 'ativado' : 'desativado'} com sucesso.`;
+        this.carregarIndicadores();
+      },
+      error: (erro) => {
+        this.errorMessage = erro.error?.detail || 'Erro ao alterar status do indicador.';
       }
     });
   }

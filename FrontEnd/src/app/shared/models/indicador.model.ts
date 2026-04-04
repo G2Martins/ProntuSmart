@@ -23,4 +23,5 @@ export interface IndicadorUpdate {
   descricao?: string;
   unidade_medida?: string;
   direcao_melhora?: DirecaoMelhora;
+  is_ativo?: boolean;
 }
