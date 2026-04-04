@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import Optional
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from enum import Enum
 
 class AreaEspecializada(str, Enum):
@@ -18,7 +18,7 @@ class SexoBiologico(str, Enum):
 class DimPaciente(BaseModel):
     nome_completo: str = Field(..., min_length=3, max_length=150)
     cpf: str = Field(..., min_length=11, max_length=14, description="CPF único do paciente")
-    data_nascimento: date = Field(..., description="Data de nascimento para cálculo de idade")
+    data_nascimento: str = Field(..., description="Data de nascimento (YYYY-MM-DD)")
     sexo: SexoBiologico
     telefone_contato: str = Field(..., min_length=10, max_length=20)
     email: Optional[EmailStr] = None

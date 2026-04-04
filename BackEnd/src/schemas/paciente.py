@@ -1,12 +1,12 @@
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional
-from datetime import date, datetime
+from datetime import datetime
 from src.models.dim_paciente import AreaEspecializada, SexoBiologico
 
 class PacienteBase(BaseModel):
     nome_completo: str = Field(..., min_length=3, max_length=150)
     cpf: str = Field(..., min_length=11, max_length=14)
-    data_nascimento: date
+    data_nascimento: str
     sexo: SexoBiologico
     telefone_contato: str = Field(..., min_length=10, max_length=20)
     email: Optional[EmailStr] = None
