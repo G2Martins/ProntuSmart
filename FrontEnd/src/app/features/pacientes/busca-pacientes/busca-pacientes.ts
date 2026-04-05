@@ -1,18 +1,19 @@
 import { Component, inject, OnInit, CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms'; // <-- Adicionado Reactive e FormBuilder
 import { PacienteService } from '../../../core/services/paciente.service';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-busca-pacientes',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink], // <-- ReactiveFormsModule adicionado aqui!
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './busca-pacientes.html'
 })
 export class BuscaPacientesComponent implements OnInit {
+   // ... resto do seu código pode continuar igualzinho!
   private pacienteService = inject(PacienteService);
   private authService = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
