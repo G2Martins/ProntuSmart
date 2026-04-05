@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
+import { Observable } from 'rxjs/internal/Observable';
 
 @Injectable({
   providedIn: 'root'
@@ -20,6 +21,10 @@ export class AdminService {
   // Vai buscar as estatísticas reais ao MongoDB
   getEstatisticas() {
     return this.http.get<any>(`${this.apiUrl}/estatisticas`, { headers: this.getHeaders() });
+  }
+
+  getUsuarios(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/usuarios`, { headers: this.getHeaders() });
   }
 
   // Prepara o terreno para criarmos o Estagiário na próxima etapa!

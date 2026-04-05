@@ -25,4 +25,9 @@ export class ProntuarioService {
   buscarPorId(id: string): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
   }
+
+  buscarPorPaciente(pacienteId: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/paciente/${pacienteId}`, { headers: this.getHeaders() });
+  }
+
 }
