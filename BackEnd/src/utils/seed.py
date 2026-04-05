@@ -14,7 +14,7 @@ async def rodar_seed():
     db = client[settings.DATABASE_NAME]
 
     # ==========================================
-    # 1. ÁREAS DE ATENDIMENTO (Atualizadas com Ícones e Cores)
+    # 1. ÁREAS DE ATENDIMENTO
     # ==========================================
     areas_base = [
         {
@@ -79,7 +79,7 @@ async def rodar_seed():
             print(f"✅ Área cadastrada: {area['nome']}")
 
     # ==========================================
-    # 2. INDICADORES FUNCIONAIS
+    # 2. INDICADORES FUNCIONAIS (CORRIGIDO)
     # ==========================================
     indicadores_base = [
         {
@@ -87,6 +87,7 @@ async def rodar_seed():
             "unidade_medida": "pontos (0-10)",
             "direcao_melhora": DirecaoMelhora.MENOR_MELHOR,
             "descricao": "Mede a intensidade da dor do paciente.",
+            "areas_vinculadas": ["Todas"], # <-- ADICIONADO
             "is_ativo": True,
             "criado_em": datetime.now(timezone.utc),
             "atualizado_em": datetime.now(timezone.utc)
@@ -96,6 +97,7 @@ async def rodar_seed():
             "unidade_medida": "segundos",
             "direcao_melhora": DirecaoMelhora.MENOR_MELHOR,
             "descricao": "Avalia mobilidade, equilíbrio e risco de quedas.",
+            "areas_vinculadas": ["Geriatria", "Neurologia Adulto"], # <-- ADICIONADO
             "is_ativo": True,
             "criado_em": datetime.now(timezone.utc),
             "atualizado_em": datetime.now(timezone.utc)
@@ -105,6 +107,7 @@ async def rodar_seed():
             "unidade_medida": "grau",
             "direcao_melhora": DirecaoMelhora.MAIOR_MELHOR,
             "descricao": "Graduação da força muscular.",
+            "areas_vinculadas": ["Ortopedia", "Traumato-Ortopedia", "Neurologia Adulto"], # <-- ADICIONADO
             "is_ativo": True,
             "criado_em": datetime.now(timezone.utc),
             "atualizado_em": datetime.now(timezone.utc)
@@ -117,7 +120,7 @@ async def rodar_seed():
             print(f"✅ Indicador cadastrado: {ind['nome']}")
 
     # ==========================================
-    # 3. USUÁRIOS BASE (Com flag precisa_trocar_senha)
+    # 3. USUÁRIOS BASE
     # ==========================================
     senha_hash = get_password_hash("ucb@1234")
 
@@ -128,7 +131,7 @@ async def rodar_seed():
         "senha_hash": senha_hash,
         "perfil": TipoPerfil.ADMINISTRADOR,
         "is_ativo": True,
-        "precisa_trocar_senha": False, # <-- Já nasce liberado para você testar
+        "precisa_trocar_senha": False,
         "criado_em": datetime.now(timezone.utc),
         "atualizado_em": datetime.now(timezone.utc),
     }

@@ -3,20 +3,21 @@ from typing import Optional
 from datetime import datetime
 from src.models.dim_status import StatusProntuario
 
-class ProntuarioBase(BaseModel):
+# Dados que vêm do Modal de Triagem do FrontEnd
+class ProntuarioCreate(BaseModel):
     paciente_id: str
-    area_id: str
-    resumo_avaliacao_inicial: str
+    estagiario_id: str
+    cid_id: str
+    area_atendimento: str
 
-class ProntuarioCreate(ProntuarioBase):
-    pass
-
-class ProntuarioResponse(ProntuarioBase):
+class ProntuarioResponse(ProntuarioCreate):
     id: str = Field(alias="_id")
+    docente_id: str
     numero_prontuario: str
     status: StatusProntuario
     total_sessoes: int
     data_ultima_evolucao: Optional[datetime]
+    resumo_avaliacao_inicial: str
     criado_em: datetime
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)

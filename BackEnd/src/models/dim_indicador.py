@@ -1,6 +1,6 @@
 from pydantic import Field
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
 from src.models.base import MongoBaseModel
 
 class DirecaoMelhora(str, Enum):
@@ -12,4 +12,5 @@ class DimIndicador(MongoBaseModel):
     descricao: Optional[str] = Field(None, description="O que este teste avalia") 
     unidade_medida: str = Field(..., description="Ex: graus, cm, pontos, kg")
     direcao_melhora: DirecaoMelhora = Field(..., description="Define como o % de progresso é calculado")
+    areas_vinculadas: List[str] = Field(default=["Todas"], description="Ex: ['Ortopedia', 'Neurologia']")
     is_ativo: bool = Field(default=True, description="Permite inativar sem excluir do histórico")
