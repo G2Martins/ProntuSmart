@@ -79,7 +79,7 @@
                 <iconify-icon icon="ph:stethoscope-bold" class="text-xl mr-1"></iconify-icon> Triar
               </button>
 
-              <button class="text-blue-600 hover:text-blue-800 font-medium transition-colors inline-flex items-center" title="Acessar Prontuário">
+              <button (click)="abrirProntuario(p)" class="text-blue-600 hover:text-blue-800 font-medium transition-colors inline-flex items-center" title="Acessar Prontuário">
                 <iconify-icon icon="ph:folder-user-bold" class="text-xl mr-1"></iconify-icon> Abrir
               </button>
 
@@ -87,10 +87,69 @@
                 <iconify-icon icon="ph:pencil-simple-bold" class="text-xl"></iconify-icon>
               </a>
             </td>
-
           </tr>
         </tbody>
       </table>
     </div>
   </div>
+
+  <div *ngIf="mostrarModalTriagem" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm transition-opacity">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl p-6 transform transition-all">
+    
+    <div class="flex justify-between items-center border-b border-gray-100 pb-4 mb-5">
+      <div>
+        <h3 class="text-xl font-bold text-gray-800">Nova Triagem Clínica</h3>
+        <p class="text-sm text-gray-500">Paciente: <span class="font-semibold text-blue-600">{{ pacienteSelecionado?.nome_completo }}</span></p>
+      </div>
+      <button (click)="fecharTriagem()" class="text-gray-400 hover:text-red-500 transition-colors">
+        <iconify-icon icon="ph:x-bold" class="text-2xl"></iconify-icon>
+      </button>
+    </div>
+
+    <form [formGroup]="triagemForm" (ngSubmit)="salvarTriagem()">
+      <div class="grid grid-cols-1 gap-5">
+        
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Área de Atendimento</label>
+          <select formControlName="area_atendimento" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-gray-800 transition-all">
+            <option value="">Selecione a área clínica...</option>
+            <option *ngFor="let area of areasDisponiveis" [value]="area">{{ area }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Vincular Estagiário Responsável</label>
+          <select formControlName="estagiario_id" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-gray-800 transition-all">
+            <option value="">Selecione o estagiário...</option>
+            <option *ngFor="let estagiario of estagiariosDisponiveis" [value]="estagiario._id">
+              {{ estagiario.nome_completo }}
+            </option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Diagnóstico Clínico Principal (CID-10/11)</label>
+          <select formControlName="cid_id" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-gray-800 transition-all">
+            <option value="">Selecione o CID...</option>
+            <option *ngFor="let cid of cidsDisponiveis" [value]="cid._id">
+              [{{ cid.codigo }}] - {{ cid.descricao }}
+            </option>
+          </select>
+        </div>
+
+      </div>
+
+      <div class="mt-8 flex justify-end gap-3 pt-4 border-t border-gray-100">
+        <button type="button" (click)="fecharTriagem()" class="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 font-semibold transition-colors">
+          Cancelar
+        </button>
+        <button type="submit" [disabled]="triagemForm.invalid" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white rounded-lg font-semibold shadow-sm transition-colors flex items-center">
+          <iconify-icon icon="ph:check-circle-bold" class="mr-2 text-lg"></iconify-icon>
+          Confirmar Triagem
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
 </div>
