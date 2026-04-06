@@ -71,13 +71,21 @@ export class BuscaPacientesComponent implements OnInit {
   }
 
   carregarDadosParaTriagem() {
-    // Puxa todos os usuários e filtra só os estagiários ativos
-    this.adminService.getUsuarios().subscribe((res: any[]) => {
-      this.estagiariosDisponiveis = res.filter(u => u.perfil === 'Estagiário' && u.is_ativo);
+    // 1. Busca os estagiários de forma correta e garantida
+    this.adminService.listarUsuarios('Estagiário', true).subscribe({
+      next: (res: any[]) => {
+        // Como já passamos os filtros na API, a resposta já vem limpa
+        this.estagiariosDisponiveis = res;
+      },
+      error: (err) => console.error("Erro ao carregar estagiários:", err)
     });
-    // Puxa todos os CIDs ativos
-    this.cidService.listar().subscribe((res: any[]) => {
-      this.cidsDisponiveis = res.filter(c => c.is_ativo);
+
+    // 2. Busca os CIDs
+    this.cidService.listar().subscribe({
+      next: (res: any[]) => {
+        this.cidsDisponiveis = res.filter(c => c.is_ativo);
+      },
+      error: (err) => console.error("Erro ao carregar CIDs:", err)
     });
   }
 
@@ -130,6 +138,40 @@ export class BuscaPacientesComponent implements OnInit {
         alert(err.error?.detail || 'Erro ao realizar a triagem. Verifique os dados.');
       }
     });
+  }
+
+  // =====================================
+  // MANIPULAÇÃO DOS DATALISTS (Pesquisa)
+  // =====================================
+
+  selecionarEstagiario(event: any) {
+    const nomeSelecionado = event.target.value;
+    const estagiario = this.estagiariosDisponiveis.find(e => e.nome_completo === nomeSelecionado);
+    
+    if (estagiario) {
+      // Se achou, injeta o ID no formulário reativo
+      this.triagemForm.patchValue({ estagiario_id: estagiario._id });
+    } else {
+      // Se limpou ou digitou errado, limpa o formulário
+      this.triagemForm.patchValue({ estagiario_id: '' });
+    }
+  }
+
+  selecionarCid(event: any) {
+    const valorSelecionado = event.target.value;
+    // O valor selecionado está no formato "[A00.0] Colera devida a..."
+    // Precisamos extrair o código para achar o ID
+    const match = valorSelecionado.match(/\[(.*?)\]/); 
+    
+    if (match) {
+      const codigoCid = match[1];
+      const cid = this.cidsDisponiveis.find(c => c.codigo === codigoCid);
+      if (cid) {
+        this.triagemForm.patchValue({ cid_id: cid._id });
+        return;
+      }
+    }
+    this.triagemForm.patchValue({ cid_id: '' });
   }
 
   // =====================================

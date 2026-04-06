@@ -119,22 +119,36 @@
 
         <div>
           <label class="block text-sm font-semibold text-gray-700 mb-1">Vincular Estagiário Responsável</label>
-          <select formControlName="estagiario_id" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-gray-800 transition-all">
-            <option value="">Selecione o estagiário...</option>
-            <option *ngFor="let estagiario of estagiariosDisponiveis" [value]="estagiario._id">
-              {{ estagiario.nome_completo }}
-            </option>
-          </select>
+          <input 
+            type="text" 
+            list="lista-estagiarios" 
+            placeholder="Digite para buscar o estagiário..." 
+            class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-gray-800 transition-all"
+            (change)="selecionarEstagiario($event)"
+            #inputEstagiario
+          >
+          <datalist id="lista-estagiarios">
+            <option *ngFor="let estagiario of estagiariosDisponiveis" [value]="estagiario.nome_completo"></option>
+          </datalist>
+          
+          <input type="hidden" formControlName="estagiario_id">
         </div>
 
         <div>
           <label class="block text-sm font-semibold text-gray-700 mb-1">Diagnóstico Clínico Principal (CID-10/11)</label>
-          <select formControlName="cid_id" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-gray-800 transition-all">
-            <option value="">Selecione o CID...</option>
-            <option *ngFor="let cid of cidsDisponiveis" [value]="cid._id">
-              [{{ cid.codigo }}] - {{ cid.descricao }}
-            </option>
-          </select>
+          <input 
+            type="text" 
+            list="lista-cids" 
+            placeholder="Digite o código ou nome do CID..." 
+            class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-gray-800 transition-all"
+            (change)="selecionarCid($event)"
+            #inputCid
+          >
+          <datalist id="lista-cids">
+            <option *ngFor="let cid of cidsDisponiveis" [value]="'[' + cid.codigo + '] ' + cid.descricao"></option>
+          </datalist>
+
+           <input type="hidden" formControlName="cid_id">
         </div>
 
       </div>
