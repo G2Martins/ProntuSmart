@@ -3,7 +3,6 @@ from typing import Optional
 from datetime import datetime
 from src.models.dim_status import StatusProntuario
 
-# Dados que vêm do Modal de Triagem do FrontEnd
 class ProntuarioCreate(BaseModel):
     paciente_id: str
     estagiario_id: str
@@ -16,7 +15,7 @@ class ProntuarioResponse(ProntuarioCreate):
     numero_prontuario: str
     status: StatusProntuario
     total_sessoes: int
-    data_ultima_evolucao: Optional[datetime]
+    data_ultima_evolucao: Optional[datetime] = None
     resumo_avaliacao_inicial: str
     criado_em: datetime
 

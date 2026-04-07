@@ -1,5 +1,5 @@
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from bson import ObjectId
 from src.core.database import get_database
 from src.core.security import get_current_user
@@ -16,11 +16,32 @@ def verificar_admin(current_user: dict = Depends(get_current_user)):
     return current_user
 
 @router.get("/", response_model=List[CidResponse])
-async def listar_cids(db = Depends(get_database), current_user: dict = Depends(get_current_user)):
-    # Busca e ordena alfabeticamente pelo código
-    cursor = db.dim_cid.find().sort("codigo", 1)
-    cids = await cursor.to_list(length=1000) # Limite folgado, CIDs podem ser muitos
-    for c in cids: c["_id"] = str(c["_id"])
+async def listar_cids(
+    busca: Optional[str] = Query(None, description="Filtro por código ou descrição"),
+    limit: int = Query(50, ge=1, le=200, description="Máximo de resultados"),
+    db = Depends(get_database),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Lista CIDs com suporte a busca full-text.
+    - Sem 'busca': retorna os primeiros 'limit' registros ordenados por código.
+    - Com 'busca': filtra por código OU descrição (case-insensitive).
+    """
+    filtro: dict = {}
+
+    if busca and busca.strip():
+        termo = busca.strip()
+        filtro = {
+            "$or": [
+                {"codigo": {"$regex": termo, "$options": "i"}},
+                {"descricao": {"$regex": termo, "$options": "i"}}
+            ]
+        }
+
+    cursor = db.dim_cid.find(filtro).sort("codigo", 1).limit(limit)
+    cids = await cursor.to_list(length=limit)
+    for c in cids:
+        c["_id"] = str(c["_id"])
     return cids
 
 @router.post("/", response_model=CidResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(verificar_admin)])

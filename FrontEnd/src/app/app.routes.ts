@@ -51,6 +51,14 @@ export const routes: Routes = [
         path: 'pacientes/editar/:id', 
         loadComponent: () => import('./features/pacientes/cadastro-paciente/cadastro-paciente').then(m => m.CadastroPacienteComponent) 
       },
+      {
+        path: 'prontuarios/visao/:id',
+        loadComponent: () => import('./features/prontuarios/visao-prontuario/visao-prontuario').then(m => m.VisaoProntuario)
+      },
+      {
+        path: 'prontuarios/evoluir/:id',
+        loadComponent: () => import('./features/prontuarios/insercao-evolucao/insercao-evolucao').then(m => m.InsercaoEvolucaoComponent)
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   },

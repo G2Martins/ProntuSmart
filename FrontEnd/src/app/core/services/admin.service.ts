@@ -40,6 +40,10 @@ export class AdminService {
     return this.http.get<any[]>(`${this.apiUrl}/usuarios${params}`, { headers: this.getHeaders() });
   }
 
+  listarEstagiarios(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/estagiarios`, { headers: this.getHeaders() });
+  }
+
   atualizarUsuario(id: string, dados: any) {
     return this.http.put<any>(`${this.apiUrl}/usuarios/${id}`, dados, { headers: this.getHeaders() });
   }

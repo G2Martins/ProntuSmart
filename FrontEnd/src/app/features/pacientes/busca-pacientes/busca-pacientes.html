@@ -93,8 +93,8 @@
     </div>
   </div>
 
-  <div *ngIf="mostrarModalTriagem" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm transition-opacity">
-  <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl p-6 transform transition-all">
+  <div *ngIf="mostrarModalTriagem" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl p-6">
     
     <div class="flex justify-between items-center border-b border-gray-100 pb-4 mb-5">
       <div>
@@ -109,46 +109,73 @@
     <form [formGroup]="triagemForm" (ngSubmit)="salvarTriagem()">
       <div class="grid grid-cols-1 gap-5">
         
+        <!-- Área -->
         <div>
           <label class="block text-sm font-semibold text-gray-700 mb-1">Área de Atendimento</label>
-          <select formControlName="area_atendimento" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-gray-800 transition-all">
+          <select formControlName="area_atendimento" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 bg-gray-50">
             <option value="">Selecione a área clínica...</option>
             <option *ngFor="let area of areasDisponiveis" [value]="area">{{ area }}</option>
           </select>
         </div>
 
+        <!-- Estagiário com datalist -->
         <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-1">Vincular Estagiário Responsável</label>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">
+            Vincular Estagiário Responsável
+            <span *ngIf="estagiariosDisponiveis.length === 0" class="text-orange-500 font-normal text-xs ml-2">(Nenhum estagiário ativo encontrado)</span>
+          </label>
           <input 
             type="text" 
             list="lista-estagiarios" 
-            placeholder="Digite para buscar o estagiário..." 
-            class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-gray-800 transition-all"
+            placeholder="Digite para buscar..." 
+            class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 bg-gray-50"
             (change)="selecionarEstagiario($event)"
-            #inputEstagiario
           >
           <datalist id="lista-estagiarios">
-            <option *ngFor="let estagiario of estagiariosDisponiveis" [value]="estagiario.nome_completo"></option>
+            <option *ngFor="let e of estagiariosDisponiveis" [value]="e.nome_completo">{{ e.matricula }}</option>
           </datalist>
-          
           <input type="hidden" formControlName="estagiario_id">
+          <span *ngIf="triagemForm.get('estagiario_id')?.touched && !triagemForm.get('estagiario_id')?.value" class="text-xs text-red-500">Selecione um estagiário da lista.</span>
         </div>
 
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-1">Diagnóstico Clínico Principal (CID-10/11)</label>
-          <input 
-            type="text" 
-            list="lista-cids" 
-            placeholder="Digite o código ou nome do CID..." 
-            class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-gray-800 transition-all"
-            (change)="selecionarCid($event)"
-            #inputCid
-          >
-          <datalist id="lista-cids">
-            <option *ngFor="let cid of cidsDisponiveis" [value]="'[' + cid.codigo + '] ' + cid.descricao"></option>
-          </datalist>
+        <!-- CID com busca reativa -->
+        <div class="relative">
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Diagnóstico Principal (CID-10)</label>
+          
+          <div class="relative">
+            <input 
+              type="text"
+              [value]="termoBuscaCid"
+              (input)="onBuscaCidChange($any($event.target).value)"
+              placeholder="Digite o código (ex: M54) ou descrição..." 
+              class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 bg-gray-50 pr-10"
+              autocomplete="off"
+            >
+            <div class="absolute right-3 top-3 text-gray-400">
+              <iconify-icon *ngIf="buscandoCids" icon="ph:spinner-gap-bold" class="animate-spin text-blue-500"></iconify-icon>
+              <iconify-icon *ngIf="!buscandoCids && cidSelecionado" icon="ph:check-circle-fill" class="text-green-500"></iconify-icon>
+            </div>
+          </div>
 
-           <input type="hidden" formControlName="cid_id">
+          <!-- Dropdown de resultados -->
+          <div *ngIf="cidsFiltrados.length > 0" class="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto">
+            <button 
+              *ngFor="let cid of cidsFiltrados" 
+              type="button"
+              (click)="selecionarCidDaLista(cid)"
+              class="w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors border-b border-gray-100 last:border-0"
+            >
+              <span class="font-mono font-bold text-blue-700 text-sm">{{ cid.codigo }}</span>
+              <span class="text-gray-700 text-sm ml-2">{{ cid.descricao }}</span>
+            </button>
+          </div>
+
+          <p *ngIf="termoBuscaCid.length >= 2 && !buscandoCids && cidsFiltrados.length === 0 && !cidSelecionado" class="text-xs text-gray-400 mt-1">
+            Nenhum CID encontrado para "{{ termoBuscaCid }}"
+          </p>
+          <p *ngIf="termoBuscaCid.length < 2" class="text-xs text-gray-400 mt-1">Digite ao menos 2 caracteres para buscar.</p>
+
+          <input type="hidden" formControlName="cid_id">
         </div>
 
       </div>
@@ -163,7 +190,5 @@
         </button>
       </div>
     </form>
-
   </div>
-</div>
 </div>

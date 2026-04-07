@@ -151,3 +151,19 @@ async def resetar_senha_usuario(usuario_id: str, db = Depends(get_database)):
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
         
     return {"nova_senha": nova_senha_temp}
+
+@router.get("/estagiarios", response_model=List[UsuarioResponse])
+async def listar_estagiarios_ativos(db = Depends(get_database), current_user: dict = Depends(get_current_user)):
+    """Rota pública (qualquer logado) para listar estagiários ativos — usada no modal de triagem."""
+    if current_user.get("perfil") not in [TipoPerfil.ADMINISTRADOR, TipoPerfil.DOCENTE]:
+        raise HTTPException(status_code=403, detail="Acesso negado.")
+    
+    cursor = db.dim_usuario.find({
+        "perfil": TipoPerfil.ESTAGIARIO,
+        "is_ativo": True
+    }).sort("nome_completo", 1)
+    
+    estagiarios = await cursor.to_list(length=500)
+    for e in estagiarios:
+        e["_id"] = str(e["_id"])
+    return estagiarios
