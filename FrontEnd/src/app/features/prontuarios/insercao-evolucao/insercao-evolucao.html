@@ -1,46 +1,97 @@
 <div class="max-w-5xl mx-auto space-y-6">
-  
+
   <div class="flex items-center justify-between">
     <div>
       <h2 class="text-2xl font-bold text-gray-800">Nova Evolução Clínica</h2>
-      <p class="text-blue-600 font-semibold mt-1">Área Específica: {{ areaProntuario }}</p>
+      <p class="text-blue-600 font-semibold mt-1 flex items-center gap-2">
+        <iconify-icon icon="ph:heartbeat-bold"></iconify-icon>
+        {{ areaProntuario }}
+      </p>
     </div>
-    <a routerLink="/pacientes" class="flex items-center text-gray-600 hover:text-blue-600 font-medium transition-colors group">
+    <button (click)="router.navigate(['/prontuarios/visao', idProntuario])"
+      class="flex items-center text-gray-600 hover:text-blue-600 font-medium transition-colors group">
       <iconify-icon icon="ph:arrow-left-bold" class="mr-2 text-xl group-hover:-translate-x-1 transition-transform"></iconify-icon>
       Cancelar e Voltar
-    </a>
+    </button>
   </div>
 
-  <form [formGroup]="evolucaoForm" (ngSubmit)="onSubmit()" class="bg-white shadow rounded-lg border border-gray-100 overflow-hidden">
-    
-    <div class="p-8 border-b">
-      <label class="block text-sm font-bold text-gray-700 uppercase tracking-wider mb-3">Relatório Descritivo (SOAP)</label>
-      <textarea formControlName="texto_clinico" rows="6" class="w-full rounded-md border border-gray-300 p-4 focus:ring-2 focus:ring-blue-500 outline-none resize-y" placeholder="Descreva os dados Subjetivos, Objetivos, Avaliação e Plano..."></textarea>
+  <form [formGroup]="evolucaoForm" (ngSubmit)="onSubmit()"
+    class="bg-white shadow rounded-lg border border-gray-100 overflow-hidden">
+
+    <!-- Texto clínico -->
+    <div class="p-8 border-b border-gray-100">
+      <label class="block text-sm font-bold text-gray-700 uppercase tracking-wider mb-3">
+        Relatório Descritivo (SOAP)
+      </label>
+      <textarea formControlName="texto_clinico" rows="7"
+        class="w-full rounded-md border border-gray-300 p-4 focus:ring-2 focus:ring-blue-500 outline-none resize-y text-sm"
+        placeholder="S - Subjetivo: O que o paciente relata...&#10;O - Objetivo: Dados observados e mensuráveis...&#10;A - Avaliação: Análise clínica...&#10;P - Plano: Conduta para próxima sessão...">
+      </textarea>
+      <p *ngIf="evolucaoForm.get('texto_clinico')?.touched && evolucaoForm.get('texto_clinico')?.invalid"
+        class="text-xs text-red-500 mt-1">Mínimo de 20 caracteres obrigatórios.</p>
     </div>
 
+    <!-- Indicadores funcionais -->
     <div class="p-8 bg-blue-50/30">
       <div class="flex items-center mb-6">
         <iconify-icon icon="ph:chart-line-up-bold" class="text-2xl text-blue-600 mr-2"></iconify-icon>
-        <h4 class="text-lg font-bold text-gray-800">Indicadores Funcionais ({{ areaProntuario }})</h4>
+        <h4 class="text-lg font-bold text-gray-800">Indicadores Funcionais</h4>
+        <span class="ml-2 text-sm text-gray-500">({{ areaProntuario }})</span>
       </div>
 
-      <div formArrayName="medicoes" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        
-        <div *ngFor="let medicaoCtrl of medicoesArray.controls; let i = index" [formGroupName]="i" class="bg-white p-4 rounded border shadow-sm border-l-4 border-l-blue-500">
-          <label class="block text-sm font-semibold text-gray-700 mb-1">{{ medicaoCtrl.value.nome_indicador }}</label>
-          <div class="flex items-center mt-2">
-            <input type="text" formControlName="valor_registrado" class="w-24 rounded-l-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 outline-none text-center font-bold">
-            <span class="bg-gray-100 border border-l-0 border-gray-300 rounded-r-md px-3 py-2 text-sm text-gray-600 flex-1">{{ medicaoCtrl.value.unidade }}</span>
+      <!-- Loading indicadores -->
+      <div *ngIf="isLoadingIndicadores" class="py-8 text-center text-gray-400">
+        <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-3xl text-blue-400 mb-2"></iconify-icon>
+        <p class="text-sm">Carregando indicadores da área...</p>
+      </div>
+
+      <!-- Sem indicadores -->
+      <div *ngIf="!isLoadingIndicadores && medicoesArray.length === 0"
+        class="py-8 text-center text-gray-400">
+        <iconify-icon icon="ph:chart-line-bold" class="text-4xl mb-2"></iconify-icon>
+        <p class="text-sm">Nenhum indicador configurado para esta área.</p>
+        <p class="text-xs mt-1">O Administrador pode adicionar indicadores em Configurações.</p>
+      </div>
+
+      <!-- Grid de indicadores -->
+      <div *ngIf="!isLoadingIndicadores && medicoesArray.length > 0"
+        formArrayName="medicoes"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+        <div *ngFor="let medicaoCtrl of medicoesArray.controls; let i = index"
+          [formGroupName]="i"
+          class="bg-white p-4 rounded-lg border shadow-sm border-l-4 border-l-blue-500">
+          <label class="block text-sm font-semibold text-gray-700 mb-3">
+            {{ medicaoCtrl.value.nome_indicador }}
+          </label>
+          <div class="flex items-center">
+            <input type="number" step="any" formControlName="valor_registrado"
+              class="w-28 rounded-l-md border border-gray-300 p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-center font-bold text-lg"
+              placeholder="0">
+            <span class="bg-gray-100 border border-l-0 border-gray-300 rounded-r-md px-3 py-2.5 text-sm text-gray-600 flex-1 text-center">
+              {{ medicaoCtrl.value.unidade }}
+            </span>
           </div>
+          <p *ngIf="medicaoCtrl.get('valor_registrado')?.touched && medicaoCtrl.get('valor_registrado')?.invalid"
+            class="text-xs text-red-500 mt-1">Valor obrigatório.</p>
         </div>
 
       </div>
     </div>
 
-    <div class="p-6 bg-gray-50 flex justify-end gap-4 border-t">
-      <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg shadow font-bold flex items-center transition-colors">
-        Salvar como Pendente de Revisão
+    <!-- Rodapé / Submit -->
+    <div class="p-6 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-4">
+      <p class="text-xs text-gray-400 flex items-center gap-1">
+        <iconify-icon icon="ph:info-bold" class="text-blue-400"></iconify-icon>
+        A evolução ficará com status <strong>Pendente de Revisão</strong> até aprovação do docente.
+      </p>
+      <button type="submit" [disabled]="isLoading"
+        class="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg shadow font-bold flex items-center gap-2 transition-colors">
+        <iconify-icon *ngIf="isLoading" icon="ph:spinner-gap-bold" class="animate-spin text-lg"></iconify-icon>
+        <iconify-icon *ngIf="!isLoading" icon="ph:paper-plane-tilt-bold" class="text-lg"></iconify-icon>
+        {{ isLoading ? 'Salvando...' : 'Salvar e Enviar para Revisão' }}
       </button>
     </div>
+
   </form>
 </div>

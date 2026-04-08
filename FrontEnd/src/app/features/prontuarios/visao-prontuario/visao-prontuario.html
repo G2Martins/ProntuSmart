@@ -1,1 +1,236 @@
-<p>visao-prontuario works!</p>
+<div class="max-w-6xl mx-auto space-y-6">
+
+  <!-- Loading -->
+  <div *ngIf="isLoadingProntuario" class="flex flex-col items-center justify-center py-20">
+    <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-5xl text-blue-500 mb-4"></iconify-icon>
+    <p class="text-gray-500 font-medium">Carregando prontuário...</p>
+  </div>
+
+  <ng-container *ngIf="!isLoadingProntuario && prontuario">
+
+    <!-- Cabeçalho -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <button (click)="voltar()"
+          class="flex items-center text-gray-500 hover:text-blue-600 text-sm font-medium mb-2 transition-colors group">
+          <iconify-icon icon="ph:arrow-left-bold" class="mr-1 group-hover:-translate-x-1 transition-transform"></iconify-icon>
+          Voltar para Pacientes
+        </button>
+        <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-3 flex-wrap">
+          <iconify-icon icon="ph:folder-user-bold" class="text-blue-600 text-3xl"></iconify-icon>
+          {{ prontuario.numero_prontuario }}
+          <span class="text-sm font-semibold px-3 py-1 rounded-full border"
+            [ngClass]="getStatusProntuarioClass(prontuario.status)">
+            {{ prontuario.status }}
+          </span>
+        </h2>
+        <p class="text-gray-500 mt-1 text-sm">
+          Aberto em {{ prontuario.criado_em | date:'dd/MM/yyyy' }} &middot; {{ prontuario.area_atendimento }}
+        </p>
+      </div>
+
+      <!-- Botão de Nova Evolução (só para Estagiário) -->
+      <button *ngIf="perfil === 'Estagiario'" (click)="irParaNovaEvolucao()"
+        class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg shadow-md flex items-center gap-2 transition-colors font-semibold">
+        <iconify-icon icon="ph:file-plus-bold" class="text-lg"></iconify-icon>
+        Nova Evolução
+      </button>
+    </div>
+
+    <!-- Cards de Informação -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+      <!-- Paciente -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-5 flex items-start gap-4 lg:col-span-2">
+        <div class="h-14 w-14 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-2xl uppercase flex-shrink-0">
+          {{ paciente?.nome_completo?.charAt(0) || '?' }}
+        </div>
+        <div class="min-w-0">
+          <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Paciente</p>
+          <p class="font-bold text-gray-800 text-lg leading-tight truncate">{{ paciente?.nome_completo || 'Carregando...' }}</p>
+          <p class="text-sm text-gray-500">
+            {{ paciente?.sexo }} &middot; {{ calcularIdade(paciente?.data_nascimento) }} anos
+          </p>
+          <p class="text-xs font-mono text-gray-400 mt-0.5">CPF: {{ paciente?.cpf }}</p>
+        </div>
+      </div>
+
+      <!-- Área + Sessões -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-5">
+        <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-3">Área Clínica</p>
+        <div class="flex items-center gap-2 mb-4">
+          <iconify-icon icon="ph:heartbeat-bold" class="text-blue-500 text-2xl flex-shrink-0"></iconify-icon>
+          <p class="font-semibold text-gray-800 text-sm leading-tight">{{ prontuario.area_atendimento }}</p>
+        </div>
+        <div class="border-t border-gray-100 pt-3">
+          <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Total de Sessões</p>
+          <p class="text-3xl font-bold text-blue-600 mt-1">{{ prontuario.total_sessoes }}</p>
+        </div>
+      </div>
+
+      <!-- Última Sessão -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-5">
+        <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-3">Última Sessão</p>
+        <div class="flex items-center gap-2 mb-4">
+          <iconify-icon icon="ph:calendar-check-bold" class="text-emerald-500 text-2xl flex-shrink-0"></iconify-icon>
+          <p class="font-semibold text-gray-800 text-sm">
+            {{ prontuario.data_ultima_evolucao
+              ? (prontuario.data_ultima_evolucao | date:'dd/MM/yyyy')
+              : 'Sem sessões' }}
+          </p>
+        </div>
+        <div class="border-t border-gray-100 pt-3">
+          <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Avaliação Inicial</p>
+          <p class="text-xs text-gray-600 mt-1 line-clamp-2">{{ prontuario.resumo_avaliacao_inicial }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="bg-white shadow-sm rounded-lg border border-gray-100 overflow-hidden">
+
+      <!-- Tab headers -->
+      <div class="flex border-b border-gray-200">
+        <button (click)="abaAtiva = 'evolucoes'"
+          class="px-6 py-4 text-sm font-semibold flex items-center gap-2 transition-colors border-b-2 -mb-px"
+          [ngClass]="abaAtiva === 'evolucoes'
+            ? 'border-blue-600 text-blue-600'
+            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'">
+          <iconify-icon icon="ph:clipboard-text-bold" class="text-base"></iconify-icon>
+          Evoluções Clínicas
+          <span *ngIf="!isLoadingEvolucoes"
+            class="ml-1 bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">
+            {{ evolucoes.length }}
+          </span>
+        </button>
+
+        <button (click)="abaAtiva = 'metas'"
+          class="px-6 py-4 text-sm font-semibold flex items-center gap-2 transition-colors border-b-2 -mb-px"
+          [ngClass]="abaAtiva === 'metas'
+            ? 'border-blue-600 text-blue-600'
+            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'">
+          <iconify-icon icon="ph:target-bold" class="text-base"></iconify-icon>
+          Metas SMART
+        </button>
+      </div>
+
+      <!-- Aba: Evoluções -->
+      <div *ngIf="abaAtiva === 'evolucoes'" class="p-6">
+
+        <!-- Loading evoluções -->
+        <div *ngIf="isLoadingEvolucoes" class="py-10 text-center text-gray-400">
+          <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-3xl text-blue-400 mb-2"></iconify-icon>
+          <p>Carregando histórico clínico...</p>
+        </div>
+
+        <!-- Empty state -->
+        <div *ngIf="!isLoadingEvolucoes && evolucoes.length === 0"
+          class="py-14 text-center text-gray-400">
+          <iconify-icon icon="ph:clipboard-text-bold" class="text-6xl mb-4"></iconify-icon>
+          <p class="font-semibold text-gray-600 text-lg">Nenhuma evolução registrada</p>
+          <p class="text-sm mt-1" *ngIf="perfil === 'Estagiario'">
+            Clique em "Nova Evolução" para registrar a primeira sessão de atendimento.
+          </p>
+          <p class="text-sm mt-1" *ngIf="perfil === 'Docente'">
+            Aguardando o estagiário responsável registrar a primeira sessão.
+          </p>
+        </div>
+
+        <!-- Timeline de evoluções -->
+        <div *ngIf="!isLoadingEvolucoes && evolucoes.length > 0" class="space-y-6">
+          <div *ngFor="let ev of evolucoes; let i = index; let isLast = last" class="relative">
+
+            <!-- Linha vertical da timeline -->
+            <div *ngIf="!isLast"
+              class="absolute left-5 top-12 bottom-0 w-0.5 bg-gray-200 z-0"></div>
+
+            <div class="flex gap-4 relative z-10">
+
+              <!-- Ícone de status -->
+              <div class="h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-sm"
+                [ngClass]="getEvolucaoIconColor(ev.status)">
+                <iconify-icon [icon]="getEvolucaoStatusIcon(ev.status)" class="text-lg"></iconify-icon>
+              </div>
+
+              <!-- Card da evolução -->
+              <div class="flex-1 bg-gray-50 rounded-xl border border-gray-200 p-5 hover:border-blue-200 hover:shadow-sm transition-all">
+
+                <!-- Header do card -->
+                <div class="flex items-start justify-between gap-4 mb-4">
+                  <div class="flex items-center gap-3 flex-wrap">
+                    <span class="text-xs font-bold px-2.5 py-1 rounded-full"
+                      [ngClass]="getEvolucaoStatusClass(ev.status)">
+                      {{ ev.status }}
+                    </span>
+                    <span class="text-xs text-gray-400 flex items-center gap-1">
+                      <iconify-icon icon="ph:calendar-blank-bold"></iconify-icon>
+                      {{ ev.criado_em | date:'dd/MM/yyyy · HH:mm' }}
+                    </span>
+                    <span class="text-xs text-gray-400 flex items-center gap-1">
+                      <iconify-icon icon="ph:number-circle-{{ i + 1 }}-bold" *ngIf="i < 9"></iconify-icon>
+                      Sessão {{ evolucoes.length - i }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Texto clínico -->
+                <div class="bg-white rounded-lg border border-gray-100 p-4 mb-3">
+                  <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                    Relatório Clínico (SOAP)
+                  </p>
+                  <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{{ ev.texto_clinico }}</p>
+                </div>
+
+                <!-- Indicadores medidos -->
+                <div *ngIf="ev.medicoes && ev.medicoes.length > 0"
+                  class="bg-white rounded-lg border border-gray-100 p-4">
+                  <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                    <iconify-icon icon="ph:chart-line-up-bold" class="mr-1 text-blue-500"></iconify-icon>
+                    Indicadores Funcionais
+                  </p>
+                  <div class="flex flex-wrap gap-2">
+                    <span *ngFor="let med of ev.medicoes"
+                      class="bg-blue-50 border border-blue-100 text-blue-800 text-xs px-3 py-1.5 rounded-full">
+                      <span class="font-semibold">{{ med.nome_indicador }}:</span>
+                      {{ med.valor_registrado }} <span class="text-blue-500">{{ med.unidade }}</span>
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Feedback do docente -->
+                <div *ngIf="ev.feedback_docente"
+                  class="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
+                  <iconify-icon icon="ph:chat-circle-text-bold" class="text-amber-500 text-lg flex-shrink-0 mt-0.5"></iconify-icon>
+                  <div>
+                    <p class="text-xs font-bold text-amber-700 mb-1">Anotação do Docente Supervisor</p>
+                    <p class="text-sm text-amber-800">{{ ev.feedback_docente }}</p>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aba: Metas SMART -->
+      <div *ngIf="abaAtiva === 'metas'" class="p-6">
+        <div class="py-14 text-center text-gray-400">
+          <iconify-icon icon="ph:target-bold" class="text-6xl mb-4"></iconify-icon>
+          <p class="font-semibold text-gray-600 text-lg">Metas SMART — Fase 2</p>
+          <p class="text-sm mt-1 max-w-sm mx-auto">
+            Esta seção registrará os objetivos clínicos mensuráveis do tratamento,
+            com acompanhamento de progresso a cada medição.
+          </p>
+          <div class="mt-6 flex justify-center">
+            <span class="bg-gray-100 text-gray-500 text-xs font-semibold px-4 py-2 rounded-full border border-gray-200">
+              Em desenvolvimento
+            </span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </ng-container>
+</div>
