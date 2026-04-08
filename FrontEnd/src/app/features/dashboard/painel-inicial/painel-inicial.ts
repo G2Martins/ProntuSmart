@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { AdminService } from '../../../core/services/admin.service';
-import { ProntuarioService } from '../../../core/services/prontuario.service'; // <-- NOVO SERVIÇO
+import { ProntuarioService } from '../../../core/services/prontuario.service';
+import { EvolucaoService } from '../../../core/services/evolucao.service';
 
 @Component({
   selector: 'app-painel-inicial',
@@ -13,40 +14,36 @@ import { ProntuarioService } from '../../../core/services/prontuario.service'; /
   templateUrl: './painel-inicial.html'
 })
 export class PainelInicialComponent implements OnInit {
-  private authService = inject(AuthService);
-  private adminService = inject(AdminService);
-  private prontuarioService = inject(ProntuarioService); // <-- INJETADO
-  private cdr = inject(ChangeDetectorRef);
+  private authService      = inject(AuthService);
+  private adminService     = inject(AdminService);
+  private prontuarioService = inject(ProntuarioService);
+  private evolucaoService  = inject(EvolucaoService);
+  private cdr              = inject(ChangeDetectorRef);
 
-  perfil: string | null = '';
-  saudacao: string = '';
+  perfil:    string | null = '';
+  saudacao:  string = '';
 
   isLoadingStats = true;
-  erroStats = '';
+  erroStats      = '';
 
-  // Stats do Admin
   adminStats: any = {
-    usuariosAtivos: 0,
-    totalUsuarios: 0,
-    areasCadastradas: 0,
+    usuariosAtivos:    0,
+    totalUsuarios:     0,
+    areasCadastradas:  0,
     testesConfigurados: 0,
-    totalCids: 0,
-    totalPacientes: 0,
-    statusServidor: 'A verificar...',
-    saudeSistema: null
+    totalCids:         0,
+    totalPacientes:    0,
+    statusServidor:    'A verificar...',
+    saudeSistema:      null
   };
 
-  // Stats do Docente (Agora dinâmico!)
-  docenteStats = { 
-    estagiariosSupervisionados: 0, 
-    pacientesAtivos: 0, 
-    evolucoesPendentesRevisao: 0 // Mock temporário até a Fase 3
+  docenteStats = {
+    estagiariosSupervisionados:  0,
+    pacientesAtivos:             0,
+    evolucoesPendentesRevisao:   0
   };
 
-  // Stats do Estagiário
-  estagiarioStats = { meusPacientes: 5, atendimentosHoje: 3, evolucoesAtrasadas: 0 };
-  
-  alertasMetas: any[] = [];
+  estagiarioStats = { meusPacientes: 0, atendimentosHoje: 0, evolucoesAtrasadas: 0 };
   proximosAtendimentos: any[] = [];
 
   ngOnInit() {
@@ -58,23 +55,21 @@ export class PainelInicialComponent implements OnInit {
     } else if (this.perfil === 'Docente') {
       this.carregarEstatisticasDocente();
     } else {
-      this.isLoadingStats = false; 
+      this.isLoadingStats = false;
     }
   }
 
   carregarEstatisticasAdmin() {
     this.isLoadingStats = true;
-    this.erroStats = '';
-
+    this.erroStats      = '';
     this.adminService.getEstatisticas().subscribe({
       next: (dadosReais: any) => {
-        this.adminStats = dadosReais;
+        this.adminStats     = dadosReais;
         this.isLoadingStats = false;
         this.cdr.detectChanges();
       },
-      error: (erro) => {
-        console.error('Erro ao buscar estatísticas reais', erro);
-        this.erroStats = 'Não foi possível carregar os dados. O servidor pode estar offline.';
+      error: () => {
+        this.erroStats      = 'Não foi possível carregar os dados.';
         this.adminStats.statusServidor = 'Erro de Conexão';
         this.isLoadingStats = false;
         this.cdr.detectChanges();
@@ -82,26 +77,32 @@ export class PainelInicialComponent implements OnInit {
     });
   }
 
-  // 👇 NOVA LÓGICA DE DADOS REAIS PARA O DOCENTE 👇
   carregarEstatisticasDocente() {
     this.isLoadingStats = true;
-    this.erroStats = '';
+    this.erroStats      = '';
 
+    // 1. Prontuários do docente
     this.prontuarioService.listarMeusProntuarios().subscribe({
       next: (prontuarios: any[]) => {
-        // 1. Conta o total de Prontuários (Pacientes em tratamento)
-        this.docenteStats.pacientesAtivos = prontuarios.length;
-        
-        // 2. Extrai apenas os IDs únicos dos estagiários para saber quantos alunos ele supervisiona na prática
-        const estagiariosUnicos = new Set(prontuarios.map(p => p.estagiario_id));
+        this.docenteStats.pacientesAtivos           = prontuarios.length;
+        const estagiariosUnicos                     = new Set(prontuarios.map(p => p.estagiario_id));
         this.docenteStats.estagiariosSupervisionados = estagiariosUnicos.size;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.erroStats = 'Erro ao carregar dados clínicos.';
+        this.cdr.detectChanges();
+      }
+    });
 
+    // 2. Evoluções pendentes — chamada independente
+    this.evolucaoService.contarPendentesPorDocente().subscribe({
+      next: (res) => {
+        this.docenteStats.evolucoesPendentesRevisao = res.count;
         this.isLoadingStats = false;
         this.cdr.detectChanges();
       },
-      error: (erro) => {
-        console.error('Erro ao buscar prontuários do docente', erro);
-        this.erroStats = 'Erro ao carregar dados clínicos.';
+      error: () => {
         this.isLoadingStats = false;
         this.cdr.detectChanges();
       }
@@ -110,16 +111,14 @@ export class PainelInicialComponent implements OnInit {
 
   definirSaudacao() {
     const hora = new Date().getHours();
-    if (hora < 12) this.saudacao = 'Bom dia';
+    if (hora < 12)      this.saudacao = 'Bom dia';
     else if (hora < 18) this.saudacao = 'Boa tarde';
-    else this.saudacao = 'Boa noite';
+    else                this.saudacao = 'Boa noite';
   }
 
   formatarMilhar(valor: number | undefined): string {
     if (valor === undefined || valor === null) return '0';
-    if (valor >= 1000) {
-      return (valor / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
-    }
+    if (valor >= 1000) return (valor / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
     return valor.toString();
   }
 }

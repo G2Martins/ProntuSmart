@@ -53,3 +53,21 @@ async def listar_por_prontuario(prontuario_id: str) -> list:
     for e in evolucoes:
         e["_id"] = str(e["_id"])
     return evolucoes
+
+async def contar_pendentes_por_docente(docente_id: str) -> int:
+    """Conta evoluções 'Pendente de Revisão' nos prontuários deste docente."""
+    db = get_database()
+    prontuarios = await db.fato_prontuario.find(
+        {"docente_id": docente_id}
+    ).to_list(length=1000)
+
+    if not prontuarios:
+        return 0
+
+    prontuario_ids = [str(p["_id"]) for p in prontuarios]
+
+    count = await db.fato_evolucao.count_documents({
+        "prontuario_id": {"$in": prontuario_ids},
+        "status": "Pendente de Revisão"
+    })
+    return count

@@ -19,3 +19,11 @@ async def listar_evolucoes_prontuario(
     current_user: dict = Depends(get_current_user)
 ):
     return await evolucao_service.listar_por_prontuario(prontuario_id)
+
+@router.get("/pendentes/count")
+async def contar_evolucoes_pendentes(
+    current_user: dict = Depends(get_current_user)
+):
+    """Retorna quantidade de evoluções pendentes de revisão para o docente logado."""
+    count = await evolucao_service.contar_pendentes_por_docente(str(current_user["_id"]))
+    return {"count": count}

@@ -8,8 +8,8 @@
 
   <ng-container *ngIf="!isLoadingProntuario && prontuario">
 
-    <!-- Cabeçalho -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <!-- ── Cabeçalho ──────────────────────────────────────── -->
+    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
       <div>
         <button (click)="voltar()"
           class="flex items-center text-gray-500 hover:text-blue-600 text-sm font-medium mb-2 transition-colors group">
@@ -29,36 +29,36 @@
         </p>
       </div>
 
-      <!-- Botão de Nova Evolução (só para Estagiário) -->
-      <button *ngIf="perfil === 'Estagiario'" (click)="irParaNovaEvolucao()"
-        class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg shadow-md flex items-center gap-2 transition-colors font-semibold">
-        <iconify-icon icon="ph:file-plus-bold" class="text-lg"></iconify-icon>
-        Nova Evolução
-      </button>
-
-      <!-- Botões de ação — substituir o bloco de cabeçalho direito -->
-      <div class="flex flex-col sm:flex-row gap-2">
-        <button *ngIf="perfil === 'Estagiario' || perfil === 'Docente'"
+      <!-- Botões de ação — SEM duplicata -->
+      <div class="flex flex-wrap gap-2">
+        <!-- Avaliação Funcional: Estagiário e Docente -->
+        <button
+          *ngIf="perfil === 'Estagiario' || perfil === 'Docente'"
           (click)="router.navigate(['/prontuarios/avaliacao', prontuario._id])"
           class="border border-blue-300 text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold transition-colors">
           <iconify-icon icon="ph:clipboard-text-bold" class="text-base"></iconify-icon>
           Avaliação Funcional
         </button>
-        <button *ngIf="perfil === 'Estagiario'"
+        <!-- Nova Meta: só Estagiário -->
+        <button
+          *ngIf="perfil === 'Estagiario'"
           (click)="router.navigate(['/prontuarios/meta', prontuario._id])"
           class="border border-purple-300 text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold transition-colors">
           <iconify-icon icon="ph:target-bold" class="text-base"></iconify-icon>
           Nova Meta SMART
         </button>
-        <button *ngIf="perfil === 'Estagiario'" (click)="irParaNovaEvolucao()"
+        <!-- Nova Evolução: só Estagiário — único botão -->
+        <button
+          *ngIf="perfil === 'Estagiario'"
+          (click)="irParaNovaEvolucao()"
           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold shadow transition-colors">
           <iconify-icon icon="ph:file-plus-bold" class="text-base"></iconify-icon>
           Nova Evolução
         </button>
-      </div>  
+      </div>
     </div>
 
-    <!-- Cards de Informação -->
+    <!-- ── Cards de Resumo ────────────────────────────────── -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
       <!-- Paciente -->
@@ -89,7 +89,7 @@
         </div>
       </div>
 
-      <!-- Última Sessão -->
+      <!-- Última Sessão + Avaliação Inicial -->
       <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-5">
         <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-3">Última Sessão</p>
         <div class="flex items-center gap-2 mb-4">
@@ -101,13 +101,54 @@
           </p>
         </div>
         <div class="border-t border-gray-100 pt-3">
-          <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Avaliação Inicial</p>
-          <p class="text-xs text-gray-600 mt-1 line-clamp-2">{{ prontuario.resumo_avaliacao_inicial }}</p>
+          <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Problema Prioritário</p>
+          <!-- ✅ Corrigido: usa campo do novo modelo -->
+          <p *ngIf="prontuario.problema_funcional_prioritario" class="text-xs text-gray-600 mt-1 line-clamp-2">
+            {{ prontuario.problema_funcional_prioritario }}
+          </p>
+          <p *ngIf="!prontuario.problema_funcional_prioritario" class="text-xs text-gray-400 mt-1 italic">
+            Avaliação funcional não realizada
+          </p>
         </div>
       </div>
     </div>
 
-    <!-- Tabs -->
+    <!-- ── Dados Clínicos Iniciais (se preenchidos) ───────── -->
+    <div *ngIf="prontuario.diagnostico_medico || prontuario.diagnostico_fisioterapeutico"
+      class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+      <div class="bg-gray-50 border-b border-gray-100 px-6 py-3 flex items-center gap-2">
+        <iconify-icon icon="ph:stethoscope-bold" class="text-gray-500 text-lg"></iconify-icon>
+        <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Dados Clínicos Iniciais</h3>
+      </div>
+      <div class="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+        <div *ngIf="prontuario.diagnostico_medico">
+          <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Diagnóstico Médico</p>
+          <p class="text-gray-700">{{ prontuario.diagnostico_medico }}</p>
+        </div>
+        <div *ngIf="prontuario.diagnostico_fisioterapeutico">
+          <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Diagnóstico Fisioterapêutico</p>
+          <p class="text-gray-700">{{ prontuario.diagnostico_fisioterapeutico }}</p>
+        </div>
+        <div *ngIf="prontuario.queixa_principal">
+          <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Queixa Principal</p>
+          <p class="text-gray-700">{{ prontuario.queixa_principal }}</p>
+        </div>
+        <div *ngIf="prontuario.objetivo_paciente">
+          <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Objetivo do Paciente</p>
+          <p class="text-gray-700">{{ prontuario.objetivo_paciente }}</p>
+        </div>
+        <div *ngIf="prontuario.comorbidades">
+          <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Comorbidades</p>
+          <p class="text-gray-700">{{ prontuario.comorbidades }}</p>
+        </div>
+        <div *ngIf="prontuario.dispositivo_auxiliar">
+          <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Dispositivo Auxiliar</p>
+          <p class="text-gray-700">{{ prontuario.dispositivo_auxiliar }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Tabs ───────────────────────────────────────────── -->
     <div class="bg-white shadow-sm rounded-lg border border-gray-100 overflow-hidden">
 
       <!-- Tab headers -->
@@ -116,7 +157,7 @@
           class="px-6 py-4 text-sm font-semibold flex items-center gap-2 transition-colors border-b-2 -mb-px"
           [ngClass]="abaAtiva === 'evolucoes'
             ? 'border-blue-600 text-blue-600'
-            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'">
+            : 'border-transparent text-gray-500 hover:text-gray-700'">
           <iconify-icon icon="ph:clipboard-text-bold" class="text-base"></iconify-icon>
           Evoluções Clínicas
           <span *ngIf="!isLoadingEvolucoes"
@@ -124,60 +165,47 @@
             {{ evolucoes.length }}
           </span>
         </button>
-
         <button (click)="abaAtiva = 'metas'"
           class="px-6 py-4 text-sm font-semibold flex items-center gap-2 transition-colors border-b-2 -mb-px"
           [ngClass]="abaAtiva === 'metas'
             ? 'border-blue-600 text-blue-600'
-            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'">
+            : 'border-transparent text-gray-500 hover:text-gray-700'">
           <iconify-icon icon="ph:target-bold" class="text-base"></iconify-icon>
           Metas SMART
+          <span *ngIf="!isLoadingMetas && metas.length > 0"
+            class="ml-1 bg-purple-100 text-purple-700 text-xs font-bold px-2 py-0.5 rounded-full">
+            {{ metas.length }}
+          </span>
         </button>
       </div>
 
-      <!-- Aba: Evoluções -->
+      <!-- ── Aba: Evoluções ─────────────────────────────── -->
       <div *ngIf="abaAtiva === 'evolucoes'" class="p-6">
 
-        <!-- Loading evoluções -->
         <div *ngIf="isLoadingEvolucoes" class="py-10 text-center text-gray-400">
           <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-3xl text-blue-400 mb-2"></iconify-icon>
           <p>Carregando histórico clínico...</p>
         </div>
 
-        <!-- Empty state -->
-        <div *ngIf="!isLoadingEvolucoes && evolucoes.length === 0"
-          class="py-14 text-center text-gray-400">
+        <div *ngIf="!isLoadingEvolucoes && evolucoes.length === 0" class="py-14 text-center text-gray-400">
           <iconify-icon icon="ph:clipboard-text-bold" class="text-6xl mb-4"></iconify-icon>
           <p class="font-semibold text-gray-600 text-lg">Nenhuma evolução registrada</p>
           <p class="text-sm mt-1" *ngIf="perfil === 'Estagiario'">
-            Clique em "Nova Evolução" para registrar a primeira sessão de atendimento.
-          </p>
-          <p class="text-sm mt-1" *ngIf="perfil === 'Docente'">
-            Aguardando o estagiário responsável registrar a primeira sessão.
+            Clique em "Nova Evolução" para registrar a primeira sessão.
           </p>
         </div>
 
-        <!-- Timeline de evoluções -->
+        <!-- Timeline -->
         <div *ngIf="!isLoadingEvolucoes && evolucoes.length > 0" class="space-y-6">
           <div *ngFor="let ev of evolucoes; let i = index; let isLast = last" class="relative">
-
-            <!-- Linha vertical da timeline -->
-            <div *ngIf="!isLast"
-              class="absolute left-5 top-12 bottom-0 w-0.5 bg-gray-200 z-0"></div>
-
+            <div *ngIf="!isLast" class="absolute left-5 top-12 bottom-0 w-0.5 bg-gray-200 z-0"></div>
             <div class="flex gap-4 relative z-10">
-
-              <!-- Ícone de status -->
               <div class="h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-sm"
                 [ngClass]="getEvolucaoIconColor(ev.status)">
                 <iconify-icon [icon]="getEvolucaoStatusIcon(ev.status)" class="text-lg"></iconify-icon>
               </div>
-
-              <!-- Card da evolução -->
-              <div class="flex-1 bg-gray-50 rounded-xl border border-gray-200 p-5 hover:border-blue-200 hover:shadow-sm transition-all">
-
-                <!-- Header do card -->
-                <div class="flex items-start justify-between gap-4 mb-4">
+              <div class="flex-1 bg-gray-50 rounded-xl border border-gray-200 p-5 hover:border-blue-200 transition-all">
+                <div class="flex items-start justify-between gap-4 mb-4 flex-wrap">
                   <div class="flex items-center gap-3 flex-wrap">
                     <span class="text-xs font-bold px-2.5 py-1 rounded-full"
                       [ngClass]="getEvolucaoStatusClass(ev.status)">
@@ -187,14 +215,13 @@
                       <iconify-icon icon="ph:calendar-blank-bold"></iconify-icon>
                       {{ ev.criado_em | date:'dd/MM/yyyy · HH:mm' }}
                     </span>
-                    <span class="text-xs text-gray-400 flex items-center gap-1">
-                      <iconify-icon icon="ph:number-circle-{{ i + 1 }}-bold" *ngIf="i < 9"></iconify-icon>
+                    <span class="text-xs font-semibold text-gray-500">
                       Sessão {{ evolucoes.length - i }}
                     </span>
                   </div>
                 </div>
 
-                <!-- Texto clínico -->
+                <!-- Texto SOAP -->
                 <div class="bg-white rounded-lg border border-gray-100 p-4 mb-3">
                   <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
                     Relatório Clínico (SOAP)
@@ -202,9 +229,9 @@
                   <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{{ ev.texto_clinico }}</p>
                 </div>
 
-                <!-- Indicadores medidos -->
+                <!-- Indicadores -->
                 <div *ngIf="ev.medicoes && ev.medicoes.length > 0"
-                  class="bg-white rounded-lg border border-gray-100 p-4">
+                  class="bg-white rounded-lg border border-gray-100 p-4 mb-3">
                   <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
                     <iconify-icon icon="ph:chart-line-up-bold" class="mr-1 text-blue-500"></iconify-icon>
                     Indicadores Funcionais
@@ -218,7 +245,27 @@
                   </div>
                 </div>
 
-                <!-- Feedback do docente -->
+                <!-- Reavaliação -->
+                <div *ngIf="ev.houve_progresso || ev.condicao_meta"
+                  class="bg-white rounded-lg border border-gray-100 p-4 mb-3">
+                  <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                    Reavaliação da Meta
+                  </p>
+                  <div class="flex flex-wrap gap-4 text-sm">
+                    <span *ngIf="ev.houve_progresso" class="text-gray-600">
+                      <span class="font-semibold">Progresso:</span> {{ ev.houve_progresso }}
+                    </span>
+                    <span *ngIf="ev.condicao_meta" class="text-gray-600">
+                      <span class="font-semibold">Condição da meta:</span> {{ ev.condicao_meta }}
+                    </span>
+                    <span *ngIf="ev.proxima_revisao" class="text-gray-600">
+                      <span class="font-semibold">Próxima revisão:</span>
+                      {{ ev.proxima_revisao | date:'dd/MM/yyyy' }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Feedback docente -->
                 <div *ngIf="ev.feedback_docente"
                   class="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
                   <iconify-icon icon="ph:chat-circle-text-bold" class="text-amber-500 text-lg flex-shrink-0 mt-0.5"></iconify-icon>
@@ -227,30 +274,106 @@
                     <p class="text-sm text-amber-800">{{ ev.feedback_docente }}</p>
                   </div>
                 </div>
-
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Aba: Metas SMART -->
+      <!-- ── Aba: Metas SMART ──────────────────────────── -->
       <div *ngIf="abaAtiva === 'metas'" class="p-6">
-        <div class="py-14 text-center text-gray-400">
+
+        <div *ngIf="isLoadingMetas" class="py-10 text-center text-gray-400">
+          <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-3xl text-purple-400 mb-2"></iconify-icon>
+          <p>Carregando metas clínicas...</p>
+        </div>
+
+        <div *ngIf="!isLoadingMetas && metas.length === 0" class="py-14 text-center text-gray-400">
           <iconify-icon icon="ph:target-bold" class="text-6xl mb-4"></iconify-icon>
-          <p class="font-semibold text-gray-600 text-lg">Metas SMART — Fase 2</p>
-          <p class="text-sm mt-1 max-w-sm mx-auto">
-            Esta seção registrará os objetivos clínicos mensuráveis do tratamento,
-            com acompanhamento de progresso a cada medição.
+          <p class="font-semibold text-gray-600 text-lg">Nenhuma meta cadastrada</p>
+          <p class="text-sm mt-1" *ngIf="perfil === 'Estagiario'">
+            Clique em "Nova Meta SMART" para definir os objetivos clínicos.
           </p>
-          <div class="mt-6 flex justify-center">
-            <span class="bg-gray-100 text-gray-500 text-xs font-semibold px-4 py-2 rounded-full border border-gray-200">
-              Em desenvolvimento
-            </span>
+        </div>
+
+        <div *ngIf="!isLoadingMetas && metas.length > 0" class="space-y-5">
+          <div *ngFor="let meta of metas; let i = index"
+            class="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden hover:border-purple-200 transition-all">
+
+            <!-- Header da meta -->
+            <div class="flex items-start justify-between gap-4 p-5 border-b border-gray-100 flex-wrap">
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-sm flex-shrink-0 mt-0.5">
+                  {{ i + 1 }}
+                </div>
+                <div>
+                  <p *ngIf="meta.problema_relacionado" class="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">
+                    {{ meta.problema_relacionado }}
+                  </p>
+                  <p class="font-bold text-gray-800 text-base leading-snug">{{ meta.especifico }}</p>
+                  <p *ngIf="meta.criterio_mensuravel" class="text-sm text-gray-500 mt-0.5">
+                    <iconify-icon icon="ph:ruler-bold" class="mr-1 text-gray-400"></iconify-icon>
+                    {{ meta.criterio_mensuravel }}
+                  </p>
+                </div>
+              </div>
+              <span class="text-xs font-bold px-3 py-1.5 rounded-full border flex-shrink-0"
+                [ngClass]="getMetaStatusClass(meta.status)">
+                {{ meta.status }}
+              </span>
+            </div>
+
+            <!-- Progresso -->
+            <div class="px-5 py-4 bg-white">
+              <div class="flex justify-between items-center mb-2 text-xs text-gray-500">
+                <span>Inicial: <strong class="text-gray-800">{{ meta.valor_inicial }}</strong></span>
+                <span class="font-bold text-base" [ngClass]="meta.progresso_percentual >= 100 ? 'text-green-600' : 'text-blue-600'">
+                  {{ meta.progresso_percentual | number:'1.0-0' }}%
+                </span>
+                <span>Alvo: <strong class="text-gray-800">{{ meta.valor_alvo }}</strong></span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                <div class="h-3 rounded-full transition-all duration-500"
+                  [ngClass]="getProgressoColor(meta.progresso_percentual)"
+                  [style.width.%]="meta.progresso_percentual > 100 ? 100 : meta.progresso_percentual">
+                </div>
+              </div>
+            </div>
+
+            <!-- Detalhes SMART -->
+            <div class="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm border-t border-gray-100">
+              <div *ngIf="meta.condicao_execucao">
+                <p class="text-xs font-semibold text-gray-400 uppercase mb-1">
+                  <span class="text-orange-600">A</span> — Condição de execução
+                </p>
+                <p class="text-gray-700">{{ meta.condicao_execucao }}</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold text-gray-400 uppercase mb-1">
+                  <span class="text-orange-600">A</span> — Justificativa clínica
+                </p>
+                <p class="text-gray-700">{{ meta.alcancavel }}</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold text-gray-400 uppercase mb-1">
+                  <span class="text-purple-600">R</span> — Relevância funcional
+                </p>
+                <p class="text-gray-700">{{ meta.relevante }}</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold text-gray-400 uppercase mb-1">
+                  <span class="text-red-600">T</span> — Prazo
+                </p>
+                <p class="text-gray-700">{{ meta.data_limite | date:'dd/MM/yyyy' }}</p>
+                <p *ngIf="meta.data_reavaliacao" class="text-gray-500 text-xs mt-0.5">
+                  Reavaliação: {{ meta.data_reavaliacao | date:'dd/MM/yyyy' }}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
+      </div>
     </div>
 
   </ng-container>
