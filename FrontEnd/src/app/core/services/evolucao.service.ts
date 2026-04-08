@@ -31,4 +31,20 @@ export class EvolucaoService {
       { headers: this.getHeaders() }
     );
   }
+
+  listarPendentes(): Observable<any[]> {
+    return this.http.get<any[]>(
+      `${this.apiUrl}/pendentes`,
+      { headers: this.getHeaders() }
+    );
+  }
+
+  // ← método que estava faltando
+  revisar(evolucaoId: string, acao: 'aprovar' | 'devolver', feedback?: string): Observable<any> {
+    return this.http.patch<any>(
+      `${this.apiUrl}/${evolucaoId}/revisar`,
+      { acao, feedback },
+      { headers: this.getHeaders() }
+    );
+  }
 }

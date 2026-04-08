@@ -5,14 +5,10 @@ import { authGuard } from './core/guards/auth-guard';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
-  
-  // NOVA ROTA (Fora do Layout, sem menu lateral)
   { 
     path: 'trocar-senha', 
     loadComponent: () => import('./features/auth/trocar-senha/trocar-senha').then(m => m.TrocarSenhaComponent)
   },
-  
-  // Rotas Protegidas (envolvidas pelo Layout e pelo Guardião)
   { 
     path: '', 
     component: LayoutComponent, 
@@ -66,6 +62,10 @@ export const routes: Routes = [
       {
         path: 'prontuarios/meta/:id',
         loadComponent: () => import('./features/prontuarios/insercao-meta-smart/insercao-meta-smart').then(m => m.InsercaoMetaSmartComponent)
+      },
+      {
+        path: 'prontuarios/revisao',
+        loadComponent: () => import('./features/prontuarios/revisao-evolucoes/revisao-evolucoes').then(m => m.RevisaoEvolucoesComponent),canActivate: [authGuard]
       },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]

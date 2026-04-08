@@ -71,3 +71,65 @@ async def contar_pendentes_por_docente(docente_id: str) -> int:
         "status": "Pendente de Revisão"
     })
     return count
+
+async def revisar_evolucao(evolucao_id: str, docente_id: str, acao: str, feedback: str | None) -> dict:
+    db = get_database()
+
+    evolucao = await db.fato_evolucao.find_one({"_id": ObjectId(evolucao_id)})
+    if not evolucao:
+        raise HTTPException(status_code=404, detail="Evolução não encontrada.")
+
+    if evolucao.get("status") != "Pendente de Revisão":
+        raise HTTPException(status_code=400, detail="Esta evolução já foi revisada.")
+
+    # Valida que o docente é responsável pelo prontuário
+    prontuario = await db.fato_prontuario.find_one({
+        "_id": ObjectId(evolucao["prontuario_id"]),
+        "docente_id": docente_id
+    })
+    if not prontuario:
+        raise HTTPException(status_code=403, detail="Você não é responsável por este prontuário.")
+
+    if acao == "aprovar":
+        novo_status = "Aprovado e Assinado"
+    elif acao == "devolver":
+        if not feedback:
+            raise HTTPException(status_code=400, detail="Feedback obrigatório ao devolver.")
+        novo_status = "Ajustes Solicitados"
+    else:
+        raise HTTPException(status_code=400, detail="Ação inválida. Use 'aprovar' ou 'devolver'.")
+
+    await db.fato_evolucao.update_one(
+        {"_id": ObjectId(evolucao_id)},
+        {"$set": {
+            "status":             novo_status,
+            "docente_revisor_id": docente_id,
+            "feedback_docente":   feedback,
+            "atualizado_em":      datetime.now(timezone.utc)
+        }}
+    )
+
+    atualizada = await db.fato_evolucao.find_one({"_id": ObjectId(evolucao_id)})
+    atualizada["_id"] = str(atualizada["_id"])
+    return atualizada
+
+async def listar_pendentes_por_docente(docente_id: str) -> list:
+    db = get_database()
+    prontuarios = await db.fato_prontuario.find(
+        {"docente_id": docente_id}
+    ).to_list(length=1000)
+
+    if not prontuarios:
+        return []
+
+    ids = [str(p["_id"]) for p in prontuarios]
+
+    cursor = db.fato_evolucao.find({
+        "prontuario_id": {"$in": ids},
+        "status": "Pendente de Revisão"
+    }).sort("criado_em", 1)  # Mais antigas primeiro
+
+    pendentes = await cursor.to_list(length=200)
+    for e in pendentes:
+        e["_id"] = str(e["_id"])
+    return pendentes
