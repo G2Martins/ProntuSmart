@@ -15,8 +15,8 @@ import { AuthService } from '../../../core/services/auth.service';
   styleUrl: './visao-prontuario.scss',
 })
 export class VisaoProntuario implements OnInit {
-  private route = inject(ActivatedRoute);
-  private router = inject(Router);
+  protected route = inject(ActivatedRoute);
+  protected router = inject(Router);
   private prontuarioService = inject(ProntuarioService);
   private pacienteService = inject(PacienteService);
   private evolucaoService = inject(EvolucaoService);

@@ -1,0 +1,219 @@
+<div class="max-w-3xl mx-auto space-y-6">
+
+  <!-- Cabeçalho -->
+  <div class="flex items-center justify-between">
+    <div>
+      <button (click)="router.navigate(['/prontuarios/visao', idProntuario])"
+        class="flex items-center text-gray-500 hover:text-blue-600 text-sm font-medium mb-2 transition-colors group">
+        <iconify-icon icon="ph:arrow-left-bold" class="mr-1 group-hover:-translate-x-1 transition-transform"></iconify-icon>
+        Voltar ao Prontuário
+      </button>
+      <h2 class="text-2xl font-bold text-gray-800">Nova Meta SMART</h2>
+      <p class="text-gray-500 text-sm mt-1 flex items-center gap-1">
+        <iconify-icon icon="ph:heartbeat-bold" class="text-blue-500"></iconify-icon>
+        {{ areaProntuario || 'Carregando...' }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isFetching" class="bg-white rounded-lg shadow p-12 text-center">
+    <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-4xl text-blue-500 mb-3"></iconify-icon>
+    <p class="text-gray-500">Carregando indicadores da área...</p>
+  </div>
+
+  <form *ngIf="!isFetching" [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-5">
+
+    <!-- Contexto Clínico -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+      <div class="bg-blue-50 border-b border-blue-100 px-6 py-4 flex items-center gap-2">
+        <iconify-icon icon="ph:stethoscope-bold" class="text-blue-600 text-xl"></iconify-icon>
+        <h3 class="font-semibold text-blue-800">Contexto Clínico</h3>
+      </div>
+      <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">
+            Problema relacionado
+          </label>
+          <input type="text" formControlName="problema_relacionado"
+            class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+            placeholder="Ex: Déficit de marcha">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">
+            Indicador principal <span class="text-red-500">*</span>
+          </label>
+          <select formControlName="indicador_id"
+            class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white">
+            <option value="">Selecione o indicador...</option>
+            <option *ngFor="let ind of indicadores" [value]="ind._id">
+              {{ ind.nome }} ({{ ind.unidade_medida }})
+            </option>
+          </select>
+          <p *ngIf="form.get('indicador_id')?.touched && form.get('indicador_id')?.invalid"
+            class="text-xs text-red-500 mt-1">Selecione um indicador.</p>
+
+          <!-- Preview do indicador selecionado -->
+          <div *ngIf="indicadorSelecionado"
+            class="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700">
+            <iconify-icon [icon]="indicadorSelecionado.direcao_melhora === 'maior_melhor' ? 'ph:trend-up-bold' : 'ph:trend-down-bold'" class="mr-1"></iconify-icon>
+            {{ indicadorSelecionado.direcao_melhora === 'maior_melhor' ? '↑ Maior é melhor' : '↓ Menor é melhor' }}
+            · {{ indicadorSelecionado.descricao }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- S — Específico -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+      <div class="bg-green-50 border-b border-green-100 px-6 py-4 flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">S</div>
+        <div>
+          <h3 class="font-semibold text-green-800">Específico — O que será alcançado?</h3>
+          <p class="text-xs text-green-600">Descreva a meta de forma clara e objetiva</p>
+        </div>
+      </div>
+      <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div class="sm:col-span-2">
+          <label class="block text-sm font-semibold text-gray-700 mb-1">
+            Meta específica <span class="text-red-500">*</span>
+          </label>
+          <input type="text" formControlName="especifico"
+            class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+            placeholder="Ex: Melhorar a capacidade de marcha em ambiente domiciliar">
+          <p *ngIf="form.get('especifico')?.touched && form.get('especifico')?.invalid"
+            class="text-xs text-red-500 mt-1">Campo obrigatório.</p>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Critério mensurável (texto)</label>
+          <input type="text" formControlName="criterio_mensuravel"
+            class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+            placeholder="Ex: Caminhar 10 metros">
+        </div>
+      </div>
+    </div>
+
+    <!-- M — Mensurável -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+      <div class="bg-yellow-50 border-b border-yellow-100 px-6 py-4 flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-yellow-500 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">M</div>
+        <div>
+          <h3 class="font-semibold text-yellow-800">Mensurável — Valores numéricos</h3>
+          <p class="text-xs text-yellow-600">Base e alvo para cálculo automático de progresso</p>
+        </div>
+      </div>
+      <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">
+            Valor inicial <span class="text-red-500">*</span>
+            <span *ngIf="indicadorSelecionado" class="text-gray-400 font-normal"> ({{ indicadorSelecionado.unidade_medida }})</span>
+          </label>
+          <input type="number" step="any" formControlName="valor_inicial"
+            class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+            placeholder="Ex: 5">
+          <p *ngIf="form.get('valor_inicial')?.touched && form.get('valor_inicial')?.invalid"
+            class="text-xs text-red-500 mt-1">Valor inicial obrigatório.</p>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">
+            Meta-alvo <span class="text-red-500">*</span>
+            <span *ngIf="indicadorSelecionado" class="text-gray-400 font-normal"> ({{ indicadorSelecionado.unidade_medida }})</span>
+          </label>
+          <input type="number" step="any" formControlName="valor_alvo"
+            class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+            placeholder="Ex: 10">
+          <p *ngIf="form.get('valor_alvo')?.touched && form.get('valor_alvo')?.invalid"
+            class="text-xs text-red-500 mt-1">Valor alvo obrigatório.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- A — Atingível -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+      <div class="bg-orange-50 border-b border-orange-100 px-6 py-4 flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">A</div>
+        <div>
+          <h3 class="font-semibold text-orange-800">Atingível — Como e por quê é realista?</h3>
+        </div>
+      </div>
+      <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">
+            Condição de execução / adaptação
+          </label>
+          <input type="text" formControlName="condicao_execucao"
+            class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+            placeholder="Ex: Com andador e supervisão">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">
+            Justificativa clínica <span class="text-red-500">*</span>
+          </label>
+          <textarea formControlName="alcancavel" rows="3"
+            class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm resize-none"
+            placeholder="Ex: Paciente apresenta musculatura preservada com potencial de ganho funcional"></textarea>
+          <p *ngIf="form.get('alcancavel')?.touched && form.get('alcancavel')?.invalid"
+            class="text-xs text-red-500 mt-1">Campo obrigatório.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- R — Relevante -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+      <div class="bg-purple-50 border-b border-purple-100 px-6 py-4 flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">R</div>
+        <div>
+          <h3 class="font-semibold text-purple-800">Relevante — Importância funcional para o paciente</h3>
+        </div>
+      </div>
+      <div class="p-6">
+        <textarea formControlName="relevante" rows="3"
+          class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm resize-none"
+          placeholder="Ex: Permitir deslocamento até o banheiro com mais independência"></textarea>
+        <p *ngIf="form.get('relevante')?.touched && form.get('relevante')?.invalid"
+          class="text-xs text-red-500 mt-1">Campo obrigatório.</p>
+      </div>
+    </div>
+
+    <!-- T — Temporal -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+      <div class="bg-red-50 border-b border-red-100 px-6 py-4 flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">T</div>
+        <div>
+          <h3 class="font-semibold text-red-800">Temporal — Prazo e Reavaliação</h3>
+        </div>
+      </div>
+      <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">
+            Data limite para alcance <span class="text-red-500">*</span>
+          </label>
+          <input type="date" formControlName="data_limite" [min]="hoje"
+            class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+          <p *ngIf="form.get('data_limite')?.touched && form.get('data_limite')?.invalid"
+            class="text-xs text-red-500 mt-1">Data obrigatória.</p>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Data prevista para reavaliação</label>
+          <input type="date" formControlName="data_reavaliacao" [min]="hoje"
+            class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <div class="flex justify-between items-center pt-2">
+      <button type="button" (click)="router.navigate(['/prontuarios/visao', idProntuario])"
+        class="border border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-2.5 rounded-lg font-semibold flex items-center gap-2 transition-colors">
+        <iconify-icon icon="ph:x-bold"></iconify-icon> Cancelar
+      </button>
+      <button type="submit" [disabled]="isLoading"
+        class="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg font-semibold flex items-center gap-2 shadow transition-colors">
+        <iconify-icon *ngIf="isLoading" icon="ph:spinner-gap-bold" class="animate-spin"></iconify-icon>
+        <iconify-icon *ngIf="!isLoading" icon="ph:target-bold"></iconify-icon>
+        {{ isLoading ? 'Criando...' : 'Criar Meta SMART' }}
+      </button>
+    </div>
+
+  </form>
+</div>

@@ -18,6 +18,10 @@ export class ProntuarioService {
     return this.http.post<any>(this.apiUrl, dados, { headers: this.getHeaders() });
   }
 
+  atualizarAvaliacao(id: string, dados: any): Observable<any> {
+    return this.http.patch<any>(`${this.apiUrl}/${id}/avaliacao`, dados, { headers: this.getHeaders() });
+  }
+
   listarMeusProntuarios(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/meus`, { headers: this.getHeaders() });
   }
@@ -29,5 +33,4 @@ export class ProntuarioService {
   buscarPorPaciente(pacienteId: string): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/paciente/${pacienteId}`, { headers: this.getHeaders() });
   }
-
 }

@@ -59,6 +59,14 @@ export const routes: Routes = [
         path: 'prontuarios/evoluir/:id',
         loadComponent: () => import('./features/prontuarios/insercao-evolucao/insercao-evolucao').then(m => m.InsercaoEvolucaoComponent)
       },
+      {
+        path: 'prontuarios/avaliacao/:id',
+        loadComponent: () => import('./features/prontuarios/avaliacao-funcional/avaliacao-funcional').then(m => m.AvaliacaoFuncionalComponent)
+      },  
+      {
+        path: 'prontuarios/meta/:id',
+        loadComponent: () => import('./features/prontuarios/insercao-meta-smart/insercao-meta-smart').then(m => m.InsercaoMetaSmartComponent)
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   },

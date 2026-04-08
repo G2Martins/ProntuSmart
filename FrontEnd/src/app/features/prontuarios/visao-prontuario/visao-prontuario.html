@@ -35,6 +35,27 @@
         <iconify-icon icon="ph:file-plus-bold" class="text-lg"></iconify-icon>
         Nova Evolução
       </button>
+
+      <!-- Botões de ação — substituir o bloco de cabeçalho direito -->
+      <div class="flex flex-col sm:flex-row gap-2">
+        <button *ngIf="perfil === 'Estagiario' || perfil === 'Docente'"
+          (click)="router.navigate(['/prontuarios/avaliacao', prontuario._id])"
+          class="border border-blue-300 text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold transition-colors">
+          <iconify-icon icon="ph:clipboard-text-bold" class="text-base"></iconify-icon>
+          Avaliação Funcional
+        </button>
+        <button *ngIf="perfil === 'Estagiario'"
+          (click)="router.navigate(['/prontuarios/meta', prontuario._id])"
+          class="border border-purple-300 text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold transition-colors">
+          <iconify-icon icon="ph:target-bold" class="text-base"></iconify-icon>
+          Nova Meta SMART
+        </button>
+        <button *ngIf="perfil === 'Estagiario'" (click)="irParaNovaEvolucao()"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold shadow transition-colors">
+          <iconify-icon icon="ph:file-plus-bold" class="text-base"></iconify-icon>
+          Nova Evolução
+        </button>
+      </div>  
     </div>
 
     <!-- Cards de Informação -->
