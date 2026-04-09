@@ -8,7 +8,7 @@ import { AuthService } from './auth.service';
 export class EvolucaoService {
   private http        = inject(HttpClient);
   private authService = inject(AuthService);
-  private apiUrl      = `${environment.apiUrl}/evolucoes/`;
+  private apiUrl      = `${environment.apiUrl}/evolucoes`;
 
   private getHeaders() {
     return new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`);
@@ -22,7 +22,7 @@ export class EvolucaoService {
   }
 
   registrar(dados: any): Observable<any> {
-    return this.http.post<any>(this.apiUrl, dados, { headers: this.getHeaders() });
+    return this.http.post<any>(`${this.apiUrl}/`, dados, { headers: this.getHeaders() });
   }
 
   contarPendentesPorDocente(): Observable<{ count: number }> {
@@ -39,7 +39,6 @@ export class EvolucaoService {
     );
   }
 
-  // ← método que estava faltando
   revisar(evolucaoId: string, acao: 'aprovar' | 'devolver', feedback?: string): Observable<any> {
     return this.http.patch<any>(
       `${this.apiUrl}/${evolucaoId}/revisar`,

@@ -142,14 +142,21 @@ export class InsercaoEvolucaoComponent implements OnInit {
 
     const metaSelecionada = this.metasAtivas.find(m => m._id === this.metaSelecionadaId);
 
-    // ✅ Filtra somente as medições efetivamente preenchidas.
-    // Campos deixados em branco pelo estagiário são ignorados — evita 422 no backend.
+    // ✅ Filtra somente as medições efetivamente preenchidas e converte valor para string.
+    // Input type="number" faz Angular armazenar o valor como número JS; Pydantic str rejeita número JSON → 422.
     const medicoesPreenchidas = (this.evolucaoForm.value.medicoes as any[])
       .filter(m =>
         m.valor_registrado !== null &&
         m.valor_registrado !== undefined &&
         String(m.valor_registrado).trim() !== ''
-      );
+      )
+      .map(m => ({ ...m, valor_registrado: String(m.valor_registrado) }));
+
+    // ✅ valorAtualMeta também vem de type="number" — converter para string.
+    const valorAtualStr = (this.valorAtualMeta !== null &&
+                           this.valorAtualMeta !== undefined &&
+                           this.valorAtualMeta !== '')
+      ? String(this.valorAtualMeta) : undefined;
 
     const dadosParaSalvar: any = {
       prontuario_id:        this.idProntuario,
@@ -157,7 +164,7 @@ export class InsercaoEvolucaoComponent implements OnInit {
       medicoes:             medicoesPreenchidas,
       meta_id_reavaliada:   this.metaSelecionadaId     || undefined,
       indicador_reavaliado: metaSelecionada?.especifico || undefined,
-      valor_atual:          this.valorAtualMeta         || undefined,
+      valor_atual:          valorAtualStr,
       houve_progresso:      this.houveProgresso         || undefined,
       condicao_meta:        this.condicaoMeta           || undefined,
       motivo_ajuste:        this.motivoAjuste           || undefined,
