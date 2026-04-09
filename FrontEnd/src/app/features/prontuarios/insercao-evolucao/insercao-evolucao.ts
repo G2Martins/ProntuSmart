@@ -2,7 +2,7 @@ import { Component, inject, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ProntuarioService } from '../../../core/services/prontuario.service';
 import { IndicadorService } from '../../../core/services/indicador.service';
 import { EvolucaoService } from '../../../core/services/evolucao.service';
@@ -17,21 +17,20 @@ import { MetaSmartService } from '../../../core/services/meta-smart.service';
 })
 export class InsercaoEvolucaoComponent implements OnInit {
   private fb                = inject(FormBuilder);
-  private route             = inject(ActivatedRoute);
-  private router            = inject(Router);
+  protected route           = inject(ActivatedRoute);
+  protected router          = inject(Router);
   private prontuarioService = inject(ProntuarioService);
   private indicadorService  = inject(IndicadorService);
   private evolucaoService   = inject(EvolucaoService);
   private metaService       = inject(MetaSmartService);
 
-  idProntuario  = '';
-  areaProntuario = '';
-  isLoading      = false;
+  idProntuario         = '';
+  areaProntuario       = '';
+  isLoading            = false;
+  isLoadingIndicadores = true;
 
-  // Metas ativas para reavaliação
   metasAtivas: any[] = [];
 
-  // Campos de reavaliação (ngModel simples, fora do FormGroup)
   metaSelecionadaId = '';
   valorAtualMeta    = '';
   houveProgresso    = '';
@@ -54,12 +53,19 @@ export class InsercaoEvolucaoComponent implements OnInit {
           this.areaProntuario = prontuario.area_atendimento;
           this.carregarIndicadoresReais();
           this.carregarMetasAtivas();
+        },
+        error: () => {
+          this.isLoadingIndicadores = false;
+          this.areaProntuario = 'Erro ao carregar área';
         }
       });
+    } else {
+      this.isLoadingIndicadores = false;
     }
   }
 
   carregarIndicadoresReais() {
+    this.isLoadingIndicadores = true;
     this.indicadorService.buscarPorArea(this.areaProntuario).subscribe({
       next: (indicadores: any[]) => {
         indicadores.forEach((ind: any) => {
@@ -70,6 +76,10 @@ export class InsercaoEvolucaoComponent implements OnInit {
             valor_registrado: ['', Validators.required]
           }));
         });
+        this.isLoadingIndicadores = false;
+      },
+      error: () => {
+        this.isLoadingIndicadores = false;
       }
     });
   }
@@ -95,15 +105,14 @@ export class InsercaoEvolucaoComponent implements OnInit {
     const metaSelecionada = this.metasAtivas.find(m => m._id === this.metaSelecionadaId);
 
     const dadosParaSalvar: any = {
-      prontuario_id: this.idProntuario,
+      prontuario_id:        this.idProntuario,
       ...this.evolucaoForm.value,
-      // Reavaliação de meta
-      meta_id_reavaliada:   this.metaSelecionadaId   || undefined,
+      meta_id_reavaliada:   this.metaSelecionadaId    || undefined,
       indicador_reavaliado: metaSelecionada?.especifico || undefined,
-      valor_atual:          this.valorAtualMeta       || undefined,
-      houve_progresso:      this.houveProgresso       || undefined,
-      condicao_meta:        this.condicaoMeta         || undefined,
-      motivo_ajuste:        this.motivoAjuste         || undefined,
+      valor_atual:          this.valorAtualMeta        || undefined,
+      houve_progresso:      this.houveProgresso        || undefined,
+      condicao_meta:        this.condicaoMeta          || undefined,
+      motivo_ajuste:        this.motivoAjuste          || undefined,
       proxima_revisao:      this.proximaRevisao
         ? new Date(this.proximaRevisao).toISOString() : undefined,
     };
