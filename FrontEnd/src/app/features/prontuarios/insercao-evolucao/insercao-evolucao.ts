@@ -28,6 +28,7 @@ export class InsercaoEvolucaoComponent implements OnInit {
   areaProntuario       = '';
   isLoading            = false;
   isLoadingIndicadores = true;
+  temEvolucaoDevolvida = false; // ← novo
 
   metasAtivas: any[] = [];
 
@@ -50,9 +51,19 @@ export class InsercaoEvolucaoComponent implements OnInit {
     if (this.idProntuario) {
       this.prontuarioService.buscarPorId(this.idProntuario).subscribe({
         next: (prontuario: any) => {
-          this.areaProntuario = prontuario.area_atendimento;
-          this.carregarIndicadoresReais();
-          this.carregarMetasAtivas();
+          this.areaProntuario = prontuario.area_atendimento
+            || prontuario.area
+            || '';
+
+          if (this.areaProntuario) {
+            this.carregarIndicadoresReais();
+            this.carregarMetasAtivas();
+            this.verificarEvolucaoDevolvida(); // ← novo
+          } else {
+            this.areaProntuario = 'Área Indefinida';
+            this.carregarIndicadoresReais();
+            this.isLoadingIndicadores = false;
+          }
         },
         error: () => {
           this.isLoadingIndicadores = false;
@@ -90,6 +101,17 @@ export class InsercaoEvolucaoComponent implements OnInit {
         this.metasAtivas = metas.filter(m =>
           ['Não iniciada', 'Em andamento', 'Parcialmente atingida'].includes(m.status)
         );
+      }
+    });
+  }
+
+  // ← novo: detecta se a última evolução foi devolvida
+  verificarEvolucaoDevolvida() {
+    this.evolucaoService.listarPorProntuario(this.idProntuario).subscribe({
+      next: (evs: any[]) => {
+        // Evoluções vêm ordenadas por -criado_em (mais recente primeiro)
+        this.temEvolucaoDevolvida = evs.length > 0 &&
+          evs[0].status === 'Ajustes Solicitados';
       }
     });
   }

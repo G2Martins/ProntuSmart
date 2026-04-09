@@ -90,10 +90,15 @@ async def buscar_prontuario_por_paciente(paciente_id: str, db = Depends(get_data
     prontuario["_id"] = str(prontuario["_id"])
     return prontuario
 
-@router.get("/{id}", response_model=ProntuarioResponse)
-async def buscar_prontuario(id: str, db = Depends(get_database)):
-    prontuario = await db.fato_prontuario.find_one({"_id": ObjectId(id)})
-    if not prontuario:
+@router.get("/{prontuario_id}")
+async def buscar_prontuario(
+    prontuario_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    db = get_database()
+    from bson import ObjectId
+    pront = await db.fato_prontuario.find_one({"_id": ObjectId(prontuario_id)})
+    if not pront:
         raise HTTPException(status_code=404, detail="Prontuário não encontrado.")
-    prontuario["_id"] = str(prontuario["_id"])
-    return prontuario
+    pront["_id"] = str(pront["_id"])
+    return pront

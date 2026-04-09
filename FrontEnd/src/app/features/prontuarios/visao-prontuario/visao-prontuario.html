@@ -102,7 +102,6 @@
         </div>
         <div class="border-t border-gray-100 pt-3">
           <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Problema Prioritário</p>
-          <!-- ✅ Corrigido: usa campo do novo modelo -->
           <p *ngIf="prontuario.problema_funcional_prioritario" class="text-xs text-gray-600 mt-1 line-clamp-2">
             {{ prontuario.problema_funcional_prioritario }}
           </p>
@@ -266,6 +265,7 @@
                 </div>
 
                 <!-- Feedback docente -->
+                 <!-- Feedback docente -->
                 <div *ngIf="ev.feedback_docente"
                   class="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
                   <iconify-icon icon="ph:chat-circle-text-bold" class="text-amber-500 text-lg flex-shrink-0 mt-0.5"></iconify-icon>
@@ -273,6 +273,27 @@
                     <p class="text-xs font-bold text-amber-700 mb-1">Anotação do Docente Supervisor</p>
                     <p class="text-sm text-amber-800">{{ ev.feedback_docente }}</p>
                   </div>
+                </div>
+
+                <!-- ← NOVO: Banner de ação para estagiário quando evolução foi devolvida -->
+                <div *ngIf="ev.status === 'Ajustes Solicitados' && perfil === 'Estagiario'"
+                  class="mt-3 bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start justify-between gap-4">
+                  <div class="flex items-start gap-2">
+                    <iconify-icon icon="ph:arrow-bend-up-right-bold" class="text-blue-500 text-lg flex-shrink-0 mt-0.5"></iconify-icon>
+                    <div>
+                      <p class="text-sm font-bold text-blue-700 mb-0.5">O que fazer agora?</p>
+                      <p class="text-xs text-blue-600 leading-relaxed">
+                        Leia o feedback acima, corrija os pontos indicados e registre
+                        uma <strong>nova evolução</strong>. A evolução anterior permanece
+                        no histórico para auditoria clínica.
+                      </p>
+                    </div>
+                  </div>
+                  <button (click)="irParaNovaEvolucao()"
+                    class="flex-shrink-0 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition-colors whitespace-nowrap">
+                    <iconify-icon icon="ph:file-plus-bold"></iconify-icon>
+                    Nova Evolução
+                  </button>
                 </div>
               </div>
             </div>

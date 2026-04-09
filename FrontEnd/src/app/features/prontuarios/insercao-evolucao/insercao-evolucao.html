@@ -15,6 +15,20 @@
     </button>
   </div>
 
+  <!-- ── Banner: Evolução Corretiva ────────────────────────── -->
+  <div *ngIf="temEvolucaoDevolvida"
+    class="bg-amber-50 border border-amber-300 rounded-xl p-4 flex items-start gap-3">
+    <iconify-icon icon="ph:warning-circle-bold" class="text-amber-500 text-2xl flex-shrink-0 mt-0.5"></iconify-icon>
+    <div>
+      <p class="text-sm font-bold text-amber-700">Evolução Corretiva</p>
+      <p class="text-xs text-amber-600 mt-0.5">
+        Sua última evolução recebeu ajustes solicitados pelo docente supervisor.
+        Registre esta nova evolução endereçando todos os pontos do feedback.
+        A evolução anterior permanece no histórico para auditoria.
+      </p>
+    </div>
+  </div>
+
   <form [formGroup]="evolucaoForm" (ngSubmit)="onSubmit()"
     class="bg-white shadow rounded-lg border border-gray-100 overflow-hidden">
 
@@ -83,7 +97,6 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-        <!-- Seleção da meta -->
         <div class="md:col-span-2">
           <label class="block text-sm font-semibold text-gray-700 mb-2">Meta sendo reavaliada</label>
           <select [(ngModel)]="metaSelecionadaId" [ngModelOptions]="{standalone: true}"
@@ -95,7 +108,6 @@
           </select>
         </div>
 
-        <!-- Campos só aparecem quando uma meta está selecionada -->
         <ng-container *ngIf="metaSelecionadaId">
 
           <div>
@@ -155,5 +167,16 @@
     <!-- ── 4. Footer / Submit ────────────────────────────── -->
     <div class="p-6 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-4">
       <p class="text-xs text-gray-400 flex items-center gap-1">
-        <iconify-icon icon="ph:info-bold" class="text-gray-400"></iconify-icon>
-        Dica: Preencha o relatório clínico e os indicadores para registrar uma evolução completa.
+        <iconify-icon icon="ph:info-bold" class="text-blue-400"></iconify-icon>
+        A evolução ficará com status <strong>Pendente de Revisão</strong> até aprovação do docente.
+      </p>
+      <button type="submit" [disabled]="isLoading"
+        class="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg shadow font-bold flex items-center gap-2 transition-colors">
+        <iconify-icon *ngIf="isLoading" icon="ph:spinner-gap-bold" class="animate-spin text-lg"></iconify-icon>
+        <iconify-icon *ngIf="!isLoading" icon="ph:paper-plane-tilt-bold" class="text-lg"></iconify-icon>
+        {{ isLoading ? 'Salvando...' : 'Salvar e Enviar para Revisão' }}
+      </button>
+    </div>
+
+  </form>
+</div>
