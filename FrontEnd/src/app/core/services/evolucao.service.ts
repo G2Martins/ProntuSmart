@@ -8,7 +8,7 @@ import { AuthService } from './auth.service';
 export class EvolucaoService {
   private http        = inject(HttpClient);
   private authService = inject(AuthService);
-  private apiUrl      = `${environment.apiUrl}/evolucoes`;
+  private apiUrl      = `${environment.apiUrl}/evolucoes/`;
 
   private getHeaders() {
     return new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`);

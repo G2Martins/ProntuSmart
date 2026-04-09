@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, inject, OnInit, CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
@@ -23,12 +23,13 @@ export class InsercaoEvolucaoComponent implements OnInit {
   private indicadorService  = inject(IndicadorService);
   private evolucaoService   = inject(EvolucaoService);
   private metaService       = inject(MetaSmartService);
+  private cdr               = inject(ChangeDetectorRef);
 
   idProntuario         = '';
   areaProntuario       = '';
   isLoading            = false;
   isLoadingIndicadores = true;
-  temEvolucaoDevolvida = false; // ← novo
+  temEvolucaoDevolvida = false;
 
   metasAtivas: any[] = [];
 
@@ -48,49 +49,61 @@ export class InsercaoEvolucaoComponent implements OnInit {
 
   ngOnInit() {
     this.idProntuario = this.route.snapshot.paramMap.get('id') || '';
-    if (this.idProntuario) {
-      this.prontuarioService.buscarPorId(this.idProntuario).subscribe({
-        next: (prontuario: any) => {
-          this.areaProntuario = prontuario.area_atendimento
-            || prontuario.area
-            || '';
-
-          if (this.areaProntuario) {
-            this.carregarIndicadoresReais();
-            this.carregarMetasAtivas();
-            this.verificarEvolucaoDevolvida(); // ← novo
-          } else {
-            this.areaProntuario = 'Área Indefinida';
-            this.carregarIndicadoresReais();
-            this.isLoadingIndicadores = false;
-          }
-        },
-        error: () => {
-          this.isLoadingIndicadores = false;
-          this.areaProntuario = 'Erro ao carregar área';
-        }
-      });
-    } else {
+    if (!this.idProntuario) {
       this.isLoadingIndicadores = false;
+      this.cdr.detectChanges();
+      return;
     }
+
+    this.prontuarioService.buscarPorId(this.idProntuario).subscribe({
+      next: (prontuario: any) => {
+        this.areaProntuario = prontuario.area_atendimento || prontuario.area || '';
+        this.cdr.detectChanges();
+
+        if (this.areaProntuario) {
+          this.carregarIndicadoresReais();
+          this.carregarMetasAtivas();
+          this.verificarEvolucaoDevolvida();
+        } else {
+          this.areaProntuario       = 'Área Indefinida';
+          this.isLoadingIndicadores = false;
+          this.cdr.detectChanges();
+        }
+      },
+      error: () => {
+        this.isLoadingIndicadores = false;
+        this.areaProntuario       = 'Erro ao carregar área';
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   carregarIndicadoresReais() {
     this.isLoadingIndicadores = true;
     this.indicadorService.buscarPorArea(this.areaProntuario).subscribe({
       next: (indicadores: any[]) => {
+        while (this.medicoesArray.length) {
+          this.medicoesArray.removeAt(0);
+        }
+
         indicadores.forEach((ind: any) => {
           this.medicoesArray.push(this.fb.group({
             indicador_id:     [ind._id],
             nome_indicador:   [ind.nome],
             unidade:          [ind.unidade_medida],
-            valor_registrado: ['', Validators.required]
+            // ✅ SEM Validators.required — indicadores são OPCIONAIS por sessão.
+            // O estagiário preenche apenas os que mensurou. Os vazios são
+            // filtrados no onSubmit() antes de enviar ao backend.
+            valor_registrado: ['']
           }));
         });
+
         this.isLoadingIndicadores = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.isLoadingIndicadores = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -101,18 +114,20 @@ export class InsercaoEvolucaoComponent implements OnInit {
         this.metasAtivas = metas.filter(m =>
           ['Não iniciada', 'Em andamento', 'Parcialmente atingida'].includes(m.status)
         );
-      }
+        this.cdr.detectChanges();
+      },
+      error: () => { this.cdr.detectChanges(); }
     });
   }
 
-  // ← novo: detecta se a última evolução foi devolvida
   verificarEvolucaoDevolvida() {
     this.evolucaoService.listarPorProntuario(this.idProntuario).subscribe({
       next: (evs: any[]) => {
-        // Evoluções vêm ordenadas por -criado_em (mais recente primeiro)
         this.temEvolucaoDevolvida = evs.length > 0 &&
           evs[0].status === 'Ajustes Solicitados';
-      }
+        this.cdr.detectChanges();
+      },
+      error: () => { this.cdr.detectChanges(); }
     });
   }
 
@@ -123,18 +138,29 @@ export class InsercaoEvolucaoComponent implements OnInit {
     }
 
     this.isLoading = true;
+    this.cdr.detectChanges();
 
     const metaSelecionada = this.metasAtivas.find(m => m._id === this.metaSelecionadaId);
 
+    // ✅ Filtra somente as medições efetivamente preenchidas.
+    // Campos deixados em branco pelo estagiário são ignorados — evita 422 no backend.
+    const medicoesPreenchidas = (this.evolucaoForm.value.medicoes as any[])
+      .filter(m =>
+        m.valor_registrado !== null &&
+        m.valor_registrado !== undefined &&
+        String(m.valor_registrado).trim() !== ''
+      );
+
     const dadosParaSalvar: any = {
       prontuario_id:        this.idProntuario,
-      ...this.evolucaoForm.value,
-      meta_id_reavaliada:   this.metaSelecionadaId    || undefined,
+      texto_clinico:        this.evolucaoForm.value.texto_clinico,
+      medicoes:             medicoesPreenchidas,
+      meta_id_reavaliada:   this.metaSelecionadaId     || undefined,
       indicador_reavaliado: metaSelecionada?.especifico || undefined,
-      valor_atual:          this.valorAtualMeta        || undefined,
-      houve_progresso:      this.houveProgresso        || undefined,
-      condicao_meta:        this.condicaoMeta          || undefined,
-      motivo_ajuste:        this.motivoAjuste          || undefined,
+      valor_atual:          this.valorAtualMeta         || undefined,
+      houve_progresso:      this.houveProgresso         || undefined,
+      condicao_meta:        this.condicaoMeta           || undefined,
+      motivo_ajuste:        this.motivoAjuste           || undefined,
       proxima_revisao:      this.proximaRevisao
         ? new Date(this.proximaRevisao).toISOString() : undefined,
     };
@@ -142,10 +168,12 @@ export class InsercaoEvolucaoComponent implements OnInit {
     this.evolucaoService.registrar(dadosParaSalvar).subscribe({
       next: () => {
         this.isLoading = false;
+        this.cdr.detectChanges();
         this.router.navigate(['/prontuarios/visao', this.idProntuario]);
       },
       error: () => {
         this.isLoading = false;
+        this.cdr.detectChanges();
         alert('Erro ao salvar evolução. Verifique os dados e tente novamente.');
       }
     });
