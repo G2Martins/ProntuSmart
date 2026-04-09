@@ -65,7 +65,11 @@ export const routes: Routes = [
       },
       {
         path: 'prontuarios/revisao',
-        loadComponent: () => import('./features/prontuarios/revisao-evolucoes/revisao-evolucoes').then(m => m.RevisaoEvolucoesComponent),canActivate: [authGuard]
+        loadComponent: () => import('./features/prontuarios/revisao-evolucoes/revisao-evolucoes').then(m => m.RevisaoEvolucoesComponent), canActivate: [authGuard]
+      },
+      {
+        path: 'dashboard/epidemiologia',
+        loadComponent: () => import('./features/dashboard/inteligencia-epidemiologica/inteligencia-epidemiologica').then(m => m.InteligenciaEpidemiologicaComponent)
       },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
