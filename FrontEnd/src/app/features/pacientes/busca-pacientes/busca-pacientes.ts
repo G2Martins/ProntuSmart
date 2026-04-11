@@ -1,197 +1,117 @@
 import { Component, inject, OnInit, CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
-import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { Subject, debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs';
-import { PacienteService } from '../../../core/services/paciente.service';
-import { AuthService } from '../../../core/services/auth.service';
+import { FormsModule } from '@angular/forms';
 import { ProntuarioService } from '../../../core/services/prontuario.service';
-import { AdminService } from '../../../core/services/admin.service';
-import { CidService } from '../../../core/services/cid.service';
-import { HttpParams } from '@angular/common/http';
+import { AuthService }       from '../../../core/services/auth.service';
+
+interface AreaGrupo {
+  nome:       string;
+  prontuarios: any[];
+  aberto:     boolean;
+}
 
 @Component({
   selector: 'app-busca-pacientes',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './busca-pacientes.html'
 })
 export class BuscaPacientesComponent implements OnInit {
-  private pacienteService = inject(PacienteService);
-  private authService = inject(AuthService);
   private prontuarioService = inject(ProntuarioService);
-  private adminService = inject(AdminService);
-  private cidService = inject(CidService);
-  private cdr = inject(ChangeDetectorRef);
-  private router = inject(Router);
-  private fb = inject(FormBuilder);
+  private authService       = inject(AuthService);
+  private cdr               = inject(ChangeDetectorRef);
+  private router            = inject(Router);
 
-  pacientes: any[] = [];
-  termoBusca: string = '';
-  isLoading = true;
+  perfil       = this.authService.getUserProfile();
+  isLoading    = true;
   errorMessage = '';
-  perfil: string | null = '';
+  termoBusca   = '';
 
-  // Modal de Triagem
-  mostrarModalTriagem = false;
-  pacienteSelecionado: any = null;
-  estagiariosDisponiveis: any[] = [];
-
-  // CID com busca reativa
-  termoBuscaCid: string = '';
-  cidsFiltrados: any[] = [];
-  cidSelecionado: any = null;
-  buscandoCids = false;
-  private cidSearch$ = new Subject<string>();
-
-  areasDisponiveis = [
-    "Saúde do Homem e da Mulher", "Geriatria", "Neurologia Adulto",
-    "Neuropediatria", "Traumato-Ortopedia", "Cardiorrespiratória"
-  ];
-
-  triagemForm = this.fb.group({
-    estagiario_id: ['', Validators.required],
-    area_atendimento: ['', Validators.required],
-    cid_id: ['', Validators.required]
-  });
+  areasGrupos: AreaGrupo[] = [];
 
   ngOnInit() {
-    this.perfil = this.authService.getUserProfile();
-    this.carregarPacientes();
-
-    if (this.perfil === 'Docente' || this.perfil === 'Administrador') {
-      this.carregarEstagiarios();
-    }
-
-    // Busca reativa de CIDs com debounce de 300ms
-    this.cidSearch$.pipe(
-      debounceTime(300),
-      distinctUntilChanged(),
-      switchMap(termo => {
-        if (!termo || termo.length < 2) {
-          return of([]);
-        }
-        this.buscandoCids = true;
-        return this.cidService.buscar(termo, 50);
-      })
-    ).subscribe({
-      next: (cids) => {
-        this.cidsFiltrados = cids;
-        this.buscandoCids = false;
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.buscandoCids = false;
-        this.cdr.detectChanges();
-      }
-    });
+    this.carregarBase();
   }
 
-  carregarEstagiarios() {
-    this.adminService.listarEstagiarios().subscribe({
-      next: (res) => {
-        this.estagiariosDisponiveis = res;
-        this.cdr.detectChanges();
-      },
-      error: (err) => console.error("Erro ao carregar estagiários:", err)
-    });
-  }
-
-  onBuscaCidChange(termo: string) {
-    this.termoBuscaCid = termo;
-    this.cidSelecionado = null;
-    this.triagemForm.patchValue({ cid_id: '' });
-    this.cidSearch$.next(termo);
-  }
-
-  selecionarCidDaLista(cid: any) {
-    this.cidSelecionado = cid;
-    this.termoBuscaCid = `[${cid.codigo}] ${cid.descricao}`;
-    this.cidsFiltrados = [];
-    this.triagemForm.patchValue({ cid_id: cid._id });
-    this.cdr.detectChanges();
-  }
-
-  carregarPacientes() {
+  carregarBase() {
     this.isLoading = true;
-    this.pacienteService.listar().subscribe({
-      next: (dados) => {
-        this.pacientes = dados;
+    this.prontuarioService.listarMeusProntuarios().subscribe({
+      next: (prontuarios) => {
+        this.construirGrupos(prontuarios);
         this.isLoading = false;
         this.cdr.detectChanges();
       },
       error: () => {
-        this.errorMessage = 'Erro ao carregar base de pacientes.';
-        this.isLoading = false;
+        this.errorMessage = 'Erro ao carregar base clínica.';
+        this.isLoading    = false;
         this.cdr.detectChanges();
       }
     });
   }
 
-  get pacientesFiltrados() {
-    if (!this.termoBusca) return this.pacientes;
-    const termo = this.termoBusca.toLowerCase();
-    return this.pacientes.filter(p =>
-      p.nome_completo.toLowerCase().includes(termo) ||
-      p.cpf.includes(termo) ||
-      p.area_atendimento_atual.toLowerCase().includes(termo)
-    );
-  }
-
-  abrirTriagem(paciente: any) {
-    this.pacienteSelecionado = paciente;
-    this.mostrarModalTriagem = true;
-    this.triagemForm.reset({ area_atendimento: paciente.area_atendimento_atual });
-    this.termoBuscaCid = '';
-    this.cidsFiltrados = [];
-    this.cidSelecionado = null;
-  }
-
-  fecharTriagem() {
-    this.mostrarModalTriagem = false;
-    this.pacienteSelecionado = null;
-  }
-
-  selecionarEstagiario(event: any) {
-    const nomeSelecionado = event.target.value;
-    const estagiario = this.estagiariosDisponiveis.find(e => e.nome_completo === nomeSelecionado);
-    this.triagemForm.patchValue({ estagiario_id: estagiario?._id || '' });
-  }
-
-  salvarTriagem() {
-  if (this.triagemForm.invalid) {
-    this.triagemForm.markAllAsTouched();
-    return;
-  }
-
-  const dadosProntuario = {
-    paciente_id: this.pacienteSelecionado._id,
-    estagiario_id: this.triagemForm.value.estagiario_id,
-    area_atendimento: this.triagemForm.value.area_atendimento,
-    cid_id: this.triagemForm.value.cid_id
-  };
-
-  this.prontuarioService.criarTriagem(dadosProntuario).subscribe({
-    next: (prontuario) => {
-      this.fecharTriagem();          // fecha primeiro
-      this.cdr.detectChanges();      // força re-render
-      alert(`✅ Triagem concluída! Prontuário ${prontuario.numero_prontuario} criado com sucesso.`);
-    },
-    error: (err) => {
-      alert(err.error?.detail || 'Erro ao realizar a triagem. Verifique os dados.');
+  construirGrupos(prontuarios: any[]) {
+    const mapa = new Map<string, any[]>();
+    for (const p of prontuarios) {
+      const area = p.area_atendimento || 'Sem Área';
+      if (!mapa.has(area)) mapa.set(area, []);
+      mapa.get(area)!.push(p);
     }
-  });
-}
+    this.areasGrupos = Array.from(mapa.entries())
+      .sort((a, b) => a[0].localeCompare(b[0], 'pt-BR'))
+      .map(([nome, prnts]) => ({ nome, prontuarios: prnts, aberto: true }));
+  }
 
-  abrirProntuario(paciente: any) {
-    this.prontuarioService.buscarPorPaciente(paciente._id).subscribe({
-      next: (prontuario) => {
-        this.router.navigate(['/prontuarios/visao', prontuario._id]);
-      },
-      error: () => {
-        alert(`O paciente ${paciente.nome_completo} ainda não passou por Triagem.`);
-      }
+  toggleArea(grupo: AreaGrupo) {
+    grupo.aberto = !grupo.aberto;
+  }
+
+  get totalProntuarios(): number {
+    return this.areasGrupos.reduce((s, g) => s + g.prontuarios.length, 0);
+  }
+
+  get gruposFiltrados(): AreaGrupo[] {
+    if (!this.termoBusca.trim()) return this.areasGrupos;
+    const termo = this.termoBusca.toLowerCase();
+    return this.areasGrupos
+      .map(g => ({
+        ...g,
+        prontuarios: g.prontuarios.filter(p =>
+          p.nome_paciente?.toLowerCase().includes(termo)     ||
+          p.nome_estagiario?.toLowerCase().includes(termo)   ||
+          p.numero_prontuario?.toLowerCase().includes(termo)
+        )
+      }))
+      .filter(g => g.prontuarios.length > 0);
+  }
+
+  abrirProntuario(prontuario: any) {
+    this.router.navigate(['/prontuarios/visao', prontuario._id]);
+  }
+
+  formatarData(data: string | null): string {
+    if (!data) return '—';
+    return new Date(data).toLocaleDateString('pt-BR', {
+      day: '2-digit', month: '2-digit', year: 'numeric'
     });
+  }
+
+  getStatusClass(status: string): string {
+    switch (status) {
+      case 'Ativo':        return 'bg-green-100 text-green-700';
+      case 'Alta':         return 'bg-blue-100  text-blue-700';
+      case 'Interrompido': return 'bg-red-100   text-red-700';
+      default:             return 'bg-gray-100  text-gray-600';
+    }
+  }
+
+  getAreaIconClass(nome: string): string {
+    if (nome.includes('Neuro'))     return 'bg-purple-100 text-purple-600';
+    if (nome.includes('Geriatria')) return 'bg-amber-100  text-amber-600';
+    if (nome.includes('Traumato') || nome.includes('Ortoped')) return 'bg-orange-100 text-orange-600';
+    if (nome.includes('Cardio'))    return 'bg-red-100    text-red-600';
+    if (nome.includes('Saúde'))     return 'bg-teal-100   text-teal-600';
+    return                                 'bg-blue-100   text-blue-600';
   }
 }

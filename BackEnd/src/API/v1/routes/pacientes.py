@@ -11,12 +11,13 @@ from src.schemas.paciente import PacienteCreate, PacienteUpdate, PacienteRespons
 
 router = APIRouter()
 
-# SEGURANÇA: Apenas Admins e Docentes podem criar/editar pacientes.
-def verificar_criacao(current_user: dict = Depends(get_current_user)):
+# Criação liberada para todos os perfis autenticados (Estagiário, Docente, Admin).
+# Edição restrita a Docentes e Administradores.
+def verificar_edicao(current_user: dict = Depends(get_current_user)):
     if current_user.get("perfil") not in [TipoPerfil.ADMINISTRADOR, TipoPerfil.DOCENTE]:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, 
-            detail="Acesso negado. Apenas Docentes e Administradores podem cadastrar pacientes."
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso negado. Apenas Docentes e Administradores podem editar fichas de pacientes."
         )
     return current_user
 
@@ -37,8 +38,8 @@ async def buscar_paciente(paciente_id: str, db = Depends(get_database), current_
     paciente["_id"] = str(paciente["_id"])
     return paciente
 
-@router.post("/", response_model=PacienteResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(verificar_criacao)])
-async def criar_paciente(paciente_in: PacienteCreate, db = Depends(get_database)):
+@router.post("/", response_model=PacienteResponse, status_code=status.HTTP_201_CREATED)
+async def criar_paciente(paciente_in: PacienteCreate, db = Depends(get_database), current_user: dict = Depends(get_current_user)):
     # Impede duplicação de CPF
     if await db.dim_paciente.find_one({"cpf": paciente_in.cpf}):
         raise HTTPException(status_code=400, detail="Já existe um paciente cadastrado com este CPF.")
@@ -50,7 +51,7 @@ async def criar_paciente(paciente_in: PacienteCreate, db = Depends(get_database)
     paciente_criado["_id"] = str(paciente_criado["_id"])
     return paciente_criado
 
-@router.patch("/{paciente_id}", response_model=PacienteResponse, dependencies=[Depends(verificar_criacao)])
+@router.patch("/{paciente_id}", response_model=PacienteResponse, dependencies=[Depends(verificar_edicao)])
 async def atualizar_paciente(paciente_id: str, paciente_in: PacienteUpdate, db = Depends(get_database)):
     update_data = paciente_in.model_dump(exclude_unset=True)
     if not update_data:

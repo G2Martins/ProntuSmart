@@ -4,9 +4,8 @@ from datetime import datetime
 from src.models.dim_status import StatusProntuario
 
 class ProntuarioCreate(BaseModel):
-    """Dados mínimos para abrir triagem (Docente)."""
+    """Dados mínimos para abrir triagem (Estagiário). estagiario_id é preenchido pelo servidor."""
     paciente_id:      str
-    estagiario_id:    str
     cid_id:           str
     area_atendimento: str
     # Dados clínicos iniciais opcionais na triagem
@@ -64,8 +63,11 @@ class ProntuarioResponse(BaseModel):
     id:               str = Field(alias="_id")
     paciente_id:      str
     estagiario_id:    str
-    docente_id:       str
+    docente_id:       Optional[str] = None
     cid_id:           str
+    # Campos enriquecidos (populados pelo endpoint /meus)
+    nome_paciente:    Optional[str] = None
+    nome_estagiario:  Optional[str] = None
     area_atendimento: str
     numero_prontuario: str
     status:            StatusProntuario

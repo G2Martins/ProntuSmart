@@ -13,7 +13,7 @@ class FatoProntuario(MongoBaseModel):
     # ── Vínculo e controle ────────────────────────────────────
     paciente_id:        str = Field(..., description="Referência ao DimPaciente")
     estagiario_id:      str = Field(..., description="Estagiário responsável")
-    docente_id:         str = Field(..., description="Docente que realizou a triagem")
+    docente_id:         Optional[str] = Field(default=None, description="Docente responsável (atribuído posteriormente)")
     cid_id:             str = Field(..., description="CID principal")
     area_atendimento:   str = Field(..., description="Área clínica")
     numero_prontuario:  str = Field(..., description="Ex: UCB-2026-00001")

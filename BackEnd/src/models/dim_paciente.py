@@ -4,12 +4,12 @@ from datetime import datetime, timezone
 from enum import Enum
 
 class AreaEspecializada(str, Enum):
-    SAUDE_HOMEM_MULHER = "Saúde do Homem e da Mulher"
-    GERIATRIA = "Geriatria"
-    NEURO_ADULTO = "Neurologia Adulto"
-    NEURO_PEDIATRIA = "Neuropediatria"
-    ORTOPEDIA = "Ortopedia"
-    PEDIATRIA = "Pediatria"
+    SAUDE_HOMEM_MULHER   = "Saúde do Homem e da Mulher"
+    GERIATRIA            = "Geriatria"
+    NEURO_ADULTO         = "Neurologia Adulto"
+    NEURO_PEDIATRIA      = "Neuropediatria"
+    TRAUMATO_ORTOPEDIA   = "Traumato-Ortopedia"
+    CARDIORRESPIRATORIA  = "Cardiorrespiratória"
 
 class SexoBiologico(str, Enum):
     MASCULINO = "Masculino"
