@@ -102,8 +102,8 @@ async def rodar_seed():
         {"nome": "Amplitude de Movimento (ADM)",  "unidade_medida": "graus",         "direcao_melhora": DirecaoMelhora.MAIOR_MELHOR, "descricao": "Amplitude articular em goniometria.",                    "areas_vinculadas": ["Traumato-Ortopedia"],                                   "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
         {"nome": "SpO2 em Repouso",               "unidade_medida": "%",             "direcao_melhora": DirecaoMelhora.MAIOR_MELHOR, "descricao": "Saturação periférica de oxigênio.",                      "areas_vinculadas": ["Cardiorrespiratória"],                                  "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
     ]
-    for ind in indicadores:
-        await db.dim_indicador.insert_one(ind)
+    for indicador in indicadores:
+        await db.dim_indicador.insert_one(indicador)
     print(f"  ✅ {len(indicadores)} Indicadores cadastrados")
 
     # ────────────────────────────────────────────────────────────────────────
@@ -215,17 +215,17 @@ async def rodar_seed():
     # ────────────────────────────────────────────────────────────────────────
     # 6. INDICADORES (busca IDs pelo nome)
     # ────────────────────────────────────────────────────────────────────────
-    async def ind(nome):
+    async def get_ind_id(nome):
         doc = await db.dim_indicador.find_one({"nome": nome})
         assert doc is not None, f"Indicador '{nome}' não encontrado!"
         return doc["_id"]
 
-    ind_distancia = await ind("Distância de Marcha")
-    ind_berg      = await ind("Escala de Berg")
-    ind_tug       = await ind("Time Up and Go (TUG)")
-    ind_adm       = await ind("Amplitude de Movimento (ADM)")
-    ind_forca     = await ind("Força Muscular (Grau 0-5)")
-    ind_spo2      = await ind("SpO2 em Repouso")
+    ind_distancia = await get_ind_id("Distância de Marcha")
+    ind_berg      = await get_ind_id("Escala de Berg")
+    ind_tug       = await get_ind_id("Time Up and Go (TUG)")
+    ind_adm       = await get_ind_id("Amplitude de Movimento (ADM)")
+    ind_forca     = await get_ind_id("Força Muscular (Grau 0-5)")
+    ind_spo2      = await get_ind_id("SpO2 em Repouso")
 
     # ────────────────────────────────────────────────────────────────────────
     # 7. PRONTUÁRIOS
