@@ -14,7 +14,7 @@ import { AdminService } from '../../../core/services/admin.service';
 export class GestaoUsuariosComponent implements OnInit {
   private fb = inject(FormBuilder);
   private adminService = inject(AdminService);
-  private cdr = inject(ChangeDetectorRef); // <-- ADICIONADO PARA FORÇAR ATUALIZAÇÃO VISUAL
+  private cdr = inject(ChangeDetectorRef);
 
   usuarios: any[] = [];
   usuarioEditando: any = null;
@@ -24,19 +24,41 @@ export class GestaoUsuariosComponent implements OnInit {
   errorMessage = '';
   modoFormulario: 'criar' | 'editar' = 'criar';
 
+  areasDisponiveis = [
+    "Saúde do Homem e da Mulher",
+    "Geriatria",
+    "Neurologia Adulto",
+    "Neuropediatria",
+    "Traumato-Ortopedia",
+    "Cardiorrespiratória"
+  ];
+
   usuarioForm = this.fb.group({
-    nome_completo: ['', Validators.required],
-    matricula: ['', Validators.required],
-    email: ['', [Validators.required, Validators.email]],
-    senha: ['', [Validators.required, Validators.minLength(6)]],
-    perfil: ['Estagiario', Validators.required],
-    is_ativo: [true] 
+    nome_completo:    ['', Validators.required],
+    matricula:        ['', Validators.required],
+    email:            ['', [Validators.required, Validators.email]],
+    senha:            ['', [Validators.required, Validators.minLength(6)]],
+    perfil:           ['Estagiario', Validators.required],
+    area_atendimento: ['', Validators.required], // obrigatório por padrão (perfil inicial = Estagiário)
+    is_ativo:         [true]
   });
 
   get f() { return this.usuarioForm.controls; }
 
   ngOnInit() {
     this.carregarUsuarios();
+
+    // Atualiza obrigatoriedade de área conforme o perfil selecionado
+    this.usuarioForm.get('perfil')?.valueChanges.subscribe(perfil => {
+      const areaCtrl = this.usuarioForm.get('area_atendimento');
+      if (perfil === 'Estagiario') {
+        areaCtrl?.setValidators([Validators.required]);
+      } else {
+        areaCtrl?.clearValidators();
+        areaCtrl?.setValue('');
+      }
+      areaCtrl?.updateValueAndValidity();
+    });
   }
 
   carregarUsuarios() {
@@ -59,14 +81,24 @@ export class GestaoUsuariosComponent implements OnInit {
   iniciarEdicao(usuario: any) {
     this.modoFormulario = 'editar';
     this.usuarioEditando = usuario;
-    
+
     this.usuarioForm.patchValue({
-      nome_completo: usuario.nome_completo,
-      matricula: usuario.matricula,
-      email: usuario.email,
-      perfil: usuario.perfil,
-      is_ativo: usuario.is_ativo
+      nome_completo:    usuario.nome_completo,
+      matricula:        usuario.matricula,
+      email:            usuario.email,
+      perfil:           usuario.perfil,
+      area_atendimento: usuario.area_atendimento || '',
+      is_ativo:         usuario.is_ativo
     });
+
+    // Ajusta validação de área para o perfil do usuário carregado
+    const areaCtrl = this.usuarioForm.get('area_atendimento');
+    if (usuario.perfil === 'Estagiario') {
+      areaCtrl?.setValidators([Validators.required]);
+    } else {
+      areaCtrl?.clearValidators();
+    }
+    areaCtrl?.updateValueAndValidity();
 
     this.usuarioForm.get('senha')?.clearValidators();
     this.usuarioForm.get('senha')?.updateValueAndValidity();
@@ -77,12 +109,17 @@ export class GestaoUsuariosComponent implements OnInit {
   cancelarEdicao() {
     this.modoFormulario = 'criar';
     this.usuarioEditando = null;
-    
-    this.usuarioForm.reset({ perfil: 'Estagiario', is_ativo: true });
-    
+
+    this.usuarioForm.reset({ perfil: 'Estagiario', is_ativo: true, area_atendimento: '' });
+
     this.usuarioForm.get('senha')?.setValidators([Validators.required, Validators.minLength(6)]);
     this.usuarioForm.get('senha')?.updateValueAndValidity();
-    
+
+    // Restaura obrigatoriedade de área (perfil padrão = Estagiário)
+    const areaCtrl = this.usuarioForm.get('area_atendimento');
+    areaCtrl?.setValidators([Validators.required]);
+    areaCtrl?.updateValueAndValidity();
+
     this.successMessage = '';
     this.errorMessage = '';
   }
@@ -102,15 +139,16 @@ export class GestaoUsuariosComponent implements OnInit {
     // FLUXO DE CRIAÇÃO (POST)
     if (this.modoFormulario === 'criar') {
       
-      // Montamos o objeto EXATAMENTE como o UsuarioCreate do FastAPI espera.
-      // Retiramos o "is_ativo" daqui, pois o BackEnd já o define como True por padrão.
-      const novoUsuario = { 
-        nome_completo: formValue.nome_completo, 
-        matricula: formValue.matricula, 
-        email: formValue.email, 
-        senha: formValue.senha,
-        perfil: formValue.perfil
+      const novoUsuario: any = {
+        nome_completo: formValue.nome_completo,
+        matricula:     formValue.matricula,
+        email:         formValue.email,
+        senha:         formValue.senha,
+        perfil:        formValue.perfil
       };
+      if (formValue.perfil === 'Estagiario' && formValue.area_atendimento) {
+        novoUsuario.area_atendimento = formValue.area_atendimento;
+      }
       
       this.adminService.criarUsuario(novoUsuario).subscribe({
         next: (resposta) => {
@@ -129,12 +167,12 @@ export class GestaoUsuariosComponent implements OnInit {
     // FLUXO DE EDIÇÃO (PUT)
     } else {
       
-      // Para ATUALIZAR, o nosso schema UsuarioUpdate já aceita o is_ativo, então enviamos!
-      const dadosUpdate = {
-        nome_completo: formValue.nome_completo,
-        email: formValue.email,
-        perfil: formValue.perfil,
-        is_ativo: formValue.is_ativo
+      const dadosUpdate: any = {
+        nome_completo:    formValue.nome_completo,
+        email:            formValue.email,
+        perfil:           formValue.perfil,
+        is_ativo:         formValue.is_ativo,
+        area_atendimento: formValue.perfil === 'Estagiario' ? (formValue.area_atendimento || null) : null
       };
 
       this.adminService.atualizarUsuario(this.usuarioEditando._id, dadosUpdate).subscribe({

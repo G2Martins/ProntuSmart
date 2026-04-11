@@ -6,9 +6,10 @@ import { ProntuarioService } from '../../../core/services/prontuario.service';
 import { AuthService }       from '../../../core/services/auth.service';
 
 interface AreaGrupo {
-  nome:       string;
+  nome:        string;
   prontuarios: any[];
-  aberto:     boolean;
+  estagiarios: string[]; // nomes únicos dos estagiários activos nesta área
+  aberto:      boolean;
 }
 
 @Component({
@@ -60,7 +61,12 @@ export class BuscaPacientesComponent implements OnInit {
     }
     this.areasGrupos = Array.from(mapa.entries())
       .sort((a, b) => a[0].localeCompare(b[0], 'pt-BR'))
-      .map(([nome, prnts]) => ({ nome, prontuarios: prnts, aberto: true }));
+      .map(([nome, prnts]) => ({
+        nome,
+        prontuarios: prnts,
+        estagiarios: [...new Set(prnts.map((p: any) => p.nome_estagiario).filter(Boolean))] as string[],
+        aberto: true
+      }));
   }
 
   toggleArea(grupo: AreaGrupo) {

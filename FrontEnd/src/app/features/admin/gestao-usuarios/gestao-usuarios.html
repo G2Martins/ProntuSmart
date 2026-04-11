@@ -61,6 +61,20 @@
           </select>
         </div>
 
+        <!-- Área de Atendimento — obrigatória para Estagiário -->
+        <div *ngIf="f['perfil'].value === 'Estagiario'" class="lg:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Área de Atendimento <span class="text-red-500">*</span>
+          </label>
+          <select formControlName="area_atendimento"
+            class="w-full rounded-md border border-gray-300 p-2 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <option value="">Selecione a área do estagiário...</option>
+            <option *ngFor="let a of areasDisponiveis" [value]="a">{{ a }}</option>
+          </select>
+          <span *ngIf="f['area_atendimento'].touched && f['area_atendimento'].invalid"
+            class="text-xs text-red-500 mt-1">Área é obrigatória para Estagiários.</span>
+        </div>
+
         <div *ngIf="modoFormulario === 'criar'">
           <label class="block text-sm font-medium text-gray-700 mb-1">Senha Provisória</label>
           <input type="password" formControlName="senha" class="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Mínimo 6 caracteres">
@@ -128,6 +142,11 @@
             <td class="px-6 py-4">
               <div class="font-medium text-gray-800">{{ u.nome_completo }}</div>
               <div class="text-xs text-gray-500 mt-0.5">{{ u.email }}</div>
+              <div *ngIf="u.perfil === 'Estagiario' && u.area_atendimento"
+                class="inline-flex items-center gap-1 text-xs text-purple-600 bg-purple-50 border border-purple-100 rounded-full px-2 py-0.5 mt-1">
+                <iconify-icon icon="ph:stethoscope-bold" class="text-xs shrink-0"></iconify-icon>
+                {{ u.area_atendimento }}
+              </div>
             </td>
             
             <td class="px-6 py-4 font-mono text-gray-600">{{ u.matricula }}</td>

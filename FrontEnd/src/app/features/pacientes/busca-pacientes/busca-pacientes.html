@@ -81,6 +81,14 @@
               <p class="text-xs text-gray-400 mt-0.5">
                 {{ grupo.prontuarios.length }} {{ grupo.prontuarios.length === 1 ? 'prontuário' : 'prontuários' }}
               </p>
+              <!-- Estagiários vinculados à área -->
+              <div *ngIf="grupo.estagiarios.length > 0" class="flex flex-wrap gap-1.5 mt-1.5">
+                <span *ngFor="let est of grupo.estagiarios"
+                  class="inline-flex items-center gap-1 text-xs bg-purple-50 text-purple-700 border border-purple-100 px-2 py-0.5 rounded-full">
+                  <iconify-icon icon="ph:student-bold" class="text-xs shrink-0"></iconify-icon>
+                  {{ est }}
+                </span>
+              </div>
             </div>
           </div>
           <iconify-icon

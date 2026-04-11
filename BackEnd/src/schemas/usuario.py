@@ -8,6 +8,7 @@ class UsuarioBase(BaseModel):
     matricula: str = Field(..., min_length=4, max_length=20)
     email: EmailStr
     perfil: TipoPerfil = TipoPerfil.ESTAGIARIO
+    area_atendimento: Optional[str] = None
     is_ativo: bool = True
 
 class UsuarioCreate(UsuarioBase):
@@ -17,6 +18,7 @@ class UsuarioUpdate(BaseModel):
     nome_completo: Optional[str] = None
     email: Optional[EmailStr] = None
     perfil: Optional[TipoPerfil] = None
+    area_atendimento: Optional[str] = None
     is_ativo: Optional[bool] = None
 
 class UsuarioResponse(BaseModel):
@@ -25,6 +27,7 @@ class UsuarioResponse(BaseModel):
     matricula: str
     email: EmailStr
     perfil: TipoPerfil
+    area_atendimento: Optional[str] = None
     is_ativo: bool
     criado_em: datetime
 

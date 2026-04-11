@@ -91,7 +91,15 @@ async def listar_meus_prontuarios(
     """
     filtro = {}
     if current_user.get("perfil") == TipoPerfil.ESTAGIARIO:
-        filtro["estagiario_id"] = str(current_user["_id"])
+        estagiario_id  = str(current_user["_id"])
+        area_propria   = current_user.get("area_atendimento")
+        if area_propria:
+            filtro = {"$or": [
+                {"estagiario_id":    estagiario_id},
+                {"area_atendimento": area_propria}
+            ]}
+        else:
+            filtro = {"estagiario_id": estagiario_id}
 
     cursor = db.fato_prontuario.find(filtro).sort("criado_em", -1)
     prontuarios = await cursor.to_list(length=500)
