@@ -43,8 +43,9 @@ export class PainelInicialComponent implements OnInit {
     evolucoesPendentesRevisao:   0
   };
 
-  estagiarioStats = { meusPacientes: 0, atendimentosHoje: 0, evolucoesAtrasadas: 0 };
-  proximosAtendimentos: any[] = [];
+  estagiarioStats = { meusPacientes: 0, sessoesRegistradas: 0, pendentesAvaliacao: 0 };
+  filaAvaliacao:       any[] = [];
+  prontuariosRecentes: any[] = [];
 
   ngOnInit() {
     this.perfil = this.authService.getUserProfile();
@@ -54,6 +55,8 @@ export class PainelInicialComponent implements OnInit {
       this.carregarEstatisticasAdmin();
     } else if (this.perfil === 'Docente') {
       this.carregarEstatisticasDocente();
+    } else if (this.perfil === 'Estagiario') {
+      this.carregarEstatisticasEstagiario();
     } else {
       this.isLoadingStats = false;
     }
@@ -109,6 +112,45 @@ export class PainelInicialComponent implements OnInit {
     });
   }
 
+  carregarEstatisticasEstagiario() {
+    this.isLoadingStats = true;
+    this.erroStats = '';
+    this.prontuarioService.listarMeusProntuarios().subscribe({
+      next: (prontuarios: any[]) => {
+        this.estagiarioStats.meusPacientes     = prontuarios.length;
+        this.estagiarioStats.sessoesRegistradas = prontuarios.reduce(
+          (sum, p) => sum + (p.total_sessoes || 0), 0
+        );
+
+        // Pendentes de avaliação = ativos sem avaliação funcional preenchida (sedestacao nula)
+        const pendentes = prontuarios.filter(p => p.status === 'Ativo' && !p.sedestacao);
+        this.estagiarioStats.pendentesAvaliacao = pendentes.length;
+        this.filaAvaliacao = pendentes.slice(0, 5);
+
+        // Prontuários recentes — ordenados por última evolução ou data de criação
+        this.prontuariosRecentes = [...prontuarios]
+          .sort((a, b) => {
+            const ta = a.data_ultima_evolucao
+              ? new Date(a.data_ultima_evolucao).getTime()
+              : new Date(a.criado_em).getTime();
+            const tb = b.data_ultima_evolucao
+              ? new Date(b.data_ultima_evolucao).getTime()
+              : new Date(b.criado_em).getTime();
+            return tb - ta;
+          })
+          .slice(0, 5);
+
+        this.isLoadingStats = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.erroStats      = 'Não foi possível carregar seus dados clínicos.';
+        this.isLoadingStats = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
   definirSaudacao() {
     const hora = new Date().getHours();
     if (hora < 12)      this.saudacao = 'Bom dia';
@@ -120,5 +162,12 @@ export class PainelInicialComponent implements OnInit {
     if (valor === undefined || valor === null) return '0';
     if (valor >= 1000) return (valor / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
     return valor.toString();
+  }
+
+  formatarData(data: string | Date): string {
+    if (!data) return '—';
+    return new Date(data).toLocaleDateString('pt-BR', {
+      day: '2-digit', month: '2-digit', year: 'numeric'
+    });
   }
 }
