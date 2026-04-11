@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 class Token(BaseModel):
     access_token: str
@@ -7,3 +7,7 @@ class Token(BaseModel):
 class TokenPayload(BaseModel):
     sub: str | None = None
     perfil: str | None = None
+
+class TrocarSenhaRequest(BaseModel):
+    senha_temporaria: str
+    nova_senha: str = Field(..., min_length=6)

@@ -1,0 +1,181 @@
+<div class="max-w-5xl mx-auto space-y-6">
+
+  <!-- Cabeçalho -->
+  <div class="flex items-center justify-between">
+    <div>
+      <button (click)="router.navigate(['/dashboard'])"
+        class="flex items-center text-gray-500 hover:text-blue-600 text-sm font-medium mb-2 transition-colors group">
+        <iconify-icon icon="ph:arrow-left-bold" class="mr-1 group-hover:-translate-x-1 transition-transform"></iconify-icon>
+        Voltar ao Painel
+      </button>
+      <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-3">
+        <iconify-icon icon="ph:seal-check-bold" class="text-blue-600 text-3xl"></iconify-icon>
+        Caixa de Revisão
+      </h2>
+      <p class="text-gray-500 text-sm mt-1">Evoluções aguardando sua coassinatura pedagógica</p>
+    </div>
+    <span class="bg-orange-100 text-orange-700 font-bold text-lg px-4 py-2 rounded-full border border-orange-200">
+      {{ evolucoes.length }} pendente{{ evolucoes.length !== 1 ? 's' : '' }}
+    </span>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="py-20 text-center text-gray-400">
+    <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-5xl text-blue-400 mb-3"></iconify-icon>
+    <p>Carregando caixa de revisão...</p>
+  </div>
+
+  <!-- Vazia -->
+  <div *ngIf="!isLoading && evolucoes.length === 0 && !erro"
+    class="bg-white rounded-xl border border-gray-100 shadow-sm py-20 text-center">
+    <iconify-icon icon="ph:check-circle-bold" class="text-6xl text-green-400 mb-4"></iconify-icon>
+    <p class="text-xl font-semibold text-gray-700">Tudo em dia!</p>
+    <p class="text-gray-400 text-sm mt-1">Não há evoluções aguardando revisão.</p>
+  </div>
+
+  <!-- Erro -->
+  <div *ngIf="erro" class="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm">
+    <iconify-icon icon="ph:warning-circle-bold" class="mr-2"></iconify-icon>{{ erro }}
+  </div>
+
+  <!-- Lista de evoluções -->
+  <div *ngIf="!isLoading && evolucoes.length > 0" class="space-y-4">
+    <div *ngFor="let ev of evolucoes"
+      class="bg-white rounded-xl border border-orange-200 shadow-sm overflow-hidden hover:border-blue-300 transition-all">
+
+      <!-- Header do card -->
+      <div class="bg-orange-50 border-b border-orange-100 px-6 py-4 flex items-center justify-between flex-wrap gap-3">
+        <div class="flex items-center gap-3">
+          <iconify-icon icon="ph:clock-countdown-bold" class="text-orange-500 text-xl"></iconify-icon>
+          <div>
+            <p class="font-bold text-gray-800 text-sm">Prontuário: {{ ev.prontuario_id }}</p>
+            <p class="text-xs text-gray-400">
+              Registrado em {{ ev.criado_em | date:'dd/MM/yyyy · HH:mm' }}
+            </p>
+          </div>
+        </div>
+        <span class="text-xs font-bold px-3 py-1 rounded-full"
+          [ngClass]="getStatusClass(ev.status)">
+          {{ ev.status }}
+        </span>
+      </div>
+
+      <!-- Corpo -->
+      <div class="p-6 space-y-4">
+
+        <!-- Texto SOAP -->
+        <div class="bg-gray-50 rounded-lg border border-gray-100 p-4">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+            Relatório Clínico (SOAP)
+          </p>
+          <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{{ ev.texto_clinico }}</p>
+        </div>
+
+        <!-- Indicadores -->
+        <div *ngIf="ev.medicoes && ev.medicoes.length > 0"
+          class="bg-gray-50 rounded-lg border border-gray-100 p-4">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            <iconify-icon icon="ph:chart-line-up-bold" class="mr-1 text-blue-500"></iconify-icon>
+            Indicadores Funcionais
+          </p>
+          <div class="flex flex-wrap gap-2">
+            <span *ngFor="let med of ev.medicoes"
+              class="bg-blue-50 border border-blue-100 text-blue-800 text-xs px-3 py-1.5 rounded-full">
+              <span class="font-semibold">{{ med.nome_indicador }}:</span>
+              {{ med.valor_registrado }} <span class="text-blue-500">{{ med.unidade }}</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Ações -->
+        <div class="flex gap-3 pt-2 justify-end">
+          <button (click)="router.navigate(['/prontuarios/visao', ev.prontuario_id])"
+            class="border border-gray-300 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors">
+            <iconify-icon icon="ph:folder-open-bold"></iconify-icon>
+            Ver Prontuário
+          </button>
+          <button (click)="abrirModal(ev, 'devolver')"
+            class="border border-red-300 text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors">
+            <iconify-icon icon="ph:arrow-u-up-left-bold"></iconify-icon>
+            Devolver
+          </button>
+          <button (click)="abrirModal(ev, 'aprovar')"
+            class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow transition-colors">
+            <iconify-icon icon="ph:seal-check-bold"></iconify-icon>
+            Aprovar e Assinar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de confirmação -->
+  <div *ngIf="modalAberto"
+    class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+    (click)="fecharModal()">
+    <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 space-y-5"
+      (click)="$event.stopPropagation()">
+
+      <!-- Aprovar -->
+      <ng-container *ngIf="acaoAtual === 'aprovar'">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
+            <iconify-icon icon="ph:seal-check-bold" class="text-2xl"></iconify-icon>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-gray-800">Confirmar Aprovação</h3>
+            <p class="text-sm text-gray-500">Esta ação irá coassinar a evolução digitalmente.</p>
+          </div>
+        </div>
+        <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">
+          <iconify-icon icon="ph:info-bold" class="mr-1"></iconify-icon>
+          A evolução ficará com status <strong>"Aprovado e Assinado"</strong> e será registrada com seu ID como docente revisor.
+        </div>
+        <textarea [(ngModel)]="feedbackTexto" rows="3" placeholder="Comentário opcional para o estagiário..."
+          class="w-full rounded-lg border border-gray-300 p-3 text-sm focus:ring-2 focus:ring-green-400 outline-none resize-none">
+        </textarea>
+      </ng-container>
+
+      <!-- Devolver -->
+      <ng-container *ngIf="acaoAtual === 'devolver'">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+            <iconify-icon icon="ph:arrow-u-up-left-bold" class="text-2xl"></iconify-icon>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-gray-800">Devolver para Ajustes</h3>
+            <p class="text-sm text-gray-500">O estagiário verá seu feedback no prontuário.</p>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            Feedback obrigatório <span class="text-red-500">*</span>
+          </label>
+          <textarea [(ngModel)]="feedbackTexto" rows="4"
+            placeholder="Descreva o que precisa ser corrigido ou complementado..."
+            class="w-full rounded-lg border border-gray-300 p-3 text-sm focus:ring-2 focus:ring-red-400 outline-none resize-none">
+          </textarea>
+          <p *ngIf="!feedbackTexto.trim()" class="text-xs text-red-500 mt-1">
+            Informe o motivo da devolução.
+          </p>
+        </div>
+      </ng-container>
+
+      <!-- Botões do modal -->
+      <div class="flex gap-3 justify-end pt-2">
+        <button (click)="fecharModal()"
+          class="border border-gray-300 text-gray-600 hover:bg-gray-50 px-5 py-2 rounded-lg text-sm font-semibold transition-colors">
+          Cancelar
+        </button>
+        <button (click)="confirmarRevisao()"
+          [disabled]="isProcessando || (acaoAtual === 'devolver' && !feedbackTexto.trim())"
+          class="px-6 py-2 rounded-lg text-sm font-bold text-white shadow transition-colors disabled:opacity-50"
+          [ngClass]="acaoAtual === 'aprovar' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'">
+          <iconify-icon *ngIf="isProcessando" icon="ph:spinner-gap-bold" class="animate-spin mr-1"></iconify-icon>
+          {{ acaoAtual === 'aprovar' ? 'Confirmar Assinatura' : 'Devolver com Feedback' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

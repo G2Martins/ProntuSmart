@@ -1,1 +1,182 @@
-<p>insercao-evolucao works!</p>
+<div class="max-w-5xl mx-auto space-y-6">
+
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800">Nova Evolução Clínica</h2>
+      <p class="text-blue-600 font-semibold mt-1 flex items-center gap-2">
+        <iconify-icon icon="ph:heartbeat-bold"></iconify-icon>
+        {{ areaProntuario }}
+      </p>
+    </div>
+    <button (click)="router.navigate(['/prontuarios/visao', idProntuario])"
+      class="flex items-center text-gray-600 hover:text-blue-600 font-medium transition-colors group">
+      <iconify-icon icon="ph:arrow-left-bold" class="mr-2 text-xl group-hover:-translate-x-1 transition-transform"></iconify-icon>
+      Cancelar e Voltar
+    </button>
+  </div>
+
+  <!-- ── Banner: Evolução Corretiva ────────────────────────── -->
+  <div *ngIf="temEvolucaoDevolvida"
+    class="bg-amber-50 border border-amber-300 rounded-xl p-4 flex items-start gap-3">
+    <iconify-icon icon="ph:warning-circle-bold" class="text-amber-500 text-2xl flex-shrink-0 mt-0.5"></iconify-icon>
+    <div>
+      <p class="text-sm font-bold text-amber-700">Evolução Corretiva</p>
+      <p class="text-xs text-amber-600 mt-0.5">
+        Sua última evolução recebeu ajustes solicitados pelo docente supervisor.
+        Registre esta nova evolução endereçando todos os pontos do feedback.
+        A evolução anterior permanece no histórico para auditoria.
+      </p>
+    </div>
+  </div>
+
+  <form [formGroup]="evolucaoForm" (ngSubmit)="onSubmit()"
+    class="bg-white shadow rounded-lg border border-gray-100 overflow-hidden">
+
+    <!-- ── 1. SOAP ────────────────────────────────────────── -->
+    <div class="p-8 border-b border-gray-100">
+      <label class="block text-sm font-bold text-gray-700 uppercase tracking-wider mb-3">
+        Relatório Descritivo (SOAP)
+      </label>
+      <textarea formControlName="texto_clinico" rows="7"
+        class="w-full rounded-md border border-gray-300 p-4 focus:ring-2 focus:ring-blue-500 outline-none resize-y text-sm"
+        placeholder="S - Subjetivo: O que o paciente relata...&#10;O - Objetivo: Dados observados e mensuráveis...&#10;A - Avaliação: Análise clínica...&#10;P - Plano: Conduta para próxima sessão...">
+      </textarea>
+      <p *ngIf="evolucaoForm.get('texto_clinico')?.touched && evolucaoForm.get('texto_clinico')?.invalid"
+        class="text-xs text-red-500 mt-1">Mínimo de 10 caracteres obrigatórios.</p>
+    </div>
+
+    <!-- ── 2. Indicadores Funcionais ─────────────────────── -->
+    <div class="p-8 bg-blue-50/30 border-b border-gray-100">
+      <div class="flex items-center mb-6">
+        <iconify-icon icon="ph:chart-line-up-bold" class="text-2xl text-blue-600 mr-2"></iconify-icon>
+        <h4 class="text-lg font-bold text-gray-800">Indicadores Funcionais</h4>
+        <span class="ml-2 text-sm text-gray-500">({{ areaProntuario }})</span>
+      </div>
+
+      <div *ngIf="isLoadingIndicadores" class="py-8 text-center text-gray-400">
+        <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-3xl text-blue-400 mb-2"></iconify-icon>
+        <p class="text-sm">Carregando indicadores da área...</p>
+      </div>
+
+      <div *ngIf="!isLoadingIndicadores && medicoesArray.length === 0" class="py-8 text-center text-gray-400">
+        <iconify-icon icon="ph:chart-line-bold" class="text-4xl mb-2"></iconify-icon>
+        <p class="text-sm">Nenhum indicador configurado para esta área.</p>
+        <p class="text-xs mt-1">O Administrador pode adicionar indicadores em Configurações.</p>
+      </div>
+
+      <div *ngIf="!isLoadingIndicadores && medicoesArray.length > 0"
+        formArrayName="medicoes"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div *ngFor="let medicaoCtrl of medicoesArray.controls; let i = index"
+          [formGroupName]="i"
+          class="bg-white p-4 rounded-lg border shadow-sm border-l-4 border-l-blue-500">
+          <label class="block text-sm font-semibold text-gray-700 mb-3">
+            {{ medicaoCtrl.value.nome_indicador }}
+          </label>
+          <div class="flex items-center">
+            <input type="number" step="any" formControlName="valor_registrado"
+              class="w-28 rounded-l-md border border-gray-300 p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-center font-bold text-lg"
+              placeholder="0">
+            <span class="bg-gray-100 border border-l-0 border-gray-300 rounded-r-md px-3 py-2.5 text-sm text-gray-600 flex-1 text-center">
+              {{ medicaoCtrl.value.unidade }}
+            </span>
+          </div>
+          <p *ngIf="medicaoCtrl.get('valor_registrado')?.touched && medicaoCtrl.get('valor_registrado')?.invalid"
+            class="text-xs text-red-500 mt-1">Valor obrigatório.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 3. Reavaliação de Meta SMART ──────────────────── -->
+    <div *ngIf="metasAtivas.length > 0" class="p-8 bg-purple-50/30 border-b border-gray-100">
+      <div class="flex items-center mb-5">
+        <iconify-icon icon="ph:target-bold" class="text-2xl text-purple-600 mr-2"></iconify-icon>
+        <h4 class="text-lg font-bold text-gray-800">Reavaliação de Meta SMART</h4>
+        <span class="ml-3 text-xs bg-purple-100 text-purple-600 font-semibold px-2 py-0.5 rounded-full">opcional</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+        <div class="md:col-span-2">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Meta sendo reavaliada</label>
+          <select [(ngModel)]="metaSelecionadaId" [ngModelOptions]="{standalone: true}"
+            class="w-full rounded-lg border border-gray-300 p-2.5 bg-white focus:ring-2 focus:ring-purple-400 outline-none text-sm">
+            <option value="">— Não reavaliando nesta sessão —</option>
+            <option *ngFor="let m of metasAtivas" [value]="m._id">
+              {{ m.especifico }} (Alvo: {{ m.valor_alvo }})
+            </option>
+          </select>
+        </div>
+
+        <ng-container *ngIf="metaSelecionadaId">
+
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
+              Valor atual medido
+              <span class="text-purple-500 font-normal text-xs ml-1">— mesmo indicador da meta</span>
+            </label>
+            <input type="number" step="any" [(ngModel)]="valorAtualMeta"
+              [ngModelOptions]="{standalone: true}"
+              placeholder="Ex: 18"
+              class="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-purple-400 outline-none">
+            <p class="text-xs text-gray-400 mt-1">O progresso será recalculado automaticamente.</p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Houve progresso?</label>
+            <select [(ngModel)]="houveProgresso" [ngModelOptions]="{standalone: true}"
+              class="w-full rounded-lg border border-gray-300 p-2.5 bg-white focus:ring-2 focus:ring-purple-400 outline-none text-sm">
+              <option value="">— Selecione —</option>
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+              <option value="Parcial">Parcial</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Condição da meta</label>
+            <select [(ngModel)]="condicaoMeta" [ngModelOptions]="{standalone: true}"
+              class="w-full rounded-lg border border-gray-300 p-2.5 bg-white focus:ring-2 focus:ring-purple-400 outline-none text-sm">
+              <option value="">— Selecione —</option>
+              <option value="Mantida">Mantida</option>
+              <option value="Ajustada">Ajustada</option>
+              <option value="Concluída">Concluída</option>
+              <option value="Substituída">Substituída</option>
+              <option value="Suspensa">Suspensa</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Próxima reavaliação</label>
+            <input type="date" [(ngModel)]="proximaRevisao" [ngModelOptions]="{standalone: true}"
+              class="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-purple-400 outline-none">
+          </div>
+
+          <div *ngIf="condicaoMeta === 'Ajustada' || condicaoMeta === 'Substituída'"
+            class="md:col-span-2">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Motivo do ajuste</label>
+            <input type="text" [(ngModel)]="motivoAjuste" [ngModelOptions]="{standalone: true}"
+              placeholder="Descreva o motivo do ajuste ou substituição..."
+              class="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-purple-400 outline-none">
+          </div>
+
+        </ng-container>
+      </div>
+    </div>
+
+    <!-- ── 4. Footer / Submit ────────────────────────────── -->
+    <div class="p-6 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-4">
+      <p class="text-xs text-gray-400 flex items-center gap-1">
+        <iconify-icon icon="ph:info-bold" class="text-blue-400"></iconify-icon>
+        A evolução ficará com status <strong>Pendente de Revisão</strong> até aprovação do docente.
+      </p>
+      <button type="submit" [disabled]="isLoading"
+        class="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg shadow font-bold flex items-center gap-2 transition-colors">
+        <iconify-icon *ngIf="isLoading" icon="ph:spinner-gap-bold" class="animate-spin text-lg"></iconify-icon>
+        <iconify-icon *ngIf="!isLoading" icon="ph:paper-plane-tilt-bold" class="text-lg"></iconify-icon>
+        {{ isLoading ? 'Salvando...' : 'Salvar e Enviar para Revisão' }}
+      </button>
+    </div>
+
+  </form>
+</div>

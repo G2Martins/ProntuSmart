@@ -6,12 +6,16 @@ export const authGuard: CanActivateFn = (route, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  // Se o usuário tem o token no localStorage, deixa passar
-  if (authService.isLoggedIn()) {
-    return true;
+  if (!authService.isLoggedIn()) {
+    router.navigate(['/login']);
+    return false;
   }
 
-  // Se não tem, chuta ele de volta para a tela de login
-  router.navigate(['/login']);
-  return false;
+  // A ARMADILHA DO FRONTEND: Se precisa trocar a senha, chuta para a tela isolada
+  if (authService.needsPasswordChange()) {
+    router.navigate(['/trocar-senha']);
+    return false;
+  }
+
+  return true;
 };

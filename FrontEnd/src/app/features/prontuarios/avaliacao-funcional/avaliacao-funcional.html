@@ -1,0 +1,393 @@
+<div class="max-w-4xl mx-auto space-y-6">
+
+  <!-- Cabeçalho -->
+  <div class="flex items-center justify-between">
+    <div>
+      <button (click)="router.navigate(['/prontuarios/visao', idProntuario])"
+        class="flex items-center text-gray-500 hover:text-blue-600 text-sm font-medium mb-2 transition-colors group">
+        <iconify-icon icon="ph:arrow-left-bold" class="mr-1 group-hover:-translate-x-1 transition-transform"></iconify-icon>
+        Voltar ao Prontuário
+      </button>
+      <h2 class="text-2xl font-bold text-gray-800">Avaliação Funcional</h2>
+      <p class="text-gray-500 text-sm mt-1">Preencha os dados objetivos e a síntese clínica do paciente.</p>
+    </div>
+
+    <!-- Indicador de progresso -->
+    <div class="hidden sm:flex items-center gap-2">
+      <div *ngFor="let s of [1,2,3]"
+        class="flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold border-2 transition-all"
+        [ngClass]="s === secaoAtiva
+          ? 'bg-blue-600 border-blue-600 text-white'
+          : s < secaoAtiva
+            ? 'bg-blue-100 border-blue-300 text-blue-600'
+            : 'bg-gray-100 border-gray-300 text-gray-400'">
+        <iconify-icon *ngIf="s < secaoAtiva" icon="ph:check-bold" class="text-xs"></iconify-icon>
+        <span *ngIf="s >= secaoAtiva">{{ s }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isFetching" class="bg-white rounded-lg shadow p-12 text-center">
+    <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-4xl text-blue-500 mb-3"></iconify-icon>
+    <p class="text-gray-500">Carregando dados do prontuário...</p>
+  </div>
+
+  <form *ngIf="!isFetching" [formGroup]="form" (ngSubmit)="onSubmit()">
+
+    <!-- ══════════════════════════════════════════════════════
+         SEÇÃO 1 — MOBILIDADE, FUNÇÃO E SINTOMAS
+    ═══════════════════════════════════════════════════════ -->
+    <div *ngIf="secaoAtiva === 1" class="space-y-5">
+
+      <!-- Mobilidade -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-blue-50 border-b border-blue-100 px-6 py-4 flex items-center gap-2">
+          <iconify-icon icon="ph:person-simple-walk-bold" class="text-blue-600 text-xl"></iconify-icon>
+          <h3 class="font-semibold text-blue-800">Mobilidade</h3>
+        </div>
+        <div class="p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Sedestação</label>
+            <div class="space-y-2">
+              <label *ngFor="let op of opSedestacao" class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" [value]="op" formControlName="sedestacao" class="text-blue-600">
+                <span class="text-sm text-gray-700">{{ op }}</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Ortostatismo</label>
+            <div class="space-y-2">
+              <label *ngFor="let op of opOrtostatismo" class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" [value]="op" formControlName="ortostatismo" class="text-blue-600">
+                <span class="text-sm text-gray-700">{{ op }}</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Transferências</label>
+            <div class="space-y-2">
+              <label *ngFor="let op of opTransferencias" class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" [value]="op" formControlName="transferencias" class="text-blue-600">
+                <span class="text-sm text-gray-700">{{ op }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Marcha -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-blue-50 border-b border-blue-100 px-6 py-4 flex items-center gap-2">
+          <iconify-icon icon="ph:footprints-bold" class="text-blue-600 text-xl"></iconify-icon>
+          <h3 class="font-semibold text-blue-800">Marcha / Locomoção</h3>
+        </div>
+        <div class="p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Realiza marcha?</label>
+            <div class="space-y-2">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" [value]="true" formControlName="realiza_marcha" class="text-blue-600">
+                <span class="text-sm text-gray-700">Sim</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" [value]="false" formControlName="realiza_marcha" class="text-blue-600">
+                <span class="text-sm text-gray-700">Não</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Com dispositivo auxiliar?</label>
+            <div class="space-y-2">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" [value]="true" formControlName="marcha_dispositivo" class="text-blue-600">
+                <span class="text-sm text-gray-700">Sim</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" [value]="false" formControlName="marcha_dispositivo" class="text-blue-600">
+                <span class="text-sm text-gray-700">Não</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Distância tolerada</label>
+            <input type="text" formControlName="distancia_tolerada"
+              class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              placeholder="Ex: 5 metros">
+          </div>
+        </div>
+      </div>
+
+      <!-- Função -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-blue-50 border-b border-blue-100 px-6 py-4 flex items-center gap-2">
+          <iconify-icon icon="ph:activity-bold" class="text-blue-600 text-xl"></iconify-icon>
+          <h3 class="font-semibold text-blue-800">Função e Equilíbrio</h3>
+        </div>
+        <div class="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Função MMSS</label>
+            <div class="space-y-2">
+              <label *ngFor="let op of opFuncao" class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" [value]="op" formControlName="funcao_mmss" class="text-blue-600">
+                <span class="text-sm text-gray-700">{{ op }}</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Função MMII</label>
+            <div class="space-y-2">
+              <label *ngFor="let op of opFuncao" class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" [value]="op" formControlName="funcao_mmii" class="text-blue-600">
+                <span class="text-sm text-gray-700">{{ op }}</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Equilíbrio</label>
+            <div class="space-y-2">
+              <label *ngFor="let op of opEquilibrio" class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" [value]="op" formControlName="equilibrio" class="text-blue-600">
+                <span class="text-sm text-gray-700">{{ op }}</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Risco de Queda</label>
+            <div class="space-y-2">
+              <label *ngFor="let op of opRiscoQueda" class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" [value]="op" formControlName="risco_queda" class="text-blue-600">
+                <span class="text-sm text-gray-700">{{ op }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sintomas -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-blue-50 border-b border-blue-100 px-6 py-4 flex items-center gap-2">
+          <iconify-icon icon="ph:warning-circle-bold" class="text-blue-600 text-xl"></iconify-icon>
+          <h3 class="font-semibold text-blue-800">Sintomas Relevantes</h3>
+        </div>
+        <div class="p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Dor presente?</label>
+            <div class="flex gap-4">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" [value]="true" formControlName="dor" class="text-blue-600">
+                <span class="text-sm text-gray-700">Sim</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" [value]="false" formControlName="dor" class="text-blue-600">
+                <span class="text-sm text-gray-700">Não</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Intensidade / Local</label>
+            <input type="text" formControlName="dor_intensidade_local"
+              class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              placeholder="Ex: 6/10 — lombar">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Fadiga interfere na função?</label>
+            <div class="flex gap-4">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" [value]="true" formControlName="fadiga_funcional" class="text-blue-600">
+                <span class="text-sm text-gray-700">Sim</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" [value]="false" formControlName="fadiga_funcional" class="text-blue-600">
+                <span class="text-sm text-gray-700">Não</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cognição -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-blue-50 border-b border-blue-100 px-6 py-4 flex items-center gap-2">
+          <iconify-icon icon="ph:brain-bold" class="text-blue-600 text-xl"></iconify-icon>
+          <h3 class="font-semibold text-blue-800">Cognição / Comunicação</h3>
+        </div>
+        <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Compreende comandos simples?</label>
+            <div class="flex gap-4">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" [value]="true" formControlName="compreende_comandos" class="text-blue-600">
+                <span class="text-sm text-gray-700">Sim</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" [value]="false" formControlName="compreende_comandos" class="text-blue-600">
+                <span class="text-sm text-gray-700">Não</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Comunicação funcional preservada?</label>
+            <div class="flex gap-4">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" [value]="true" formControlName="comunicacao_preservada" class="text-blue-600">
+                <span class="text-sm text-gray-700">Sim</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" [value]="false" formControlName="comunicacao_preservada" class="text-blue-600">
+                <span class="text-sm text-gray-700">Não</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end">
+        <button type="button" (click)="avancar()"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold flex items-center gap-2 shadow transition-colors">
+          Próximo: AVDs e Participação
+          <iconify-icon icon="ph:arrow-right-bold"></iconify-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         SEÇÃO 2 — AVDs E PARTICIPAÇÃO
+    ═══════════════════════════════════════════════════════ -->
+    <div *ngIf="secaoAtiva === 2" class="space-y-5">
+
+      <!-- AVDs -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-blue-50 border-b border-blue-100 px-6 py-4 flex items-center gap-2">
+          <iconify-icon icon="ph:house-line-bold" class="text-blue-600 text-xl"></iconify-icon>
+          <h3 class="font-semibold text-blue-800">Atividades de Vida Diária (AVDs)</h3>
+          <span class="ml-auto text-xs text-gray-500 bg-white border border-gray-200 px-2 py-1 rounded">
+            I = Independente · S = Supervisão · AP = Ajuda parcial · D = Dependente
+          </span>
+        </div>
+        <div class="p-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div *ngFor="let avd of [
+            {ctrl:'avd_banho', label:'Banho'},
+            {ctrl:'avd_vestir', label:'Vestir-se'},
+            {ctrl:'avd_higiene', label:'Higiene'},
+            {ctrl:'avd_locomocao', label:'Locomoção'},
+            {ctrl:'avd_alimentacao', label:'Alimentação'},
+            {ctrl:'avd_banheiro', label:'Uso do banheiro'}
+          ]">
+            <label class="block text-sm font-semibold text-gray-700 mb-2 text-center">{{ avd.label }}</label>
+            <div class="flex flex-col gap-1">
+              <label *ngFor="let op of opAVD"
+                class="flex items-center justify-center gap-1 cursor-pointer border rounded-lg py-1.5 text-xs font-bold transition-all"
+                [ngClass]="form.get(avd.ctrl)?.value === op
+                  ? 'border-blue-500 bg-blue-50 text-blue-700'
+                  : 'border-gray-200 text-gray-500 hover:border-gray-400'">
+                <input type="radio" [value]="op" [formControlName]="avd.ctrl" class="hidden">
+                {{ op }}
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Participação -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-blue-50 border-b border-blue-100 px-6 py-4 flex items-center gap-2">
+          <iconify-icon icon="ph:users-bold" class="text-blue-600 text-xl"></iconify-icon>
+          <h3 class="font-semibold text-blue-800">Participação e Teste Principal</h3>
+        </div>
+        <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Atividade mais impactada na rotina</label>
+            <input type="text" formControlName="atividade_mais_impactada"
+              class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              placeholder="Ex: Locomoção dentro de casa">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Principal limitação funcional</label>
+            <input type="text" formControlName="principal_limitacao"
+              class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              placeholder="Ex: Não consegue caminhar sem auxílio">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Teste / Escala principal</label>
+            <input type="text" formControlName="teste_escala_principal"
+              class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              placeholder="Ex: Escala de Berg">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Valor inicial do teste</label>
+            <input type="text" formControlName="valor_teste_inicial"
+              class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              placeholder="Ex: 28 pontos">
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-between">
+        <button type="button" (click)="voltar()"
+          class="border border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-2.5 rounded-lg font-semibold flex items-center gap-2 transition-colors">
+          <iconify-icon icon="ph:arrow-left-bold"></iconify-icon> Voltar
+        </button>
+        <button type="button" (click)="avancar()"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold flex items-center gap-2 shadow transition-colors">
+          Próximo: Síntese Clínica
+          <iconify-icon icon="ph:arrow-right-bold"></iconify-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         SEÇÃO 3 — SÍNTESE FISIOTERAPÊUTICA
+    ═══════════════════════════════════════════════════════ -->
+    <div *ngIf="secaoAtiva === 3" class="space-y-5">
+
+      <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-blue-50 border-b border-blue-100 px-6 py-4 flex items-center gap-2">
+          <iconify-icon icon="ph:notepad-bold" class="text-blue-600 text-xl"></iconify-icon>
+          <h3 class="font-semibold text-blue-800">Síntese Fisioterapêutica</h3>
+        </div>
+        <div class="p-6 space-y-5">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Problema funcional prioritário</label>
+            <input type="text" formControlName="problema_funcional_prioritario"
+              class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              placeholder="Ex: Déficit de marcha com risco aumentado de queda">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Atividade funcional comprometida</label>
+            <input type="text" formControlName="atividade_comprometida"
+              class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              placeholder="Ex: Locomoção domiciliar">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Impacto na independência / segurança</label>
+            <textarea formControlName="impacto_independencia" rows="3"
+              class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm resize-none"
+              placeholder="Ex: Dependência parcial para deslocamento e insegurança ao realizar transferências"></textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Prioridade terapêutica atual</label>
+            <textarea formControlName="prioridade_terapeutica" rows="3"
+              class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm resize-none"
+              placeholder="Ex: Melhorar marcha funcional e segurança nas transferências"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-between">
+        <button type="button" (click)="voltar()"
+          class="border border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-2.5 rounded-lg font-semibold flex items-center gap-2 transition-colors">
+          <iconify-icon icon="ph:arrow-left-bold"></iconify-icon> Voltar
+        </button>
+        <button type="submit" [disabled]="isLoading"
+          class="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg font-semibold flex items-center gap-2 shadow transition-colors">
+          <iconify-icon *ngIf="isLoading" icon="ph:spinner-gap-bold" class="animate-spin"></iconify-icon>
+          <iconify-icon *ngIf="!isLoading" icon="ph:floppy-disk-bold"></iconify-icon>
+          {{ isLoading ? 'Salvando...' : 'Salvar Avaliação e Síntese' }}
+        </button>
+      </div>
+    </div>
+
+  </form>
+</div>

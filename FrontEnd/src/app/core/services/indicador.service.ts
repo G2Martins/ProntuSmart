@@ -42,4 +42,12 @@ export class IndicadorService {
   deletar(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
   }
+  
+  // Busca apenas os indicadores da área X (ou globais)
+  buscarPorArea(area: string): Observable<Indicador[]> {
+    return this.http.get<Indicador[]>(
+      `${this.apiUrl}/por-area/${area}`,
+      { headers: this.getHeaders() }
+    );
+  }
 }

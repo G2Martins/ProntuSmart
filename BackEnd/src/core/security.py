@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 from jose import jwt, JWTError
 import bcrypt
 from fastapi import Depends, HTTPException, status
@@ -28,33 +29,45 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         # Se houver algum problema de formatação no hash antigo, retorna False por segurança
         return False
 
-def create_access_token(data: dict) -> str:
-    """Gera o token JWT de acesso com tempo de expiração."""
+"""Gera o token JWT de acesso com tempo de expiração."""
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    
+    # A CORREÇÃO ESTÁ AQUI: Usar sempre datetime.now(timezone.utc)
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        # Por padrão, vamos colocar 60 minutos de duração se não for informado
+        expire = datetime.now(timezone.utc) + timedelta(minutes=60)
+        
     to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    return encoded_jwt
 
-async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
-    """
+"""
     Dependência (Depends) injetada nas rotas protegidas.
     Verifica o token JWT e retorna o usuário logado do banco de dados.
-    """
+    Se o token for inválido ou o usuário não existir, lança uma HTTPException 401."""
+async def get_current_user(token: str = Depends(oauth2_scheme), db = Depends(get_database)):
+    from bson import ObjectId # Importar aqui para garantir conversão
+    
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Não foi possível validar as credenciais",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
+        # Se o token estiver expirado, ele cai direto no except JWTError abaixo!
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        matricula = payload.get("sub")
-        if matricula is None:
+        user_id: Optional[str] = payload.get("sub")
+        if user_id is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-        
-    db = get_database()
-    user = await db.dim_usuario.find_one({"matricula": matricula})
+
+    # Procura no MongoDB pelo _id convertido
+    user = await db.dim_usuario.find_one({"_id": ObjectId(user_id)})
     if user is None:
         raise credentials_exception
+        
     return user

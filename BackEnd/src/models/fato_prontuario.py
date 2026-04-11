@@ -1,17 +1,83 @@
-from pydantic import Field
-from datetime import datetime
+from pydantic import Field, ConfigDict
+from datetime import datetime, timezone
 from typing import Optional
-from src.models.base import MongoBaseModel, PyObjectId
+from src.models.base import MongoBaseModel
 from src.models.dim_status import StatusProntuario
 
+# ── Tela 2: Avaliação Funcional ──────────────────────────────
+
+class AvaliacaoMobilidade(ConfigDict):
+    pass
+
 class FatoProntuario(MongoBaseModel):
-    paciente_id: PyObjectId = Field(..., description="Referência ao DimPaciente")
-    numero_prontuario: str = Field(..., description="Gerado via helpers (ex: UCB-2026-00001)")
-    status: StatusProntuario = Field(default=StatusProntuario.ATIVO)
-    
-    # Atualizados via serviços dinamicamente
-    total_sessoes: int = Field(default=0)
+    # ── Vínculo e controle ────────────────────────────────────
+    paciente_id:        str = Field(..., description="Referência ao DimPaciente")
+    estagiario_id:      str = Field(..., description="Estagiário responsável")
+    docente_id:         str = Field(..., description="Docente que realizou a triagem")
+    cid_id:             str = Field(..., description="CID principal")
+    area_atendimento:   str = Field(..., description="Área clínica")
+    numero_prontuario:  str = Field(..., description="Ex: UCB-2026-00001")
+    status:             StatusProntuario = Field(default=StatusProntuario.ATIVO)
+    total_sessoes:      int = Field(default=0)
     data_ultima_evolucao: Optional[datetime] = None
-    
-    area_id: PyObjectId = Field(..., description="Área atual de tratamento na clínica")
-    resumo_avaliacao_inicial: str = Field(..., description="Contextualização clínica base, sem prescrever conduta")
+
+    # ── TELA 1: Dados Clínicos Iniciais ──────────────────────
+    diagnostico_medico:             Optional[str] = None
+    diagnostico_fisioterapeutico:   Optional[str] = None
+    queixa_principal:               Optional[str] = None
+    objetivo_paciente:              Optional[str] = None
+    tempo_evolucao:                 Optional[str] = None
+    comorbidades:                   Optional[str] = None
+    medicamentos:                   Optional[str] = None
+    dispositivo_auxiliar:           Optional[str] = None  # "Nenhum","Bengala","Muleta","Andador","Cadeira de rodas","Outro"
+    barreiras_ambientais:           Optional[str] = None
+
+    # ── TELA 2: Avaliação Funcional — Mobilidade ─────────────
+    sedestacao:    Optional[str] = None  # "Independente","Com apoio","Dependente"
+    ortostatismo:  Optional[str] = None  # "Independente","Supervisão","Ajuda física","Não realiza"
+    transferencias: Optional[str] = None # "Independente","Supervisão","Ajuda parcial","Dependente"
+
+    # Marcha
+    realiza_marcha:      Optional[bool] = None
+    marcha_dispositivo:  Optional[bool] = None
+    distancia_tolerada:  Optional[str]  = None
+
+    # Função
+    funcao_mmss:  Optional[str] = None  # "Preservada","Parcialmente comprometida","Comprometida"
+    funcao_mmii:  Optional[str] = None
+    equilibrio:   Optional[str] = None  # "Preservado","Alterado"
+    risco_queda:  Optional[str] = None  # "Baixo","Moderado","Alto"
+
+    # Sintomas
+    dor:                  Optional[bool] = None
+    dor_intensidade_local: Optional[str] = None
+    fadiga_funcional:     Optional[bool] = None
+
+    # Cognição / Comunicação
+    compreende_comandos:      Optional[bool] = None
+    comunicacao_preservada:   Optional[bool] = None
+
+    # AVDs: I=Independente, S=Supervisão, AP=Ajuda parcial, D=Dependente
+    avd_banho:        Optional[str] = None
+    avd_vestir:       Optional[str] = None
+    avd_higiene:      Optional[str] = None
+    avd_locomocao:    Optional[str] = None
+    avd_alimentacao:  Optional[str] = None
+    avd_banheiro:     Optional[str] = None
+
+    # Participação
+    atividade_mais_impactada:  Optional[str] = None
+    principal_limitacao:       Optional[str] = None
+    teste_escala_principal:    Optional[str] = None
+    valor_teste_inicial:       Optional[str] = None
+
+    # ── TELA 3: Síntese Fisioterapêutica ─────────────────────
+    problema_funcional_prioritario: Optional[str] = None
+    atividade_comprometida:         Optional[str] = None
+    impacto_independencia:          Optional[str] = None
+    prioridade_terapeutica:         Optional[str] = None
+
+    criado_em:     datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    atualizado_em: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)

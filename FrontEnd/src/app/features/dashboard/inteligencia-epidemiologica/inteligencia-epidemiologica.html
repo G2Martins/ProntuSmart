@@ -1,0 +1,322 @@
+<div class="max-w-7xl mx-auto space-y-8">
+
+  <!-- ── Cabeçalho ──────────────────────────────────────────── -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+        <iconify-icon icon="ph:chart-pie-slice-bold" class="text-purple-600"></iconify-icon>
+        Inteligência Epidemiológica
+      </h2>
+      <p class="text-gray-500 mt-1 text-sm">Visão estratégica da clínica: epidemiologia, produtividade e alertas de risco.</p>
+    </div>
+    <button (click)="router.navigate(['/dashboard'])"
+      class="flex items-center text-gray-600 hover:text-purple-600 font-medium transition-colors group text-sm">
+      <iconify-icon icon="ph:arrow-left-bold" class="mr-1 text-lg group-hover:-translate-x-1 transition-transform"></iconify-icon>
+      Voltar ao Painel
+    </button>
+  </div>
+
+  <!-- ── Loading ────────────────────────────────────────────── -->
+  <div *ngIf="isLoading" class="flex flex-col items-center justify-center py-24 bg-white rounded-2xl shadow border border-gray-100">
+    <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-5xl text-purple-500 mb-4"></iconify-icon>
+    <p class="text-gray-500 font-medium">Carregando inteligência clínica...</p>
+  </div>
+
+  <!-- ── Erro ───────────────────────────────────────────────── -->
+  <div *ngIf="!isLoading && erro" class="bg-red-50 border border-red-200 rounded-xl p-6 flex items-center gap-4">
+    <iconify-icon icon="ph:warning-circle-bold" class="text-red-500 text-3xl flex-shrink-0"></iconify-icon>
+    <div>
+      <p class="text-red-700 font-semibold">{{ erro }}</p>
+      <button (click)="carregarDados()" class="mt-2 text-sm text-red-600 underline hover:text-red-800">Tentar novamente</button>
+    </div>
+  </div>
+
+  <!-- ── Conteúdo ───────────────────────────────────────────── -->
+  <ng-container *ngIf="!isLoading && !erro">
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- CARDS DE RESUMO                                        -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
+          <iconify-icon icon="ph:users-three-bold" class="text-2xl"></iconify-icon>
+        </div>
+        <div>
+          <p class="text-xs text-gray-500 font-medium uppercase tracking-wide">Prontuários Ativos</p>
+          <p class="text-2xl font-bold text-gray-800">{{ epidemiologia?.total_prontuarios_ativos ?? 0 }}</p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center flex-shrink-0">
+          <iconify-icon icon="ph:clipboard-text-bold" class="text-2xl"></iconify-icon>
+        </div>
+        <div>
+          <p class="text-xs text-gray-500 font-medium uppercase tracking-wide">Total de Evoluções</p>
+          <p class="text-2xl font-bold text-gray-800">{{ totalEvolucoes }}</p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center flex-shrink-0">
+          <iconify-icon icon="ph:seal-check-bold" class="text-2xl"></iconify-icon>
+        </div>
+        <div>
+          <p class="text-xs text-gray-500 font-medium uppercase tracking-wide">Evoluções Aprovadas</p>
+          <p class="text-2xl font-bold text-gray-800">
+            {{ produtividade?.totais_evolucoes?.aprovadas ?? 0 }}
+            <span class="text-sm font-normal text-gray-400 ml-1">{{ pctAprovadas }}%</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4"
+        [class.border-red-200]="(riscos?.total_alertas ?? 0) > 0"
+        [class.bg-red-50]="(riscos?.total_alertas ?? 0) > 0">
+        <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
+          [class.bg-red-100]="(riscos?.total_alertas ?? 0) > 0"
+          [class.text-red-600]="(riscos?.total_alertas ?? 0) > 0"
+          [class.bg-gray-100]="(riscos?.total_alertas ?? 0) === 0"
+          [class.text-gray-500]="(riscos?.total_alertas ?? 0) === 0">
+          <iconify-icon icon="ph:warning-bold" class="text-2xl"></iconify-icon>
+        </div>
+        <div>
+          <p class="text-xs text-gray-500 font-medium uppercase tracking-wide">Alertas de Risco</p>
+          <p class="text-2xl font-bold"
+            [class.text-red-600]="(riscos?.total_alertas ?? 0) > 0"
+            [class.text-gray-800]="(riscos?.total_alertas ?? 0) === 0">
+            {{ riscos?.total_alertas ?? 0 }}
+          </p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- LINHA 1: Epidemiologia                                 -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- CIDs mais comuns -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center gap-2 mb-5">
+          <iconify-icon icon="ph:dna-bold" class="text-blue-600 text-xl"></iconify-icon>
+          <h3 class="font-bold text-gray-800">CIDs Mais Frequentes</h3>
+          <span class="ml-auto text-xs text-gray-400">prontuários ativos</span>
+        </div>
+
+        <div *ngIf="epidemiologia?.cids_mais_comuns?.length === 0" class="py-8 text-center text-gray-400 text-sm">
+          <iconify-icon icon="ph:chart-bar-bold" class="text-3xl mb-2"></iconify-icon>
+          <p>Nenhum CID registrado ainda.</p>
+        </div>
+
+        <div class="space-y-3">
+          <div *ngFor="let cid of epidemiologia?.cids_mais_comuns; let i = index">
+            <div class="flex justify-between items-center mb-1">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="text-xs font-bold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded flex-shrink-0">{{ cid.codigo }}</span>
+                <span class="text-xs text-gray-600 truncate">{{ cid.descricao }}</span>
+              </div>
+              <span class="text-sm font-bold text-gray-800 ml-2 flex-shrink-0">{{ cid.count }}</span>
+            </div>
+            <div class="w-full bg-gray-100 rounded-full h-2">
+              <div class="h-2 rounded-full transition-all duration-500"
+                [class]="barColor(i)"
+                [style.width]="barWidth(cid.count, epidemiologia.cids_mais_comuns, 'count')">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pacientes por área -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center gap-2 mb-5">
+          <iconify-icon icon="ph:heartbeat-bold" class="text-purple-600 text-xl"></iconify-icon>
+          <h3 class="font-bold text-gray-800">Distribuição por Área Clínica</h3>
+          <span class="ml-auto text-xs text-gray-400">ativos</span>
+        </div>
+
+        <div *ngIf="epidemiologia?.pacientes_por_area?.length === 0" class="py-8 text-center text-gray-400 text-sm">
+          <iconify-icon icon="ph:squares-four-bold" class="text-3xl mb-2"></iconify-icon>
+          <p>Nenhuma área com pacientes ativos.</p>
+        </div>
+
+        <div class="space-y-3">
+          <div *ngFor="let area of epidemiologia?.pacientes_por_area; let i = index">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-xs text-gray-700 font-medium truncate">{{ area.area }}</span>
+              <span class="text-sm font-bold text-gray-800 ml-2 flex-shrink-0">
+                {{ area.count }} <span class="text-xs font-normal text-gray-400">pac.</span>
+              </span>
+            </div>
+            <div class="w-full bg-gray-100 rounded-full h-2">
+              <div class="h-2 rounded-full transition-all duration-500"
+                [class]="barColor(i + 2)"
+                [style.width]="barWidth(area.count, epidemiologia.pacientes_por_area, 'count')">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- LINHA 2: Produtividade + Status de Evoluções           -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- Produtividade por estagiário -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center gap-2 mb-5">
+          <iconify-icon icon="ph:student-bold" class="text-emerald-600 text-xl"></iconify-icon>
+          <h3 class="font-bold text-gray-800">Produtividade por Estagiário</h3>
+        </div>
+
+        <div *ngIf="produtividade?.evolucoes_por_estagiario?.length === 0"
+          class="py-8 text-center text-gray-400 text-sm">
+          <iconify-icon icon="ph:user-list-bold" class="text-3xl mb-2"></iconify-icon>
+          <p>Nenhuma evolução registrada ainda.</p>
+        </div>
+
+        <div class="space-y-4">
+          <div *ngFor="let est of produtividade?.evolucoes_por_estagiario; let i = index"
+            class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
+              {{ i + 1 }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex justify-between items-center mb-1">
+                <span class="text-sm font-semibold text-gray-800 truncate">{{ est.nome }}</span>
+                <span class="text-sm font-bold text-emerald-600 ml-2 flex-shrink-0">
+                  {{ est.total_evolucoes }} evol.
+                </span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="flex-1 bg-gray-100 rounded-full h-1.5">
+                  <div class="h-1.5 rounded-full bg-emerald-500 transition-all duration-500"
+                    [style.width]="barWidth(est.total_evolucoes, produtividade.evolucoes_por_estagiario, 'total_evolucoes')">
+                  </div>
+                </div>
+                <span class="text-xs text-gray-400 flex-shrink-0">{{ est.total_prontuarios }} pront.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status das evoluções + Metas -->
+      <div class="space-y-4">
+
+        <!-- Status das evoluções -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <div class="flex items-center gap-2 mb-4">
+            <iconify-icon icon="ph:chart-donut-bold" class="text-orange-500 text-xl"></iconify-icon>
+            <h3 class="font-bold text-gray-800">Status das Evoluções</h3>
+          </div>
+          <div class="grid grid-cols-3 gap-3 text-center">
+            <div class="bg-green-50 rounded-xl p-3 border border-green-100">
+              <p class="text-xl font-bold text-green-700">{{ produtividade?.totais_evolucoes?.aprovadas ?? 0 }}</p>
+              <p class="text-xs text-green-600 font-medium mt-0.5">Aprovadas</p>
+            </div>
+            <div class="bg-orange-50 rounded-xl p-3 border border-orange-100">
+              <p class="text-xl font-bold text-orange-700">{{ produtividade?.totais_evolucoes?.pendentes ?? 0 }}</p>
+              <p class="text-xs text-orange-600 font-medium mt-0.5">Pendentes</p>
+            </div>
+            <div class="bg-red-50 rounded-xl p-3 border border-red-100">
+              <p class="text-xl font-bold text-red-700">{{ produtividade?.totais_evolucoes?.devolvidas ?? 0 }}</p>
+              <p class="text-xs text-red-600 font-medium mt-0.5">Devolvidas</p>
+            </div>
+          </div>
+          <!-- Barra de progresso geral -->
+          <div class="mt-4">
+            <div class="flex justify-between text-xs text-gray-500 mb-1">
+              <span>Taxa de aprovação</span>
+              <span class="font-semibold text-green-600">{{ pctAprovadas }}%</span>
+            </div>
+            <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden flex">
+              <div class="h-2.5 bg-green-500 transition-all" [style.width.%]="pctAprovadas"></div>
+              <div class="h-2.5 bg-orange-400 transition-all" [style.width.%]="pctPendentes"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metas por status -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <div class="flex items-center gap-2 mb-4">
+            <iconify-icon icon="ph:target-bold" class="text-purple-600 text-xl"></iconify-icon>
+            <h3 class="font-bold text-gray-800">Metas SMART por Status</h3>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <div *ngFor="let entry of produtividade?.metas_por_status | keyvalue"
+              class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-sm">
+              <span class="font-semibold text-gray-800">{{ entry.value }}</span>
+              <span class="text-gray-500">{{ entry.key }}</span>
+            </div>
+            <div *ngIf="!(produtividade?.metas_por_status | keyvalue)?.length"
+              class="text-sm text-gray-400">Nenhuma meta registrada.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- LINHA 3: Alertas de Risco                              -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <div class="flex items-center gap-2 mb-5">
+        <iconify-icon icon="ph:warning-diamond-bold" class="text-red-500 text-xl"></iconify-icon>
+        <h3 class="font-bold text-gray-800">Alertas de Risco Clínico</h3>
+        <span *ngIf="(riscos?.total_alertas ?? 0) > 0"
+          class="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+          {{ riscos.total_alertas }} alerta{{ riscos.total_alertas > 1 ? 's' : '' }}
+        </span>
+      </div>
+
+      <!-- Sem alertas -->
+      <div *ngIf="riscos?.total_alertas === 0" class="py-8 text-center text-gray-400">
+        <iconify-icon icon="ph:shield-check-bold" class="text-5xl text-green-400 mb-3"></iconify-icon>
+        <p class="font-semibold text-green-600">Nenhum alerta ativo</p>
+        <p class="text-sm mt-1">Todos os pacientes estão sem indicadores de risco no momento.</p>
+      </div>
+
+      <!-- Lista de alertas -->
+      <div *ngIf="(riscos?.total_alertas ?? 0) > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div *ngFor="let alerta of riscos.alertas"
+          class="flex items-start gap-3 p-4 rounded-xl border"
+          [class]="prioridadeClass(alerta.prioridade)">
+
+          <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+            [class]="tipoRiscoColor(alerta.tipo)">
+            <iconify-icon [icon]="tipoRiscoIcon(alerta.tipo)" class="text-lg"></iconify-icon>
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <p class="font-bold text-sm text-gray-800 truncate">{{ alerta.paciente_nome }}</p>
+              <span class="text-xs px-1.5 py-0.5 rounded font-semibold"
+                [class.bg-red-200]="alerta.prioridade === 'alta'"
+                [class.text-red-700]="alerta.prioridade === 'alta'"
+                [class.bg-yellow-200]="alerta.prioridade === 'media'"
+                [class.text-yellow-700]="alerta.prioridade === 'media'">
+                {{ alerta.prioridade === 'alta' ? 'ALTA' : 'MÉDIA' }}
+              </span>
+            </div>
+            <p class="text-xs text-gray-500 mt-0.5">{{ alerta.area }}</p>
+            <p class="text-xs font-medium mt-1 text-gray-700">{{ alerta.motivo }}</p>
+            <button (click)="router.navigate(['/prontuarios/visao', alerta.prontuario_id])"
+              class="mt-2 text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1">
+              Ver prontuário
+              <iconify-icon icon="ph:arrow-right-bold"></iconify-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
+</div>

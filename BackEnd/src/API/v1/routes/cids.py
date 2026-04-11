@@ -1,0 +1,93 @@
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from bson import ObjectId
+from src.core.database import get_database
+from src.core.security import get_current_user
+from src.models.dim_usuario import TipoPerfil
+from src.models.dim_cid import DimCid
+from src.schemas.cid import CidCreate, CidUpdate, CidResponse
+
+router = APIRouter()
+
+# Middleware para garantir que só Admins manipulam CIDs
+def verificar_admin(current_user: dict = Depends(get_current_user)):
+    if current_user.get("perfil") != TipoPerfil.ADMINISTRADOR:
+        raise HTTPException(status_code=403, detail="Acesso negado. Apenas Administradores.")
+    return current_user
+
+@router.get("/", response_model=List[CidResponse])
+async def listar_cids(
+    busca: Optional[str] = Query(None, description="Filtro por código ou descrição"),
+    limit: int = Query(50, ge=1, le=200, description="Máximo de resultados"),
+    db = Depends(get_database),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Lista CIDs com suporte a busca full-text.
+    - Sem 'busca': retorna os primeiros 'limit' registros ordenados por código.
+    - Com 'busca': filtra por código OU descrição (case-insensitive).
+    """
+    filtro: dict = {}
+
+    if busca and busca.strip():
+        termo = busca.strip()
+        filtro = {
+            "$or": [
+                {"codigo": {"$regex": termo, "$options": "i"}},
+                {"descricao": {"$regex": termo, "$options": "i"}}
+            ]
+        }
+
+    cursor = db.dim_cid.find(filtro).sort("codigo", 1).limit(limit)
+    cids = await cursor.to_list(length=limit)
+    for c in cids:
+        c["_id"] = str(c["_id"])
+    return cids
+
+@router.post("/", response_model=CidResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(verificar_admin)])
+async def criar_cid(cid_in: CidCreate, db = Depends(get_database)):
+    if await db.dim_cid.find_one({"codigo": cid_in.codigo}):
+        raise HTTPException(status_code=400, detail="Já existe um CID com este código.")
+    
+    novo_cid = DimCid(**cid_in.model_dump())
+    resultado = await db.dim_cid.insert_one(novo_cid.model_dump(by_alias=True, exclude_none=True))
+    cid_criado = await db.dim_cid.find_one({"_id": resultado.inserted_id})
+    cid_criado["_id"] = str(cid_criado["_id"])
+    return cid_criado
+
+@router.put("/{cid_id}", response_model=CidResponse, dependencies=[Depends(verificar_admin)])
+async def atualizar_cid(cid_id: str, cid_in: CidUpdate, db = Depends(get_database)):
+    update_data = cid_in.model_dump(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Nenhum dado enviado para atualização.")
+        
+    res = await db.dim_cid.update_one({"_id": ObjectId(cid_id)}, {"$set": update_data})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="CID não encontrado.")
+        
+    cid = await db.dim_cid.find_one({"_id": ObjectId(cid_id)})
+    cid["_id"] = str(cid["_id"])
+    return cid
+
+@router.post("/bulk", status_code=status.HTTP_201_CREATED, dependencies=[Depends(verificar_admin)])
+async def importar_cids_lote(cids_in: List[CidCreate], db = Depends(get_database)):
+    if not cids_in:
+        raise HTTPException(status_code=400, detail="A lista de CIDs está vazia.")
+
+    novos_cids = []
+    
+    # 1. Puxa todos os códigos que já existem no banco para não duplicar
+    codigos_existentes = set([c["codigo"] async for c in db.dim_cid.find({}, {"codigo": 1})])
+
+    # 2. Prepara os novos documentos
+    for cid in cids_in:
+        if cid.codigo not in codigos_existentes:
+            novo_cid = DimCid(**cid.model_dump())
+            novos_cids.append(novo_cid.model_dump(by_alias=True, exclude_none=True))
+            codigos_existentes.add(cid.codigo) # Adiciona no set para não duplicar na mesma carga
+
+    # 3. Insere todos de uma vez (MUITO mais rápido que inserir um por um)
+    if novos_cids:
+        await db.dim_cid.insert_many(novos_cids)
+
+    return {"message": f"Upload concluído! {len(novos_cids)} novos CIDs foram adicionados."}

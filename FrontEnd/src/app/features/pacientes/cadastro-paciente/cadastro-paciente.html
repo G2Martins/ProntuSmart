@@ -1,1 +1,203 @@
-<p>cadastro-paciente works!</p>
+<div class="max-w-4xl mx-auto space-y-6">
+
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800">
+        {{ modoFormulario === 'criar' ? 'Nova Ficha de Paciente' : 'Atualização Cadastral' }}
+      </h2>
+      <p class="text-gray-600">Preencha os dados socio-demográficos e a triagem inicial.</p>
+    </div>
+    <a routerLink="/pacientes"
+      class="flex items-center text-gray-600 hover:text-blue-600 font-medium transition-colors group">
+      <iconify-icon icon="ph:arrow-left-bold" class="mr-2 text-xl group-hover:-translate-x-1 transition-transform"></iconify-icon>
+      Cancelar e Voltar
+    </a>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isFetching" class="bg-white p-12 text-center rounded-lg shadow border border-gray-100 text-gray-500">
+    <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-4xl text-blue-500 mb-3"></iconify-icon>
+    <p>A puxar ficha do paciente...</p>
+  </div>
+
+  <div *ngIf="!isFetching" class="bg-white shadow rounded-lg border border-gray-100 overflow-hidden">
+
+    <div class="bg-blue-50 border-b border-blue-100 px-8 py-5 flex items-center">
+      <iconify-icon icon="ph:address-book-bold" class="text-blue-600 text-2xl mr-3"></iconify-icon>
+      <h3 class="text-lg font-semibold text-blue-800">Formulário de Identificação</h3>
+    </div>
+
+    <form [formGroup]="pacienteForm" (ngSubmit)="onSubmit()" class="p-8 space-y-8">
+
+      <div *ngIf="errorMessage" class="bg-red-50 border-l-4 border-red-500 p-4 flex items-center rounded">
+        <iconify-icon icon="ph:warning-circle-bold" class="text-red-500 mr-2 text-xl"></iconify-icon>
+        <p class="text-red-700">{{ errorMessage }}</p>
+      </div>
+
+      <!-- ── Informações Pessoais ─────────────────────────── -->
+      <div>
+        <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 border-b pb-2">
+          Informações Pessoais
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+          <!-- Nome -->
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              Nome Completo <span class="text-red-500">*</span>
+            </label>
+            <input type="text" formControlName="nome_completo"
+              class="w-full rounded-md border border-gray-300 p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="Ex: Maria da Silva">
+            <span *ngIf="f['nome_completo'].touched && f['nome_completo'].invalid"
+              class="text-xs text-red-500 mt-1">Nome é obrigatório (Mín 3 letras).</span>
+          </div>
+
+          <!-- CPF -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              CPF <span class="text-red-500">*</span>
+            </label>
+            <input type="text" formControlName="cpf" (input)="onCpfInput($event)" maxlength="14"
+              class="w-full rounded-md border border-gray-300 p-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 font-mono"
+              placeholder="000.000.000-00">
+            <span *ngIf="f['cpf'].touched && f['cpf'].invalid"
+              class="text-xs text-red-500 mt-1">Insira os 11 dígitos do CPF.</span>
+            <span *ngIf="modoFormulario === 'editar'" class="text-xs text-gray-400 mt-1">
+              CPF não pode ser alterado.
+            </span>
+          </div>
+
+          <!-- Data de Nascimento -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              Data de Nascimento <span class="text-red-500">*</span>
+            </label>
+            <input type="date" formControlName="data_nascimento"
+              min="1900-01-01" [max]="hoje"
+              [attr.readonly]="modoFormulario === 'editar' ? true : null"
+              [ngClass]="modoFormulario === 'editar'
+                ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                : ''"
+              class="w-full rounded-md border border-gray-300 p-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+            <span *ngIf="modoFormulario === 'editar'" class="text-xs text-gray-400 mt-1 block">
+              Data de nascimento não pode ser alterada.
+            </span>
+            <span *ngIf="f['data_nascimento'].touched && f['data_nascimento'].errors?.['required']"
+              class="text-xs text-red-500 mt-1 block">Data é obrigatória.</span>
+            <span *ngIf="f['data_nascimento'].touched && f['data_nascimento'].errors?.['dataInvalida']"
+              class="text-xs text-red-500 mt-1 block">A data deve estar entre 1900 e hoje.</span>
+          </div>
+
+          <!-- Sexo -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              Sexo Biológico <span class="text-red-500">*</span>
+            </label>
+            <select formControlName="sexo"
+              class="w-full rounded-md border border-gray-300 p-2.5 focus:ring-2 focus:ring-blue-500 bg-white">
+              <option *ngFor="let s of sexosDisponiveis" [value]="s">{{ s }}</option>
+            </select>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── Contacto e Localização ───────────────────────── -->
+      <div>
+        <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 border-b pb-2">
+          Contacto e Localização
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              Telefone Principal <span class="text-red-500">*</span>
+            </label>
+            <input type="text" formControlName="telefone_contato"
+              (input)="onPhoneInput($event)" maxlength="15"
+              class="w-full rounded-md border border-gray-300 p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="(00) 00000-0000">
+            <span *ngIf="f['telefone_contato'].touched && f['telefone_contato'].invalid"
+              class="text-xs text-red-500 mt-1">Telefone inválido.</span>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">E-mail (opcional)</label>
+            <input type="email" formControlName="email"
+              (input)="atualizarSugestoesEmail()" list="sugestoes-email"
+              class="w-full rounded-md border border-gray-300 p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="paciente@email.com">
+            <span *ngIf="f['email'].touched && f['email'].errors?.['email']"
+              class="text-xs text-red-500 mt-1">O formato do e-mail é inválido.</span>
+            <datalist id="sugestoes-email">
+              <option *ngFor="let sug of emailSugestoes" [value]="sug"></option>
+            </datalist>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              Morada / Endereço Resumido (opcional)
+            </label>
+            <input type="text" formControlName="endereco_resumido"
+              class="w-full rounded-md border border-gray-300 p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="Rua, Bairro, Cidade">
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── Triagem + Status ────────────────────────────── -->
+      <div class="bg-gray-50 -mx-8 -mb-8 p-8 border-t border-gray-100">
+        <h4 class="text-sm font-bold text-blue-600 uppercase tracking-wider mb-4 border-b border-blue-200 pb-2">
+          Triagem Inicial de Sistema
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+          <div class="md:col-span-1">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              Encaminhar para Área <span class="text-red-500">*</span>
+            </label>
+            <select formControlName="area_atendimento_atual"
+              class="w-full rounded-md border border-gray-300 p-2.5 focus:ring-2 focus:ring-blue-500 bg-white font-semibold text-blue-800">
+              <option *ngFor="let a of areasDisponiveis" [value]="a">{{ a }}</option>
+            </select>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              Motivo da Consulta / Queixa Principal
+            </label>
+            <textarea formControlName="queixa_principal" rows="3"
+              class="w-full rounded-md border border-gray-300 p-2.5 focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+              placeholder="Descreva brevemente o que motivou a procura pela clínica..."></textarea>
+          </div>
+
+          <!-- ✅ Status — só aparece em modo edição -->
+          <div *ngIf="modoFormulario === 'editar'" class="md:col-span-3">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Status do Paciente</label>
+            <select formControlName="is_ativo"
+              class="w-full md:w-64 rounded-md border border-gray-300 p-2.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+              <option [ngValue]="true">🟢 Ativo — aparece nas buscas</option>
+              <option [ngValue]="false">🔴 Inativo — oculto nas buscas</option>
+            </select>
+            <p class="text-xs text-gray-400 mt-1">
+              Pacientes inativos não aparecem na listagem mas mantêm o histórico.
+            </p>
+          </div>
+
+        </div>
+
+        <div class="mt-8 flex justify-end gap-4">
+          <button type="submit" [disabled]="isLoading"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg shadow-md font-bold flex items-center transition-colors disabled:opacity-50">
+            <iconify-icon *ngIf="isLoading"  icon="ph:spinner-gap-bold" class="animate-spin mr-2 text-xl"></iconify-icon>
+            <iconify-icon *ngIf="!isLoading" icon="ph:floppy-disk-bold" class="mr-2 text-xl"></iconify-icon>
+            {{ isLoading ? 'Processando...' : (modoFormulario === 'criar' ? 'Salvar Ficha do Paciente' : 'Atualizar Ficha') }}
+          </button>
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>

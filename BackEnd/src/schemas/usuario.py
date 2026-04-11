@@ -14,13 +14,18 @@ class UsuarioCreate(UsuarioBase):
     senha: str = Field(..., min_length=6, description="Senha em texto plano que será hasheada no service")
 
 class UsuarioUpdate(BaseModel):
-    nome_completo: Optional[str] = Field(None, min_length=3, max_length=150)
+    nome_completo: Optional[str] = None
     email: Optional[EmailStr] = None
+    perfil: Optional[TipoPerfil] = None
     is_ativo: Optional[bool] = None
 
-class UsuarioResponse(UsuarioBase):
+class UsuarioResponse(BaseModel):
     id: str = Field(alias="_id")
+    nome_completo: str
+    matricula: str
+    email: EmailStr
+    perfil: TipoPerfil
+    is_ativo: bool
     criado_em: datetime
-    atualizado_em: datetime
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)

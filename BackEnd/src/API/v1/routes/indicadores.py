@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, Query, status, HTTPException
 from typing import List
+
+from src.core.database import get_database # <-- IMPORTAÇÃO CORRIGIDA
 from src.core.security import get_current_user
 from src.models.dim_usuario import TipoPerfil
 from src.schemas.indicador import IndicadorCreate, IndicadorUpdate, IndicadorResponse
@@ -22,6 +24,23 @@ async def listar_indicadores(
 ):
     return await indicador_service.listar_indicadores(apenas_ativos)
 
+
+# 👇 ROTA ESPECÍFICA MOVIDA PARA CIMA PARA EVITAR CONFLITO COM O {indicador_id} 👇
+@router.get("/por-area/{nome_area}", response_model=List[IndicadorResponse])
+async def listar_indicadores_por_area(nome_area: str, db = Depends(get_database)):
+    # Busca indicadores que pertencem à área específica OU que são globais ("Todas")
+    query = {
+        "is_ativo": True,
+        "areas_vinculadas": {"$in": [nome_area, "Todas"]}
+    }
+    cursor = db.dim_indicador.find(query)
+    indicadores = await cursor.to_list(length=100)
+    for i in indicadores: 
+        i["_id"] = str(i["_id"])
+    return indicadores
+
+
+# 👇 ROTAS COM PARÂMETRO {id} FICAM POR ÚLTIMO 👇
 @router.get("/{indicador_id}", response_model=IndicadorResponse)
 async def buscar_indicador(
     indicador_id: str,

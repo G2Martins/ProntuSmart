@@ -1,1 +1,194 @@
-<p>busca-pacientes works!</p>
+<div class="max-w-7xl mx-auto space-y-6">
+  
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800">Prontuários e Pacientes</h2>
+      <p class="text-gray-600">Busque pacientes, consulte históricos ou inicie uma nova triagem.</p>
+    </div>
+    
+    <button *ngIf="perfil === 'Administrador' || perfil === 'Docente'" routerLink="/pacientes/novo" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg shadow flex items-center transition-colors">
+      <iconify-icon icon="ph:user-plus-bold" class="mr-2 text-lg"></iconify-icon> Novo Paciente
+    </button>
+  </div>
+
+  <div class="bg-white shadow rounded-lg border border-gray-100 overflow-hidden">
+    <div class="bg-gray-50 border-b border-gray-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      
+      <div class="flex items-center">
+        <iconify-icon icon="ph:users-three-bold" class="text-gray-600 text-xl mr-2"></iconify-icon>
+        <h3 class="text-lg font-semibold text-gray-800">Base Ativa</h3>
+        <span *ngIf="!isLoading" class="ml-3 bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-0.5 rounded-full">{{ pacientes.length }}</span>
+      </div>
+      
+      <div class="relative w-full sm:w-80">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <iconify-icon icon="ph:magnifying-glass-bold" class="text-gray-400"></iconify-icon>
+        </div>
+        <input type="text" [(ngModel)]="termoBusca" class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors" placeholder="Buscar por nome, CPF ou área...">
+      </div>
+    </div>
+
+    <div *ngIf="isLoading" class="p-12 text-center text-gray-500">
+      <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-4xl text-blue-500 mb-3"></iconify-icon>
+      <p>A carregar prontuários...</p>
+    </div>
+
+    <div *ngIf="!isLoading && pacientesFiltrados.length === 0" class="p-12 text-center text-gray-400">
+      <iconify-icon icon="ph:magnifying-glass-minus-bold" class="text-5xl mb-3"></iconify-icon>
+      <p class="font-medium text-lg">Nenhum paciente localizado.</p>
+    </div>
+
+    <div *ngIf="!isLoading && pacientesFiltrados.length > 0" class="overflow-x-auto">
+      <table class="w-full text-sm text-left">
+        <thead class="bg-gray-50 text-xs text-gray-500 uppercase tracking-wider sticky top-0">
+          <tr>
+            <th class="px-6 py-4">Identificação</th>
+            <th class="px-6 py-4">Contato</th>
+            <th class="px-6 py-4">Área de Triagem</th>
+            <th class="px-6 py-4 text-right">Ações</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <tr *ngFor="let p of pacientesFiltrados" class="hover:bg-blue-50/50 transition-colors group">
+            
+            <td class="px-6 py-4">
+              <div class="flex items-center">
+                <div class="h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold mr-3 uppercase">
+                  {{ p.nome_completo.charAt(0) }}
+                </div>
+                <div>
+                  <p class="font-bold text-gray-800">{{ p.nome_completo }}</p>
+                  <p class="text-xs text-gray-500 font-mono">CPF: {{ p.cpf }}</p>
+                </div>
+              </div>
+            </td>
+
+            <td class="px-6 py-4">
+              <p class="text-gray-700 flex items-center"><iconify-icon icon="ph:phone-bold" class="mr-1.5 text-gray-400"></iconify-icon> {{ p.telefone_contato }}</p>
+            </td>
+
+            <td class="px-6 py-4">
+              <span class="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full text-xs font-semibold flex w-max items-center">
+                <iconify-icon icon="ph:heartbeat-bold" class="mr-1.5 text-blue-500 text-sm"></iconify-icon> {{ p.area_atendimento_atual }}
+              </span>
+            </td>
+
+            <td class="px-6 py-4 text-right space-x-4 whitespace-nowrap">
+              
+              <button *ngIf="perfil === 'Docente'" (click)="abrirTriagem(p)" class="text-orange-500 hover:text-orange-700 font-bold transition-colors inline-flex items-center" title="Iniciar Nova Triagem Clínica">
+                <iconify-icon icon="ph:stethoscope-bold" class="text-xl mr-1"></iconify-icon> Triar
+              </button>
+
+              <button (click)="abrirProntuario(p)" class="text-blue-600 hover:text-blue-800 font-medium transition-colors inline-flex items-center" title="Acessar Prontuário">
+                <iconify-icon icon="ph:folder-user-bold" class="text-xl mr-1"></iconify-icon> Abrir
+              </button>
+
+              <a *ngIf="perfil === 'Administrador' || perfil === 'Docente'" [routerLink]="['/pacientes/editar', p._id]" class="text-gray-400 hover:text-gray-700 transition-colors inline-flex items-center" title="Editar Ficha">
+                <iconify-icon icon="ph:pencil-simple-bold" class="text-xl"></iconify-icon>
+              </a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div *ngIf="mostrarModalTriagem" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl p-6">
+    
+    <div class="flex justify-between items-center border-b border-gray-100 pb-4 mb-5">
+      <div>
+        <h3 class="text-xl font-bold text-gray-800">Nova Triagem Clínica</h3>
+        <p class="text-sm text-gray-500">Paciente: <span class="font-semibold text-blue-600">{{ pacienteSelecionado?.nome_completo }}</span></p>
+      </div>
+      <button (click)="fecharTriagem()" class="text-gray-400 hover:text-red-500 transition-colors">
+        <iconify-icon icon="ph:x-bold" class="text-2xl"></iconify-icon>
+      </button>
+    </div>
+
+    <form [formGroup]="triagemForm" (ngSubmit)="salvarTriagem()">
+      <div class="grid grid-cols-1 gap-5">
+        
+        <!-- Área -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Área de Atendimento</label>
+          <select formControlName="area_atendimento" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 bg-gray-50">
+            <option value="">Selecione a área clínica...</option>
+            <option *ngFor="let area of areasDisponiveis" [value]="area">{{ area }}</option>
+          </select>
+        </div>
+
+        <!-- Estagiário com datalist -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">
+            Vincular Estagiário Responsável
+            <span *ngIf="estagiariosDisponiveis.length === 0" class="text-orange-500 font-normal text-xs ml-2">(Nenhum estagiário ativo encontrado)</span>
+          </label>
+          <input 
+            type="text" 
+            list="lista-estagiarios" 
+            placeholder="Digite para buscar..." 
+            class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 bg-gray-50"
+            (change)="selecionarEstagiario($event)"
+          >
+          <datalist id="lista-estagiarios">
+            <option *ngFor="let e of estagiariosDisponiveis" [value]="e.nome_completo">{{ e.matricula }}</option>
+          </datalist>
+          <input type="hidden" formControlName="estagiario_id">
+          <span *ngIf="triagemForm.get('estagiario_id')?.touched && !triagemForm.get('estagiario_id')?.value" class="text-xs text-red-500">Selecione um estagiário da lista.</span>
+        </div>
+
+        <!-- CID com busca reativa -->
+        <div class="relative">
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Diagnóstico Principal (CID-10)</label>
+          
+          <div class="relative">
+            <input 
+              type="text"
+              [value]="termoBuscaCid"
+              (input)="onBuscaCidChange($any($event.target).value)"
+              placeholder="Digite o código (ex: M54) ou descrição..." 
+              class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 bg-gray-50 pr-10"
+              autocomplete="off"
+            >
+            <div class="absolute right-3 top-3 text-gray-400">
+              <iconify-icon *ngIf="buscandoCids" icon="ph:spinner-gap-bold" class="animate-spin text-blue-500"></iconify-icon>
+              <iconify-icon *ngIf="!buscandoCids && cidSelecionado" icon="ph:check-circle-fill" class="text-green-500"></iconify-icon>
+            </div>
+          </div>
+
+          <!-- Dropdown de resultados -->
+          <div *ngIf="cidsFiltrados.length > 0" class="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto">
+            <button 
+              *ngFor="let cid of cidsFiltrados" 
+              type="button"
+              (click)="selecionarCidDaLista(cid)"
+              class="w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors border-b border-gray-100 last:border-0"
+            >
+              <span class="font-mono font-bold text-blue-700 text-sm">{{ cid.codigo }}</span>
+              <span class="text-gray-700 text-sm ml-2">{{ cid.descricao }}</span>
+            </button>
+          </div>
+
+          <p *ngIf="termoBuscaCid.length >= 2 && !buscandoCids && cidsFiltrados.length === 0 && !cidSelecionado" class="text-xs text-gray-400 mt-1">
+            Nenhum CID encontrado para "{{ termoBuscaCid }}"
+          </p>
+          <p *ngIf="termoBuscaCid.length < 2" class="text-xs text-gray-400 mt-1">Digite ao menos 2 caracteres para buscar.</p>
+
+          <input type="hidden" formControlName="cid_id">
+        </div>
+
+      </div>
+
+      <div class="mt-8 flex justify-end gap-3 pt-4 border-t border-gray-100">
+        <button type="button" (click)="fecharTriagem()" class="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 font-semibold transition-colors">
+          Cancelar
+        </button>
+        <button type="submit" [disabled]="triagemForm.invalid" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white rounded-lg font-semibold shadow-sm transition-colors flex items-center">
+          <iconify-icon icon="ph:check-circle-bold" class="mr-2 text-lg"></iconify-icon>
+          Confirmar Triagem
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

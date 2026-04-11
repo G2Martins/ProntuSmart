@@ -1,1 +1,721 @@
-<p>visao-prontuario works!</p>
+<div class="max-w-6xl mx-auto space-y-6">
+
+  <!-- Loading -->
+  <div *ngIf="isLoadingProntuario" class="flex flex-col items-center justify-center py-20">
+    <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-5xl text-blue-500 mb-4"></iconify-icon>
+    <p class="text-gray-500 font-medium">Carregando prontuário...</p>
+  </div>
+
+  <ng-container *ngIf="!isLoadingProntuario && prontuario">
+
+    <!-- ── Cabeçalho ──────────────────────────────────────── -->
+    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+      <div>
+        <button (click)="voltar()"
+          class="flex items-center text-gray-500 hover:text-blue-600 text-sm font-medium mb-2 transition-colors group">
+          <iconify-icon icon="ph:arrow-left-bold" class="mr-1 group-hover:-translate-x-1 transition-transform"></iconify-icon>
+          Voltar para Pacientes
+        </button>
+        <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-3 flex-wrap">
+          <iconify-icon icon="ph:folder-user-bold" class="text-blue-600 text-3xl"></iconify-icon>
+          {{ prontuario.numero_prontuario }}
+          <span class="text-sm font-semibold px-3 py-1 rounded-full border"
+            [ngClass]="getStatusProntuarioClass(prontuario.status)">
+            {{ prontuario.status }}
+          </span>
+        </h2>
+        <p class="text-gray-500 mt-1 text-sm">
+          Aberto em {{ prontuario.criado_em | date:'dd/MM/yyyy' }} &middot; {{ prontuario.area_atendimento }}
+        </p>
+      </div>
+
+      <!-- Botões de ação — SEM duplicata -->
+      <div class="flex flex-wrap gap-2">
+        <!-- Avaliação Funcional: Estagiário e Docente -->
+        <button
+          *ngIf="perfil === 'Estagiario' || perfil === 'Docente'"
+          (click)="router.navigate(['/prontuarios/avaliacao', prontuario._id])"
+          class="border border-blue-300 text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold transition-colors">
+          <iconify-icon icon="ph:clipboard-text-bold" class="text-base"></iconify-icon>
+          Avaliação Funcional
+        </button>
+        <!-- Nova Meta: só Estagiário -->
+        <button
+          *ngIf="perfil === 'Estagiario'"
+          (click)="router.navigate(['/prontuarios/meta', prontuario._id])"
+          class="border border-purple-300 text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold transition-colors">
+          <iconify-icon icon="ph:target-bold" class="text-base"></iconify-icon>
+          Nova Meta SMART
+        </button>
+        <!-- Nova Evolução: só Estagiário — único botão -->
+        <button
+          *ngIf="perfil === 'Estagiario'"
+          (click)="irParaNovaEvolucao()"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold shadow transition-colors">
+          <iconify-icon icon="ph:file-plus-bold" class="text-base"></iconify-icon>
+          Nova Evolução
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Cards de Resumo ────────────────────────────────── -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+      <!-- Paciente -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-5 flex items-start gap-4 lg:col-span-2">
+        <div class="h-14 w-14 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-2xl uppercase flex-shrink-0">
+          {{ paciente?.nome_completo?.charAt(0) || '?' }}
+        </div>
+        <div class="min-w-0">
+          <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Paciente</p>
+          <p class="font-bold text-gray-800 text-lg leading-tight truncate">{{ paciente?.nome_completo || 'Carregando...' }}</p>
+          <p class="text-sm text-gray-500">
+            {{ paciente?.sexo }} &middot; {{ calcularIdade(paciente?.data_nascimento) }} anos
+          </p>
+          <p class="text-xs font-mono text-gray-400 mt-0.5">CPF: {{ paciente?.cpf }}</p>
+        </div>
+      </div>
+
+      <!-- Área + Sessões -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-5">
+        <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-3">Área Clínica</p>
+        <div class="flex items-center gap-2 mb-4">
+          <iconify-icon icon="ph:heartbeat-bold" class="text-blue-500 text-2xl flex-shrink-0"></iconify-icon>
+          <p class="font-semibold text-gray-800 text-sm leading-tight">{{ prontuario.area_atendimento }}</p>
+        </div>
+        <div class="border-t border-gray-100 pt-3">
+          <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Total de Sessões</p>
+          <p class="text-3xl font-bold text-blue-600 mt-1">{{ prontuario.total_sessoes }}</p>
+        </div>
+      </div>
+
+      <!-- Última Sessão + Avaliação Inicial -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-5">
+        <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-3">Última Sessão</p>
+        <div class="flex items-center gap-2 mb-4">
+          <iconify-icon icon="ph:calendar-check-bold" class="text-emerald-500 text-2xl flex-shrink-0"></iconify-icon>
+          <p class="font-semibold text-gray-800 text-sm">
+            {{ prontuario.data_ultima_evolucao
+              ? (prontuario.data_ultima_evolucao | date:'dd/MM/yyyy')
+              : 'Sem sessões' }}
+          </p>
+        </div>
+        <div class="border-t border-gray-100 pt-3">
+          <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Problema Prioritário</p>
+          <p *ngIf="prontuario.problema_funcional_prioritario" class="text-xs text-gray-600 mt-1 line-clamp-2">
+            {{ prontuario.problema_funcional_prioritario }}
+          </p>
+          <p *ngIf="!prontuario.problema_funcional_prioritario" class="text-xs text-gray-400 mt-1 italic">
+            Avaliação funcional não realizada
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Dados Clínicos Iniciais (se preenchidos) ───────── -->
+    <div *ngIf="prontuario.diagnostico_medico || prontuario.diagnostico_fisioterapeutico"
+      class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+      <div class="bg-gray-50 border-b border-gray-100 px-6 py-3 flex items-center gap-2">
+        <iconify-icon icon="ph:stethoscope-bold" class="text-gray-500 text-lg"></iconify-icon>
+        <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Dados Clínicos Iniciais</h3>
+      </div>
+      <div class="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+        <div *ngIf="prontuario.diagnostico_medico">
+          <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Diagnóstico Médico</p>
+          <p class="text-gray-700">{{ prontuario.diagnostico_medico }}</p>
+        </div>
+        <div *ngIf="prontuario.diagnostico_fisioterapeutico">
+          <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Diagnóstico Fisioterapêutico</p>
+          <p class="text-gray-700">{{ prontuario.diagnostico_fisioterapeutico }}</p>
+        </div>
+        <div *ngIf="prontuario.queixa_principal">
+          <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Queixa Principal</p>
+          <p class="text-gray-700">{{ prontuario.queixa_principal }}</p>
+        </div>
+        <div *ngIf="prontuario.objetivo_paciente">
+          <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Objetivo do Paciente</p>
+          <p class="text-gray-700">{{ prontuario.objetivo_paciente }}</p>
+        </div>
+        <div *ngIf="prontuario.comorbidades">
+          <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Comorbidades</p>
+          <p class="text-gray-700">{{ prontuario.comorbidades }}</p>
+        </div>
+        <div *ngIf="prontuario.dispositivo_auxiliar">
+          <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Dispositivo Auxiliar</p>
+          <p class="text-gray-700">{{ prontuario.dispositivo_auxiliar }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Tabs ───────────────────────────────────────────── -->
+    <div class="bg-white shadow-sm rounded-lg border border-gray-100 overflow-hidden">
+
+      <!-- Tab headers -->
+      <div class="flex border-b border-gray-200">
+        <button (click)="abaAtiva = 'evolucoes'"
+          class="px-6 py-4 text-sm font-semibold flex items-center gap-2 transition-colors border-b-2 -mb-px"
+          [ngClass]="abaAtiva === 'evolucoes'
+            ? 'border-blue-600 text-blue-600'
+            : 'border-transparent text-gray-500 hover:text-gray-700'">
+          <iconify-icon icon="ph:clipboard-text-bold" class="text-base"></iconify-icon>
+          Evoluções Clínicas
+          <span *ngIf="!isLoadingEvolucoes"
+            class="ml-1 bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">
+            {{ evolucoes.length }}
+          </span>
+        </button>
+        <button (click)="abaAtiva = 'metas'"
+          class="px-6 py-4 text-sm font-semibold flex items-center gap-2 transition-colors border-b-2 -mb-px"
+          [ngClass]="abaAtiva === 'metas'
+            ? 'border-blue-600 text-blue-600'
+            : 'border-transparent text-gray-500 hover:text-gray-700'">
+          <iconify-icon icon="ph:target-bold" class="text-base"></iconify-icon>
+          Metas SMART
+          <span *ngIf="!isLoadingMetas && metas.length > 0"
+            class="ml-1 bg-purple-100 text-purple-700 text-xs font-bold px-2 py-0.5 rounded-full">
+            {{ metas.length }}
+          </span>
+        </button>
+        <button (click)="abaAtiva = 'graficos'"
+          class="px-6 py-4 text-sm font-semibold flex items-center gap-2 transition-colors border-b-2 -mb-px"
+          [ngClass]="abaAtiva === 'graficos'
+            ? 'border-blue-600 text-blue-600'
+            : 'border-transparent text-gray-500 hover:text-gray-700'">
+          <iconify-icon icon="ph:chart-line-up-bold" class="text-base"></iconify-icon>
+          Gráficos
+          <span *ngIf="!isLoadingGraficos && dadosGraficos.length > 0"
+            class="ml-1 bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full">
+            {{ dadosGraficos.length }}
+          </span>
+        </button>
+      </div>
+
+      <!-- ── Aba: Evoluções ─────────────────────────────── -->
+      <div *ngIf="abaAtiva === 'evolucoes'" class="p-6">
+
+        <div *ngIf="isLoadingEvolucoes" class="py-10 text-center text-gray-400">
+          <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-3xl text-blue-400 mb-2"></iconify-icon>
+          <p>Carregando histórico clínico...</p>
+        </div>
+
+        <div *ngIf="!isLoadingEvolucoes && evolucoes.length === 0" class="py-14 text-center text-gray-400">
+          <iconify-icon icon="ph:clipboard-text-bold" class="text-6xl mb-4"></iconify-icon>
+          <p class="font-semibold text-gray-600 text-lg">Nenhuma evolução registrada</p>
+          <p class="text-sm mt-1" *ngIf="perfil === 'Estagiario'">
+            Clique em "Nova Evolução" para registrar a primeira sessão.
+          </p>
+        </div>
+
+        <!-- Timeline -->
+        <div *ngIf="!isLoadingEvolucoes && evolucoes.length > 0" class="space-y-6">
+          <div *ngFor="let ev of evolucoes; let i = index; let isLast = last" class="relative">
+            <div *ngIf="!isLast" class="absolute left-5 top-12 bottom-0 w-0.5 bg-gray-200 z-0"></div>
+            <div class="flex gap-4 relative z-10">
+              <div class="h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-sm"
+                [ngClass]="getEvolucaoIconColor(ev.status)">
+                <iconify-icon [icon]="getEvolucaoStatusIcon(ev.status)" class="text-lg"></iconify-icon>
+              </div>
+              <div class="flex-1 bg-gray-50 rounded-xl border border-gray-200 p-5 hover:border-blue-200 transition-all">
+                <div class="flex items-start justify-between gap-4 mb-4 flex-wrap">
+                  <div class="flex items-center gap-3 flex-wrap">
+                    <span class="text-xs font-bold px-2.5 py-1 rounded-full"
+                      [ngClass]="getEvolucaoStatusClass(ev.status)">
+                      {{ ev.status }}
+                    </span>
+                    <span class="text-xs text-gray-400 flex items-center gap-1">
+                      <iconify-icon icon="ph:calendar-blank-bold"></iconify-icon>
+                      {{ ev.criado_em | date:'dd/MM/yyyy · HH:mm' }}
+                    </span>
+                    <span class="text-xs font-semibold text-gray-500">
+                      Sessão {{ evolucoes.length - i }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Texto SOAP -->
+                <div class="bg-white rounded-lg border border-gray-100 p-4 mb-3">
+                  <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                    Relatório Clínico (SOAP)
+                  </p>
+                  <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{{ ev.texto_clinico }}</p>
+                </div>
+
+                <!-- Indicadores -->
+                <div *ngIf="ev.medicoes && ev.medicoes.length > 0"
+                  class="bg-white rounded-lg border border-gray-100 p-4 mb-3">
+                  <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                    <iconify-icon icon="ph:chart-line-up-bold" class="mr-1 text-blue-500"></iconify-icon>
+                    Indicadores Funcionais
+                  </p>
+                  <div class="flex flex-wrap gap-2">
+                    <span *ngFor="let med of ev.medicoes"
+                      class="bg-blue-50 border border-blue-100 text-blue-800 text-xs px-3 py-1.5 rounded-full">
+                      <span class="font-semibold">{{ med.nome_indicador }}:</span>
+                      {{ med.valor_registrado }} <span class="text-blue-500">{{ med.unidade }}</span>
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Reavaliação -->
+                <div *ngIf="ev.houve_progresso || ev.condicao_meta"
+                  class="bg-white rounded-lg border border-gray-100 p-4 mb-3">
+                  <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                    Reavaliação da Meta
+                  </p>
+                  <div class="flex flex-wrap gap-4 text-sm">
+                    <span *ngIf="ev.houve_progresso" class="text-gray-600">
+                      <span class="font-semibold">Progresso:</span> {{ ev.houve_progresso }}
+                    </span>
+                    <span *ngIf="ev.condicao_meta" class="text-gray-600">
+                      <span class="font-semibold">Condição da meta:</span> {{ ev.condicao_meta }}
+                    </span>
+                    <span *ngIf="ev.proxima_revisao" class="text-gray-600">
+                      <span class="font-semibold">Próxima revisão:</span>
+                      {{ ev.proxima_revisao | date:'dd/MM/yyyy' }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Feedback docente -->
+                 <!-- Feedback docente -->
+                <div *ngIf="ev.feedback_docente"
+                  class="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
+                  <iconify-icon icon="ph:chat-circle-text-bold" class="text-amber-500 text-lg flex-shrink-0 mt-0.5"></iconify-icon>
+                  <div>
+                    <p class="text-xs font-bold text-amber-700 mb-1">Anotação do Docente Supervisor</p>
+                    <p class="text-sm text-amber-800">{{ ev.feedback_docente }}</p>
+                  </div>
+                </div>
+
+                <!-- ← NOVO: Banner de ação para estagiário quando evolução foi devolvida -->
+                <div *ngIf="ev.status === 'Ajustes Solicitados' && perfil === 'Estagiario'"
+                  class="mt-3 bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start justify-between gap-4">
+                  <div class="flex items-start gap-2">
+                    <iconify-icon icon="ph:arrow-bend-up-right-bold" class="text-blue-500 text-lg flex-shrink-0 mt-0.5"></iconify-icon>
+                    <div>
+                      <p class="text-sm font-bold text-blue-700 mb-0.5">O que fazer agora?</p>
+                      <p class="text-xs text-blue-600 leading-relaxed">
+                        Leia o feedback acima, corrija os pontos indicados e registre
+                        uma <strong>nova evolução</strong>. A evolução anterior permanece
+                        no histórico para auditoria clínica.
+                      </p>
+                    </div>
+                  </div>
+                  <button (click)="irParaNovaEvolucao()"
+                    class="flex-shrink-0 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition-colors whitespace-nowrap">
+                    <iconify-icon icon="ph:file-plus-bold"></iconify-icon>
+                    Nova Evolução
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Aba: Metas SMART ──────────────────────────── -->
+      <div *ngIf="abaAtiva === 'metas'" class="p-6">
+      
+        <div *ngIf="isLoadingMetas" class="py-10 text-center text-gray-400">
+          <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-3xl text-purple-400 mb-2"></iconify-icon>
+          <p>Carregando metas clínicas...</p>
+        </div>
+      
+        <div *ngIf="!isLoadingMetas && metas.length === 0" class="py-14 text-center text-gray-400">
+          <iconify-icon icon="ph:target-bold" class="text-6xl mb-4"></iconify-icon>
+          <p class="font-semibold text-gray-600 text-lg">Nenhuma meta cadastrada</p>
+          <p class="text-sm mt-1" *ngIf="perfil === 'Estagiario'">
+            Clique em "Nova Meta SMART" para definir os objetivos clínicos.
+          </p>
+        </div>
+      
+        <div *ngIf="!isLoadingMetas && metas.length > 0" class="space-y-5">
+          <div *ngFor="let meta of metas; let i = index"
+            class="rounded-xl border overflow-hidden transition-all"
+            [ngClass]="meta.status === 'Cancelada' ? 'border-gray-200 opacity-60' : 'border-gray-200 hover:border-purple-200'">
+        
+            <!-- Header da meta -->
+            <div class="flex items-start justify-between gap-4 p-5 border-b border-gray-100 flex-wrap bg-gray-50">
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-sm flex-shrink-0 mt-0.5">
+                  {{ i + 1 }}
+                </div>
+                <div>
+                  <p *ngIf="meta.problema_relacionado" class="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">
+                    {{ meta.problema_relacionado }}
+                  </p>
+                  <p class="font-bold text-gray-800 text-base leading-snug">{{ meta.especifico }}</p>
+                  <p *ngIf="meta.criterio_mensuravel" class="text-sm text-gray-500 mt-0.5 flex items-center gap-1">
+                    <iconify-icon icon="ph:ruler-bold" class="text-gray-400"></iconify-icon>
+                    {{ meta.criterio_mensuravel }}
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <span class="text-xs font-bold px-3 py-1.5 rounded-full border"
+                  [ngClass]="getMetaStatusClass(meta.status)">
+                  {{ meta.status }}
+                </span>
+                <!-- Botões de ação — apenas Estagiário em metas editáveis -->
+                <ng-container *ngIf="perfil === 'Estagiario' && metaPodeSerEditada(meta)">
+                  <button (click)="abrirModalEditar(meta)"
+                    class="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors"
+                    title="Editar meta">
+                    <iconify-icon icon="ph:pencil-simple-bold" class="text-base"></iconify-icon>
+                  </button>
+                  <button (click)="abrirModalCancelar(meta)"
+                    class="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:border-red-400 hover:text-red-600 transition-colors"
+                    title="Cancelar meta">
+                    <iconify-icon icon="ph:x-circle-bold" class="text-base"></iconify-icon>
+                  </button>
+                </ng-container>
+              </div>
+            </div>
+          
+            <!-- Progresso -->
+            <div class="px-5 py-4 bg-white">
+              <div class="flex justify-between items-center mb-2 text-xs text-gray-500">
+                <span>Inicial: <strong class="text-gray-800">{{ meta.valor_inicial }}</strong></span>
+                <span class="font-bold text-base" [ngClass]="meta.progresso_percentual >= 100 ? 'text-green-600' : 'text-blue-600'">
+                  {{ meta.progresso_percentual | number:'1.0-0' }}%
+                </span>
+                <span>Alvo: <strong class="text-gray-800">{{ meta.valor_alvo }}</strong></span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                <div class="h-3 rounded-full transition-all duration-500"
+                  [ngClass]="getProgressoColor(meta.progresso_percentual)"
+                  [style.width.%]="meta.progresso_percentual > 100 ? 100 : meta.progresso_percentual">
+                </div>
+              </div>
+            </div>
+          
+            <!-- Detalhes SMART -->
+            <div class="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm border-t border-gray-100">
+              <div *ngIf="meta.condicao_execucao">
+                <p class="text-xs font-semibold text-gray-400 uppercase mb-1"><span class="text-orange-600">A</span> — Condição de execução</p>
+                <p class="text-gray-700">{{ meta.condicao_execucao }}</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold text-gray-400 uppercase mb-1"><span class="text-orange-600">A</span> — Justificativa clínica</p>
+                <p class="text-gray-700">{{ meta.alcancavel }}</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold text-gray-400 uppercase mb-1"><span class="text-purple-600">R</span> — Relevância funcional</p>
+                <p class="text-gray-700">{{ meta.relevante }}</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold text-gray-400 uppercase mb-1"><span class="text-red-600">T</span> — Prazo</p>
+                <p class="text-gray-700">{{ meta.data_limite | date:'dd/MM/yyyy' }}</p>
+                <p *ngIf="meta.data_reavaliacao" class="text-gray-500 text-xs mt-0.5">
+                  Reavaliação: {{ meta.data_reavaliacao | date:'dd/MM/yyyy' }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Aba: Gráficos de Evolução ──────────────────── -->
+      <div *ngIf="abaAtiva === 'graficos'" class="p-6">
+
+        <!-- Loading -->
+        <div *ngIf="isLoadingGraficos" class="py-10 text-center text-gray-400">
+          <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-3xl text-blue-400 mb-2"></iconify-icon>
+          <p class="text-sm mt-1">Carregando gráficos de evolução...</p>
+        </div>
+
+        <!-- Estado vazio -->
+        <div *ngIf="!isLoadingGraficos && dadosGraficos.length === 0"
+          class="py-14 text-center text-gray-400">
+          <iconify-icon icon="ph:chart-line-up-bold" class="text-6xl mb-4"></iconify-icon>
+          <p class="font-semibold text-gray-600 text-lg">Nenhum indicador mensurado</p>
+          <p class="text-sm mt-1">
+            Registre evoluções com medições de indicadores clínicos para visualizar os gráficos de progresso.
+          </p>
+        </div>
+
+        <!-- Cards de Gráfico -->
+        <div *ngIf="!isLoadingGraficos && dadosGraficos.length > 0" class="space-y-8">
+          <div *ngFor="let serie of dadosGraficos"
+            class="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
+
+            <!-- Cabeçalho do card -->
+            <div class="bg-gray-50 px-5 py-4 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
+                  <iconify-icon icon="ph:chart-line-up-bold" class="text-lg"></iconify-icon>
+                </div>
+                <div>
+                  <h4 class="font-bold text-gray-800 text-base">{{ serie.nome }}</h4>
+                  <p class="text-xs text-gray-400">Unidade: <strong>{{ serie.unidade || '—' }}</strong></p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 flex-wrap">
+                <span class="text-xs px-3 py-1 rounded-full font-semibold border"
+                  [ngClass]="serie.direcao_melhora === 'maior_melhor'
+                    ? 'bg-green-50 text-green-700 border-green-200'
+                    : 'bg-blue-50 text-blue-700 border-blue-200'">
+                  {{ serie.direcao_melhora === 'maior_melhor' ? '↑ Quanto maior, melhor' : '↓ Quanto menor, melhor' }}
+                </span>
+                <span class="text-sm font-bold" [ngClass]="getTendenciaBadge(serie).cor">
+                  {{ getTendenciaBadge(serie).texto }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Linha de resumo: Inicial → Atual → Alvo -->
+            <div class="grid grid-cols-3 divide-x divide-gray-100 border-b border-gray-100">
+              <div class="px-4 py-3 text-center">
+                <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Inicial</p>
+                <p class="text-xl font-bold text-gray-600">
+                  {{ serie.pontos[0].valor }}<span class="text-xs font-normal text-gray-400 ml-1">{{ serie.unidade }}</span>
+                </p>
+                <p class="text-xs text-gray-400">{{ formatDataCurta(serie.pontos[0].data) }}</p>
+              </div>
+              <div class="px-4 py-3 text-center">
+                <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Atual</p>
+                <p class="text-2xl font-extrabold" [ngClass]="getCorLinhaClass(serie)">
+                  {{ serie.pontos[serie.pontos.length - 1].valor }}<span class="text-xs font-normal text-gray-400 ml-1">{{ serie.unidade }}</span>
+                </p>
+                <p class="text-xs text-gray-400">{{ formatDataCurta(serie.pontos[serie.pontos.length - 1].data) }}</p>
+              </div>
+              <div class="px-4 py-3 text-center">
+                <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Meta / Alvo</p>
+                <p *ngIf="serie.valor_alvo != null" class="text-xl font-bold text-purple-600">
+                  {{ serie.valor_alvo }}<span class="text-xs font-normal text-purple-400 ml-1">{{ serie.unidade }}</span>
+                </p>
+                <p *ngIf="serie.valor_alvo == null" class="text-sm text-gray-400 italic pt-1">Não definida</p>
+              </div>
+            </div>
+
+            <!-- Gráfico SVG (2+ pontos) -->
+            <div *ngIf="serie.pontos.length >= 2" class="p-4 bg-white">
+              <svg viewBox="0 0 560 200" class="w-full" style="overflow: visible">
+
+                <!-- Grid horizontal + labels do eixo Y -->
+                <ng-container *ngFor="let tick of getYTicks(serie.pontos, serie.valor_alvo)">
+                  <line [attr.x1]="svgPad.left" [attr.y1]="tick.y"
+                        [attr.x2]="svgW - svgPad.right" [attr.y2]="tick.y"
+                        stroke="#f3f4f6" stroke-width="1"/>
+                  <text [attr.x]="svgPad.left - 6" [attr.y]="tick.y + 4"
+                        text-anchor="end" font-size="10" fill="#9ca3af">{{ tick.label }}</text>
+                </ng-container>
+
+                <!-- Linha tracejada da Meta (valor_alvo) -->
+                <ng-container *ngIf="serie.valor_alvo != null">
+                  <line [attr.x1]="svgPad.left"
+                        [attr.y1]="getYCoord(serie.valor_alvo, serie.pontos, serie.valor_alvo)"
+                        [attr.x2]="svgW - svgPad.right"
+                        [attr.y2]="getYCoord(serie.valor_alvo, serie.pontos, serie.valor_alvo)"
+                        stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="6,3"/>
+                  <text [attr.x]="svgW - svgPad.right + 4"
+                        [attr.y]="getYCoord(serie.valor_alvo, serie.pontos, serie.valor_alvo) + 4"
+                        font-size="9" fill="#7c3aed" font-weight="600">Alvo</text>
+                </ng-container>
+
+                <!-- Eixos X e Y -->
+                <line [attr.x1]="svgPad.left" [attr.y1]="svgPad.top"
+                      [attr.x2]="svgPad.left" [attr.y2]="svgH - svgPad.bottom"
+                      stroke="#e5e7eb" stroke-width="1.5"/>
+                <line [attr.x1]="svgPad.left" [attr.y1]="svgH - svgPad.bottom"
+                      [attr.x2]="svgW - svgPad.right" [attr.y2]="svgH - svgPad.bottom"
+                      stroke="#e5e7eb" stroke-width="1.5"/>
+
+                <!-- Área sombreada sob a linha -->
+                <path [attr.d]="calcularAreaPath(serie.pontos, serie.valor_alvo)"
+                      [attr.fill]="getCorLinha(serie)" fill-opacity="0.07"/>
+
+                <!-- Linha de dados -->
+                <polyline
+                  [attr.points]="calcularSvgPts(serie.pontos, serie.valor_alvo)"
+                  fill="none" [attr.stroke]="getCorLinha(serie)"
+                  stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+
+                <!-- Pontos de dados + labels de valor + labels do eixo X -->
+                <ng-container *ngFor="let ponto of serie.pontos; let i = index">
+                  <g>
+                    <title>{{ ponto.label || formatDataCurta(ponto.data) }}: {{ ponto.valor }} {{ serie.unidade }}</title>
+                    <!-- Halo externo -->
+                    <circle
+                      [attr.cx]="getXCoord(i, serie.pontos.length)"
+                      [attr.cy]="getYCoord(ponto.valor, serie.pontos, serie.valor_alvo)"
+                      r="7" [attr.fill]="getCorLinha(serie)" fill-opacity="0.12"/>
+                    <!-- Ponto central -->
+                    <circle
+                      [attr.cx]="getXCoord(i, serie.pontos.length)"
+                      [attr.cy]="getYCoord(ponto.valor, serie.pontos, serie.valor_alvo)"
+                      r="4" [attr.fill]="getCorLinha(serie)"
+                      stroke="white" stroke-width="1.5"/>
+                    <!-- Label de valor acima do ponto -->
+                    <text
+                      [attr.x]="getXCoord(i, serie.pontos.length)"
+                      [attr.y]="getYCoord(ponto.valor, serie.pontos, serie.valor_alvo) - 11"
+                      text-anchor="middle" font-size="10" font-weight="600"
+                      [attr.fill]="getCorLinha(serie)">{{ ponto.valor }}</text>
+                    <!-- Label de data no eixo X -->
+                    <text
+                      [attr.x]="getXCoord(i, serie.pontos.length)"
+                      [attr.y]="svgH - svgPad.bottom + 16"
+                      text-anchor="middle" font-size="10" fill="#9ca3af">
+                      {{ ponto.label || formatDataCurta(ponto.data) }}
+                    </text>
+                  </g>
+                </ng-container>
+
+              </svg>
+            </div>
+
+            <!-- Estado de 1 único registro -->
+            <div *ngIf="serie.pontos.length === 1" class="px-5 py-6 flex items-center gap-4 bg-white">
+              <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center flex-shrink-0">
+                <iconify-icon icon="ph:clock-countdown-bold" class="text-xl"></iconify-icon>
+              </div>
+              <div>
+                <p class="font-semibold text-gray-700">
+                  Registro atual: <strong>{{ serie.pontos[0].valor }} {{ serie.unidade }}</strong>
+                </p>
+                <p class="text-xs text-gray-400 mt-0.5">
+                  O gráfico de evolução aparecerá quando houver mais medições.
+                </p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+<!-- ══ MODAL: Editar Meta ══════════════════════════════════════════ -->
+<div *ngIf="modalEditarAberto"
+  class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto"
+  (click)="fecharModalEditar()">
+  <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 space-y-5 my-8"
+    (click)="$event.stopPropagation()">
+
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+          <iconify-icon icon="ph:pencil-simple-bold" class="text-xl"></iconify-icon>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-800">Editar Meta SMART</h3>
+          <p class="text-xs text-gray-400">Valor inicial e indicador não podem ser alterados</p>
+        </div>
+      </div>
+      <button (click)="fecharModalEditar()" class="text-gray-400 hover:text-gray-600">
+        <iconify-icon icon="ph:x-bold" class="text-xl"></iconify-icon>
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="sm:col-span-2">
+        <label class="block text-xs font-semibold text-blue-600 uppercase mb-1">S — Específico</label>
+        <input [(ngModel)]="editEspecifico" type="text"
+          class="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-blue-400 outline-none">
+      </div>
+      <div class="sm:col-span-2">
+        <label class="block text-xs font-semibold text-green-600 uppercase mb-1">M — Critério Mensurável</label>
+        <input [(ngModel)]="editCriterio" type="text"
+          class="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-green-400 outline-none">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Valor Alvo</label>
+        <input [(ngModel)]="editValorAlvo" type="number" step="0.1"
+          class="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-blue-400 outline-none">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-orange-600 uppercase mb-1">A — Condição de Execução</label>
+        <input [(ngModel)]="editCondicao" type="text"
+          class="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-orange-400 outline-none">
+      </div>
+      <div class="sm:col-span-2">
+        <label class="block text-xs font-semibold text-orange-600 uppercase mb-1">A — Justificativa Clínica</label>
+        <textarea [(ngModel)]="editAlcancavel" rows="2"
+          class="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-orange-400 outline-none resize-none">
+        </textarea>
+      </div>
+      <div class="sm:col-span-2">
+        <label class="block text-xs font-semibold text-purple-600 uppercase mb-1">R — Relevância Funcional</label>
+        <textarea [(ngModel)]="editRelevante" rows="2"
+          class="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-purple-400 outline-none resize-none">
+        </textarea>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-red-600 uppercase mb-1">T — Prazo (Data Limite)</label>
+        <input [(ngModel)]="editDataLimite" type="date"
+          class="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-red-400 outline-none">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Data de Reavaliação</label>
+        <input [(ngModel)]="editDataReavaliacao" type="date"
+          class="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-gray-400 outline-none">
+      </div>
+    </div>
+
+    <div class="flex gap-3 justify-end pt-2 border-t border-gray-100">
+      <button (click)="fecharModalEditar()"
+        class="border border-gray-300 text-gray-600 hover:bg-gray-50 px-5 py-2 rounded-lg text-sm font-semibold transition-colors">
+        Cancelar
+      </button>
+      <button (click)="salvarEdicao()" [disabled]="isSalvandoEdicao"
+        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-bold shadow transition-colors disabled:opacity-50 flex items-center gap-2">
+        <iconify-icon *ngIf="isSalvandoEdicao" icon="ph:spinner-gap-bold" class="animate-spin"></iconify-icon>
+        {{ isSalvandoEdicao ? 'Salvando...' : 'Salvar Alterações' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Cancelar Meta ═══════════════════════════════════════ -->
+<div *ngIf="modalCancelarAberto"
+  class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+  (click)="fecharModalCancelar()">
+  <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 space-y-5"
+    (click)="$event.stopPropagation()">
+
+    <div class="flex items-center gap-3">
+      <div class="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+        <iconify-icon icon="ph:x-circle-bold" class="text-2xl"></iconify-icon>
+      </div>
+      <div>
+        <h3 class="text-lg font-bold text-gray-800">Cancelar Meta</h3>
+        <p class="text-sm text-gray-500">A meta será encerrada e ficará no histórico para auditoria.</p>
+      </div>
+    </div>
+
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-700">
+      <iconify-icon icon="ph:warning-bold" class="mr-1"></iconify-icon>
+      Esta ação não pode ser desfeita. A meta ficará com status <strong>"Cancelada"</strong>.
+    </div>
+
+    <div>
+      <label class="block text-sm font-semibold text-gray-700 mb-2">
+        Motivo do cancelamento <span class="text-red-500">*</span>
+      </label>
+      <textarea [(ngModel)]="motivoCancelamento" rows="3"
+        placeholder="Ex: Meta substituída por nova abordagem terapêutica..."
+        class="w-full rounded-lg border border-gray-300 p-3 text-sm focus:ring-2 focus:ring-red-400 outline-none resize-none">
+      </textarea>
+      <p *ngIf="!motivoCancelamento.trim()" class="text-xs text-red-500 mt-1">
+        Informe o motivo para continuar.
+      </p>
+    </div>
+
+    <div class="flex gap-3 justify-end pt-2">
+      <button (click)="fecharModalCancelar()"
+        class="border border-gray-300 text-gray-600 hover:bg-gray-50 px-5 py-2 rounded-lg text-sm font-semibold transition-colors">
+        Voltar
+      </button>
+      <button (click)="confirmarCancelamento()"
+        [disabled]="isCancelando || !motivoCancelamento.trim()"
+        class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg text-sm font-bold shadow transition-colors disabled:opacity-50 flex items-center gap-2">
+        <iconify-icon *ngIf="isCancelando" icon="ph:spinner-gap-bold" class="animate-spin"></iconify-icon>
+        {{ isCancelando ? 'Cancelando...' : 'Confirmar Cancelamento' }}
+      </button>
+    </div>
+  </div>
+</div>
+    </div>
+
+  </ng-container>
+</div>

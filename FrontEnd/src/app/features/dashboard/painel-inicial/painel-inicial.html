@@ -63,6 +63,65 @@
       </div>
     </div>
 
+    <div *ngIf="perfil === 'Administrador' && adminStats.saudeSistema" class="mt-10">
+      
+      <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+        <iconify-icon icon="ph:activity-bold" class="mr-2 text-blue-600 text-xl"></iconify-icon> 
+        Monitoramento do Sistema
+      </h3>
+      
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 flex items-center transition-transform hover:-translate-y-1">
+          <div class="w-12 h-12 rounded-full flex items-center justify-center mr-4"
+               [ngClass]="adminStats.statusServidor === 'Online' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'">
+            <iconify-icon [icon]="adminStats.statusServidor === 'Online' ? 'ph:check-circle-bold' : 'ph:warning-bold'" class="text-2xl"></iconify-icon>
+          </div>
+          <div>
+            <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Status da API</p>
+            <p class="text-xl font-bold" [ngClass]="adminStats.statusServidor === 'Online' ? 'text-gray-800' : 'text-red-600'">
+              {{ adminStats.statusServidor }}
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 flex items-center transition-transform hover:-translate-y-1">
+          <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mr-4">
+            <iconify-icon icon="ph:database-bold" class="text-2xl"></iconify-icon>
+          </div>
+          <div>
+            <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Motor de Dados</p>
+            <p class="text-xl font-bold text-gray-800">{{ adminStats.saudeSistema.bancoDados }}</p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 flex items-center transition-transform hover:-translate-y-1">
+          <div class="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mr-4">
+            <iconify-icon icon="ph:hard-drives-bold" class="text-2xl"></iconify-icon>
+          </div>
+          <div>
+            <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Armazenamento</p>
+            <p class="text-xl font-bold text-gray-800">
+              {{ adminStats.saudeSistema.tamanhoDadosMB }} <span class="text-sm font-normal text-gray-500">MB</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 flex items-center transition-transform hover:-translate-y-1">
+          <div class="w-12 h-12 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center mr-4">
+            <iconify-icon icon="ph:folders-bold" class="text-2xl"></iconify-icon>
+          </div>
+          <div>
+            <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Volume Global</p>
+            <p class="text-xl font-bold text-gray-800">
+              {{ formatarMilhar(adminStats.saudeSistema.totalDocumentosGerais) }} <span class="text-sm font-normal text-gray-500">docs</span>
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <div class="mt-8">
       <h3 class="text-lg font-semibold text-gray-800 mb-4">Ações Rápidas</h3>
       <div class="flex gap-4">
@@ -72,111 +131,319 @@
         <a routerLink="/indicadores" class="flex items-center gap-2 bg-white border border-gray-200 hover:border-blue-400 hover:text-blue-600 text-gray-700 font-medium px-4 py-2 rounded-lg shadow-sm transition-colors">
           <iconify-icon icon="ph:gear-bold" class="text-xl"></iconify-icon> Configurar Indicadores
         </a>
+        <button routerLink="/areas" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded shadow flex items-center transition">
+          <iconify-icon icon="ph:heartbeat-bold" class="mr-2"></iconify-icon> Nova Área
+        </button>
       </div>
     </div>
   </ng-container>
 
   <ng-container *ngIf="perfil === 'Docente'">
     
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
-        <p class="text-sm text-gray-500 font-medium">Meus Estagiários</p>
-        <p class="text-3xl font-bold text-gray-800 mt-2">{{ docenteStats.estagiariosSupervisionados }}</p>
-      </div>
-      <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
-        <p class="text-sm text-gray-500 font-medium">Pacientes em Atendimento</p>
-        <p class="text-3xl font-bold text-gray-800 mt-2">{{ docenteStats.pacientesAtivos }}</p>
-      </div>
-      <div class="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500 relative">
-        <p class="text-sm text-gray-500 font-medium">Evoluções para Revisão</p>
-        <p class="text-3xl font-bold text-gray-800 mt-2">{{ docenteStats.evolucoesPendentesRevisao }}</p>
-        <iconify-icon icon="ph:warning-circle-fill" class="absolute top-6 right-6 text-yellow-500 text-3xl opacity-50"></iconify-icon>
+    <div *ngIf="isLoadingStats" class="flex flex-col items-center justify-center py-12 bg-white rounded-lg shadow border border-gray-100">
+      <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-4xl text-blue-600 mb-4"></iconify-icon>
+      <p class="text-gray-500 font-medium">A consolidar dados clínicos e alunos vinculados...</p>
+    </div>
+
+    <div *ngIf="!isLoadingStats && erroStats" class="bg-red-50 border-l-4 border-red-500 p-6 rounded-lg shadow mb-6">
+      <div class="flex items-center">
+        <iconify-icon icon="ph:warning-circle-bold" class="text-red-500 mr-3 text-2xl"></iconify-icon>
+        <p class="text-red-700 font-medium">{{ erroStats }}</p>
       </div>
     </div>
 
-    <div class="mt-8 bg-white shadow rounded-lg border border-gray-100">
-      <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-red-50 rounded-t-lg">
-        <h3 class="text-lg font-semibold text-red-800 flex items-center">
-          <iconify-icon icon="ph:bell-ringing-bold" class="mr-2"></iconify-icon> Alertas de Intervenção Pedagógica
-        </h3>
-      </div>
-      <div class="p-6">
-        <p class="text-sm text-gray-600 mb-4">Os seguintes pacientes não apresentam progresso nas medições das Metas SMART.</p>
-        <div class="space-y-3">
-          <div *ngFor="let alerta of alertasMetas" class="flex justify-between items-center bg-gray-50 p-3 rounded border border-gray-200">
-            <div>
-              <p class="font-medium text-gray-800">{{ alerta.paciente }}</p>
-              <p class="text-xs text-gray-500">Área: {{ alerta.area }}</p>
-            </div>
-            <div class="text-right">
-              <span class="inline-block bg-red-100 text-red-800 text-xs px-2 py-1 rounded font-bold">
-                Sem melhora há {{ alerta.diasEstagnada }} dias
-              </span>
-              <button class="block mt-1 text-blue-600 text-xs hover:underline">Ver Prontuário</button>
-            </div>
+    <div *ngIf="!isLoadingStats && !erroStats" class="space-y-8 animate-fade-in-up">
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6 flex items-center">
+          <div class="w-14 h-14 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mr-4">
+            <iconify-icon icon="ph:users-three-bold" class="text-3xl"></iconify-icon>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500 font-medium">Pacientes em Triagem/Tratamento</p>
+            <h3 class="text-3xl font-bold text-gray-800">{{ formatarMilhar(docenteStats.pacientesAtivos) }}</h3>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6 flex items-center">
+          <div class="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mr-4">
+            <iconify-icon icon="ph:student-bold" class="text-3xl"></iconify-icon>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500 font-medium">Estagiários Vinculados</p>
+            <h3 class="text-3xl font-bold text-gray-800">{{ formatarMilhar(docenteStats.estagiariosSupervisionados) }}</h3>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6 flex items-center relative overflow-hidden">
+          <div *ngIf="docenteStats.evolucoesPendentesRevisao > 0" class="absolute top-0 right-0 w-16 h-16 bg-orange-100 rounded-bl-full -mr-8 -mt-8 z-0"></div>
+          
+          <div class="w-14 h-14 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center mr-4 z-10">
+            <iconify-icon icon="ph:clipboard-text-bold" class="text-3xl"></iconify-icon>
+          </div>
+          <div class="z-10">
+            <p class="text-sm text-gray-500 font-medium">Evoluções p/ Revisão</p>
+            <h3 class="text-3xl font-bold text-gray-800">
+              {{ docenteStats.evolucoesPendentesRevisao }} 
+            </h3>
           </div>
         </div>
       </div>
+
+      <div>
+        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+          <iconify-icon icon="ph:rocket-launch-bold" class="mr-2 text-blue-600 text-xl"></iconify-icon> 
+          Central de Comando do Supervisor
+        </h3>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          
+          <a routerLink="/pacientes" class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:border-blue-500 hover:shadow-md transition-all group flex flex-col items-center text-center cursor-pointer relative overflow-hidden">
+            <div class="absolute inset-0 bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div class="w-14 h-14 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative z-10">
+              <iconify-icon icon="ph:stethoscope-bold" class="text-2xl"></iconify-icon>
+            </div>
+            <h4 class="font-bold text-gray-800 mb-2 relative z-10">Triagem Clínica</h4>
+            <p class="text-sm text-gray-500 relative z-10">Buscar pacientes na base e vincular a estagiários, CIDs e Áreas.</p>
+          </a>
+
+          <a routerLink="/prontuarios/revisao" class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:border-orange-400 hover:shadow-md transition-all group flex flex-col items-center text-center cursor-pointer relative overflow-hidden">
+            <div class="absolute inset-0 bg-orange-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div class="w-14 h-14 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative z-10">
+              <iconify-icon icon="ph:signature-bold" class="text-2xl"></iconify-icon>
+            </div>
+            <h4 class="font-bold text-gray-800 mb-2 relative z-10">
+              Revisar Evoluções
+              <span *ngIf="docenteStats.evolucoesPendentesRevisao > 0"
+                class="ml-2 bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                {{ docenteStats.evolucoesPendentesRevisao }}
+              </span>
+            </h4>
+            <p class="text-sm text-gray-500 relative z-10">Caixa de entrada para aprovar, devolver e coassinar prontuários.</p>
+          </a>
+
+          <a routerLink="/dashboard/epidemiologia" class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:border-purple-500 hover:shadow-md transition-all group flex flex-col items-center text-center cursor-pointer relative overflow-hidden">
+            <div class="absolute inset-0 bg-purple-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div class="w-14 h-14 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative z-10">
+              <iconify-icon icon="ph:chart-pie-slice-bold" class="text-2xl"></iconify-icon>
+            </div>
+            <h4 class="font-bold text-gray-800 mb-2 relative z-10">Inteligência Epidemiológica</h4>
+            <p class="text-sm text-gray-500 relative z-10">Epidemiologia, produtividade dos alunos e alertas de risco clínico.</p>
+          </a>
+
+        </div>
+      </div>
+
     </div>
   </ng-container>
 
   <ng-container *ngIf="perfil === 'Estagiario'">
-    
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div class="bg-blue-600 text-white rounded-lg shadow p-6 relative overflow-hidden">
-        <p class="text-sm font-medium opacity-80">Meus Pacientes</p>
-        <p class="text-4xl font-bold mt-2">{{ estagiarioStats.meusPacientes }}</p>
-        <iconify-icon icon="ph:users-bold" class="absolute -bottom-4 -right-4 text-7xl opacity-20"></iconify-icon>
-      </div>
-      <div class="bg-white rounded-lg shadow p-6 border border-gray-100">
-        <p class="text-sm text-gray-500 font-medium">Atendimentos Hoje</p>
-        <p class="text-3xl font-bold text-gray-800 mt-2">{{ estagiarioStats.atendimentosHoje }}</p>
-      </div>
-      <div class="bg-white rounded-lg shadow p-6 border border-gray-100">
-        <p class="text-sm text-gray-500 font-medium">Evoluções Pendentes</p>
-        <p class="text-3xl font-bold text-green-600 mt-2">
-          <iconify-icon *ngIf="estagiarioStats.evolucoesAtrasadas === 0" icon="ph:check-circle-fill" class="align-middle"></iconify-icon>
-          <span *ngIf="estagiarioStats.evolucoesAtrasadas > 0" class="text-red-500">{{ estagiarioStats.evolucoesAtrasadas }}</span>
-        </p>
-      </div>
+
+    <!-- Loading -->
+    <div *ngIf="isLoadingStats" class="flex flex-col items-center justify-center py-12 bg-white rounded-lg shadow border border-gray-100">
+      <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-4xl text-blue-600 mb-4"></iconify-icon>
+      <p class="text-gray-500 font-medium">A carregar seus prontuários...</p>
     </div>
 
-    <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div class="bg-white shadow rounded-lg border border-gray-100 p-6">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-          <iconify-icon icon="ph:calendar-check-bold" class="mr-2 text-blue-600"></iconify-icon> Agenda de Hoje
-        </h3>
-        <ul class="divide-y divide-gray-200">
-          <li *ngFor="let agendamento of proximosAtendimentos" class="py-3 flex justify-between items-center">
-            <div class="flex items-center">
-              <div class="bg-blue-50 text-blue-700 font-bold p-2 rounded mr-3">
-                {{ agendamento.horario }}
-              </div>
-              <div>
-                <p class="font-medium text-gray-800">{{ agendamento.paciente }}</p>
-                <p class="text-xs text-gray-500">{{ agendamento.area }}</p>
-              </div>
-            </div>
-            <button class="text-blue-600 hover:text-blue-800">
-              <iconify-icon icon="ph:arrow-circle-right-bold" class="text-2xl"></iconify-icon>
-            </button>
-          </li>
-        </ul>
+    <!-- Erro -->
+    <div *ngIf="!isLoadingStats && erroStats" class="bg-red-50 border-l-4 border-red-500 p-6 rounded-lg shadow mb-6">
+      <div class="flex items-center">
+        <iconify-icon icon="ph:warning-circle-bold" class="text-red-500 mr-3 text-2xl"></iconify-icon>
+        <p class="text-red-700 font-medium">{{ erroStats }}</p>
+      </div>
+      <button (click)="carregarEstatisticasEstagiario()" class="mt-4 text-sm bg-red-100 text-red-700 px-4 py-2 rounded hover:bg-red-200 transition">Tentar Novamente</button>
+    </div>
+
+    <div *ngIf="!isLoadingStats && !erroStats" class="space-y-6 animate-fade-in-up">
+
+      <!-- Cards de estatísticas -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- Meus Pacientes -->
+        <div class="bg-blue-600 text-white rounded-lg shadow p-6 relative overflow-hidden">
+          <div class="relative z-10">
+            <p class="text-sm font-medium opacity-80">Meus Pacientes</p>
+            <p class="text-4xl font-bold mt-2">{{ estagiarioStats.meusPacientes }}</p>
+            <p class="text-xs opacity-70 mt-1">prontuários vinculados</p>
+          </div>
+          <iconify-icon icon="ph:users-bold" class="absolute -bottom-4 -right-4 text-7xl opacity-20"></iconify-icon>
+        </div>
+
+        <!-- Sessões Registradas -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6 flex items-center">
+          <div class="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mr-4 shrink-0">
+            <iconify-icon icon="ph:clipboard-text-bold" class="text-3xl"></iconify-icon>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500 font-medium">Sessões Registradas</p>
+            <h3 class="text-3xl font-bold text-gray-800">{{ estagiarioStats.sessoesRegistradas }}</h3>
+          </div>
+        </div>
+
+        <!-- Pendentes de Avaliação -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6 flex items-center relative overflow-hidden">
+          <div *ngIf="estagiarioStats.pendentesAvaliacao > 0"
+            class="absolute top-0 right-0 w-16 h-16 bg-orange-100 rounded-bl-full -mr-8 -mt-8 z-0"></div>
+          <div class="w-14 h-14 rounded-full flex items-center justify-center mr-4 shrink-0 z-10"
+            [ngClass]="estagiarioStats.pendentesAvaliacao > 0 ? 'bg-orange-50 text-orange-500' : 'bg-green-50 text-green-600'">
+            <iconify-icon
+              [icon]="estagiarioStats.pendentesAvaliacao > 0 ? 'ph:hourglass-medium-bold' : 'ph:check-circle-bold'"
+              class="text-3xl"></iconify-icon>
+          </div>
+          <div class="z-10">
+            <p class="text-sm text-gray-500 font-medium">Pendentes de Avaliação</p>
+            <h3 class="text-3xl font-bold"
+              [ngClass]="estagiarioStats.pendentesAvaliacao > 0 ? 'text-orange-500' : 'text-green-600'">
+              {{ estagiarioStats.pendentesAvaliacao === 0 ? 'Em dia' : estagiarioStats.pendentesAvaliacao }}
+            </h3>
+          </div>
+        </div>
+
       </div>
 
-      <div class="bg-white shadow rounded-lg border border-gray-100 p-6">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4">O que deseja fazer?</h3>
-        <div class="grid grid-cols-2 gap-4">
-          <button class="p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition text-center flex flex-col items-center justify-center">
-            <iconify-icon icon="ph:magnifying-glass-bold" class="text-2xl text-blue-600 mb-2"></iconify-icon>
-            <span class="text-sm font-medium text-gray-700">Buscar Paciente</span>
-          </button>
-          <button class="p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition text-center flex flex-col items-center justify-center">
-            <iconify-icon icon="ph:file-plus-bold" class="text-2xl text-blue-600 mb-2"></iconify-icon>
-            <span class="text-sm font-medium text-gray-700">Nova Evolução</span>
-          </button>
+      <!-- Fila de Avaliação + Ações Rápidas -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Fila de Avaliação Pendente -->
+        <div class="bg-white shadow-sm rounded-lg border border-gray-100 p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <iconify-icon icon="ph:list-checks-bold" class="mr-2 text-orange-500 text-xl"></iconify-icon>
+            Fila de Avaliação
+            <span *ngIf="estagiarioStats.pendentesAvaliacao > 0"
+              class="ml-2 bg-orange-100 text-orange-600 text-xs font-bold px-2 py-0.5 rounded-full">
+              {{ estagiarioStats.pendentesAvaliacao }}
+            </span>
+          </h3>
+
+          <!-- Estado vazio -->
+          <div *ngIf="filaAvaliacao.length === 0" class="text-center py-8">
+            <iconify-icon icon="ph:check-circle-bold" class="text-5xl text-green-400 mb-3"></iconify-icon>
+            <p class="text-gray-500 text-sm font-medium">Todos os pacientes foram avaliados!</p>
+            <p class="text-gray-400 text-xs mt-1">Nenhuma avaliação funcional pendente.</p>
+          </div>
+
+          <!-- Lista -->
+          <ul *ngIf="filaAvaliacao.length > 0" class="divide-y divide-gray-100">
+            <li *ngFor="let pront of filaAvaliacao" class="py-3 flex justify-between items-center">
+              <div class="flex items-center">
+                <div class="w-9 h-9 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center mr-3 shrink-0">
+                  <iconify-icon icon="ph:stethoscope-bold" class="text-base"></iconify-icon>
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-gray-800">{{ pront.numero_prontuario }}</p>
+                  <p class="text-xs text-gray-500">{{ pront.area_atendimento }}</p>
+                </div>
+              </div>
+              <a [routerLink]="['/prontuarios/avaliacao', pront._id || pront.id]"
+                class="text-xs bg-orange-100 hover:bg-orange-200 text-orange-700 font-semibold px-3 py-1.5 rounded-full transition-colors shrink-0 ml-2">
+                Avaliar
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Ações Rápidas -->
+        <div class="bg-white shadow-sm rounded-lg border border-gray-100 p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <iconify-icon icon="ph:rocket-launch-bold" class="mr-2 text-blue-600 text-xl"></iconify-icon>
+            O que deseja fazer?
+          </h3>
+          <div class="grid grid-cols-2 gap-4">
+
+            <a routerLink="/pacientes"
+              class="p-4 border border-gray-200 rounded-xl hover:bg-blue-50 hover:border-blue-300 transition-all group flex flex-col items-center text-center cursor-pointer relative overflow-hidden">
+              <div class="absolute inset-0 bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl"></div>
+              <div class="w-11 h-11 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform relative z-10">
+                <iconify-icon icon="ph:magnifying-glass-bold" class="text-xl"></iconify-icon>
+              </div>
+              <span class="text-sm font-medium text-gray-700 relative z-10">Buscar Paciente</span>
+            </a>
+
+            <a routerLink="/pacientes"
+              class="p-4 border border-gray-200 rounded-xl hover:bg-emerald-50 hover:border-emerald-300 transition-all group flex flex-col items-center text-center cursor-pointer relative overflow-hidden">
+              <div class="absolute inset-0 bg-emerald-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl"></div>
+              <div class="w-11 h-11 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform relative z-10">
+                <iconify-icon icon="ph:file-plus-bold" class="text-xl"></iconify-icon>
+              </div>
+              <span class="text-sm font-medium text-gray-700 relative z-10">Nova Evolução</span>
+            </a>
+
+            <a routerLink="/pacientes"
+              class="p-4 border border-gray-200 rounded-xl hover:bg-purple-50 hover:border-purple-300 transition-all group flex flex-col items-center text-center cursor-pointer relative overflow-hidden">
+              <div class="absolute inset-0 bg-purple-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl"></div>
+              <div class="w-11 h-11 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform relative z-10">
+                <iconify-icon icon="ph:folder-open-bold" class="text-xl"></iconify-icon>
+              </div>
+              <span class="text-sm font-medium text-gray-700 relative z-10">Meus Prontuários</span>
+            </a>
+
+            <a routerLink="/pacientes"
+              class="p-4 border border-gray-200 rounded-xl hover:bg-indigo-50 hover:border-indigo-300 transition-all group flex flex-col items-center text-center cursor-pointer relative overflow-hidden">
+              <div class="absolute inset-0 bg-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl"></div>
+              <div class="w-11 h-11 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform relative z-10">
+                <iconify-icon icon="ph:chart-line-up-bold" class="text-xl"></iconify-icon>
+              </div>
+              <span class="text-sm font-medium text-gray-700 relative z-10">Ver Gráficos</span>
+            </a>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Atividade Recente -->
+      <div *ngIf="prontuariosRecentes.length > 0" class="bg-white shadow-sm rounded-lg border border-gray-100 p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+          <iconify-icon icon="ph:clock-countdown-bold" class="mr-2 text-blue-600 text-xl"></iconify-icon>
+          Atividade Recente
+        </h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-xs text-gray-400 uppercase tracking-wider border-b border-gray-100">
+                <th class="pb-3 font-semibold">Prontuário</th>
+                <th class="pb-3 font-semibold">Área</th>
+                <th class="pb-3 font-semibold text-center">Sessões</th>
+                <th class="pb-3 font-semibold">Última Evolução</th>
+                <th class="pb-3 font-semibold">Status</th>
+                <th class="pb-3"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+              <tr *ngFor="let p of prontuariosRecentes" class="hover:bg-gray-50 transition-colors">
+                <td class="py-3 font-semibold text-gray-800">{{ p.numero_prontuario }}</td>
+                <td class="py-3 text-gray-600">{{ p.area_atendimento }}</td>
+                <td class="py-3 text-gray-600 text-center">{{ p.total_sessoes }}</td>
+                <td class="py-3 text-gray-500 text-xs">
+                  {{ p.data_ultima_evolucao ? formatarData(p.data_ultima_evolucao) : '—' }}
+                </td>
+                <td class="py-3">
+                  <span class="text-xs font-semibold px-2.5 py-1 rounded-full"
+                    [ngClass]="p.status === 'Ativo' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'">
+                    {{ p.status }}
+                  </span>
+                </td>
+                <td class="py-3 text-right">
+                  <a [routerLink]="['/prontuarios/visao', p._id || p.id]"
+                    class="text-blue-500 hover:text-blue-700 transition-colors">
+                    <iconify-icon icon="ph:arrow-circle-right-bold" class="text-xl"></iconify-icon>
+                  </a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
+
+      <!-- Estado vazio geral (nenhum prontuário) -->
+      <div *ngIf="prontuariosRecentes.length === 0 && estagiarioStats.meusPacientes === 0"
+        class="bg-white shadow-sm rounded-lg border border-dashed border-gray-200 p-12 text-center">
+        <iconify-icon icon="ph:folder-open-bold" class="text-6xl text-gray-300 mb-4"></iconify-icon>
+        <p class="text-gray-600 font-semibold">Nenhum paciente vinculado ainda</p>
+        <p class="text-gray-400 text-sm mt-1">O docente supervisor irá atribuir pacientes a você através da triagem clínica.</p>
+      </div>
+
     </div>
   </ng-container>
 

@@ -1,4 +1,5 @@
-from pydantic import Field, EmailStr
+from datetime import datetime, timezone
+from pydantic import ConfigDict, Field, EmailStr
 from enum import Enum
 from src.models.base import MongoBaseModel
 
@@ -14,3 +15,8 @@ class DimUsuario(MongoBaseModel):
     senha_hash: str = Field(..., description="Senha criptografada com bcrypt")
     perfil: TipoPerfil = Field(default=TipoPerfil.ESTAGIARIO, description="Nível de acesso no sistema")
     is_ativo: bool = Field(default=True, description="Define se o usuário tem permissão de login")
+    precisa_trocar_senha: bool = Field(default=False, description="Define se o usuário precisa trocar a senha ao fazer login")
+    criado_em: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    atualizado_em: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)

@@ -40,19 +40,64 @@ export class AuthService {
     localStorage.removeItem('prontusmart_token');
   }
 
-  // NOVA FUNÇÃO: Descodifica o JWT para descobrir o perfil logado
   getUserProfile(): string | null {
     const token = this.getToken();
     if (!token) return null;
-
     try {
-      // O JWT tem 3 partes separadas por ponto. A segunda parte é o Payload (dados).
-      const payloadBase64 = token.split('.')[1];
-      const payloadDecoded = JSON.parse(atob(payloadBase64));
-      return payloadDecoded.perfil || null;
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.perfil || null;
     } catch (e) {
-      console.error('Erro ao descodificar o token', e);
       return null;
     }
+  }
+
+  getUserName(): string {
+    const token = this.getToken();
+    if (!token) return '';
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.nome || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  getUserId(): string | null {
+    const token = this.getToken();
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.sub || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  getMe() {
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${this.getToken()}`);
+    return this.http.get<any>(`${this.apiUrl}/auth/me`, { headers });
+  }
+
+  // --- NOVAS FUNÇÕES PARA TROCA DE SENHA ---
+  // Lê o JWT e verifica se a flag de troca obrigatória é verdadeira
+  needsPasswordChange(): boolean {
+    const token = this.getToken();
+    if (!token) return false;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.precisa_trocar_senha === true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Envia a senha atual/temporária e a nova para o BackEnd
+  efetivarTrocaSenha(senha_temporaria: string, nova_senha: string) {
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${this.getToken()}`);
+    return this.http.post<any>(
+      `${this.apiUrl}/auth/trocar-senha`, 
+      { senha_temporaria, nova_senha }, 
+      { headers }
+    );
   }
 }

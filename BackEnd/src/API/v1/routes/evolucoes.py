@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
+from typing import List
 from src.schemas.evolucao import EvolucaoCreate, EvolucaoResponse
 from src.services import evolucao_service
 from src.core.security import get_current_user
@@ -6,5 +7,53 @@ from src.core.security import get_current_user
 router = APIRouter()
 
 @router.post("/", response_model=EvolucaoResponse)
-async def create_evolucao(evolucao_in: EvolucaoCreate, current_user: dict = Depends(get_current_user)):
+async def create_evolucao(
+    evolucao_in: EvolucaoCreate,
+    current_user: dict = Depends(get_current_user)
+):
     return await evolucao_service.registrar_evolucao(evolucao_in, str(current_user["_id"]))
+
+@router.get("/prontuario/{prontuario_id}", response_model=List[EvolucaoResponse])
+async def listar_evolucoes_prontuario(
+    prontuario_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    return await evolucao_service.listar_por_prontuario(prontuario_id)
+
+@router.get("/pendentes/count")
+async def contar_evolucoes_pendentes(
+    current_user: dict = Depends(get_current_user)
+):
+    """Retorna quantidade de evoluções pendentes de revisão para o docente logado."""
+    count = await evolucao_service.contar_pendentes_por_docente(str(current_user["_id"]))
+    return {"count": count}
+
+@router.patch("/{evolucao_id}/revisar")
+async def revisar_evolucao(
+    evolucao_id: str,
+    body: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    if current_user.get("perfil") != "Docente":
+        raise HTTPException(status_code=403, detail="Apenas Docentes podem revisar evoluções.")
+
+    acao: str = body.get("acao") or ""          # ← garante str, nunca None
+    feedback: str | None = body.get("feedback") # ← opcional, pode ser None
+
+    if not acao:
+        raise HTTPException(status_code=400, detail="Campo 'acao' é obrigatório.")
+
+    return await evolucao_service.revisar_evolucao(
+        evolucao_id=evolucao_id,
+        docente_id=str(current_user["_id"]),
+        acao=acao,
+        feedback=feedback
+    )
+
+@router.get("/pendentes")
+async def listar_pendentes_docente(
+    current_user: dict = Depends(get_current_user)
+):
+    if current_user.get("perfil") != "Docente":
+        raise HTTPException(status_code=403, detail="Apenas Docentes.")
+    return await evolucao_service.listar_pendentes_por_docente(str(current_user["_id"]))

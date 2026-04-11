@@ -1,53 +1,73 @@
-import asyncio
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-
 from src.core.database import get_database
-from src.schemas.usuario import UsuarioCreate, UsuarioResponse
-from src.schemas.auth import Token
-from src.services import auth_service
-from src.core.security import get_current_user, verify_password, create_access_token
+from src.core.security import verify_password, create_access_token, get_password_hash, get_current_user
+from src.schemas.auth import Token, TrocarSenhaRequest # <-- Importe o novo Schema
 
 router = APIRouter()
 
-@router.post("/register", response_model=UsuarioResponse, status_code=status.HTTP_201_CREATED)
-async def register(usuario_in: UsuarioCreate):
-    return await auth_service.criar_usuario(usuario_in)
-
 @router.post("/login", response_model=Token)
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    db = get_database()
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), db = Depends(get_database)):
+    # 1. Buscar usuário
+    usuario = await db.dim_usuario.find_one({"matricula": form_data.username})
+    if not usuario:
+        raise HTTPException(status_code=400, detail="Matrícula ou senha incorretos.")
     
-    # 1. Busca o usuário no banco de dados
-    user = await db.dim_usuario.find_one({"matricula": form_data.username})
-    
-    # 2. Verifica se o usuário existe ANTES de fazer qualquer outra coisa
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Matrícula ou senha incorretos",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-        
-    # 3. Validação de senha sem travar o servidor (A Mágica!)
-    # Usamos o user.get() para evitar KeyError (Erro 500) caso o campo não exista.
-    # Usamos asyncio.to_thread para rodar o bcrypt pesado em segundo plano, liberando o FastAPI.
-    senha_valida = await asyncio.to_thread(
-        verify_password, 
-        form_data.password, 
-        user.get("senha_hash", "")
-    )
-    
-    if not senha_valida:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Matrícula ou senha incorretos",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-        
-    # 4. Gera o Token JWT
+    # 2. Verificar se está ativo
+    if not usuario.get("is_ativo", True):
+        raise HTTPException(status_code=403, detail="Usuário inativo. Procure a administração.")
+
+    # 3. Verificar senha
+    if not verify_password(form_data.password, usuario["senha_hash"]):
+        raise HTTPException(status_code=400, detail="Matrícula ou senha incorretos.")
+
+    # 4. Criar o Token INJETANDO a flag de troca de senha
     access_token = create_access_token(
-        data={"sub": user["matricula"], "perfil": user.get("perfil")}
+        data={
+            "sub": str(usuario["_id"]),
+            "perfil": usuario["perfil"],
+            "nome": usuario["nome_completo"],
+            "precisa_trocar_senha": usuario.get("precisa_trocar_senha", False) # <-- INJETADO NO JWT!
+        }
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+# --- NOVA ROTA PARA EFETIVAR A TROCA ---
+@router.post("/trocar-senha")
+async def efetivar_troca_senha(
+    dados: TrocarSenhaRequest, 
+    current_user: dict = Depends(get_current_user), 
+    db = Depends(get_database)
+):
+    # Verifica se a senha temporária digitada confere com a que está no banco (hash)
+    if not verify_password(dados.senha_temporaria, current_user["senha_hash"]):
+        raise HTTPException(status_code=400, detail="A senha provisória atual está incorreta.")
+    
+    # Encripta a nova senha digitada pelo usuário
+    novo_hash = get_password_hash(dados.nova_senha)
+    
+    # Atualiza o banco e DESARMA a armadilha
+    await db.dim_usuario.update_one(
+        {"_id": current_user["_id"]},
+        {"$set": {
+            "senha_hash": novo_hash, 
+            "precisa_trocar_senha": False # 
+        }}
     )
     
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"message": "Senha atualizada com sucesso!"}
+
+
+@router.get("/me")
+async def get_me(current_user: dict = Depends(get_current_user)):
+    """Retorna os dados do utilizador autenticado (sem senha_hash)."""
+    return {
+        "_id":           str(current_user["_id"]),
+        "nome_completo": current_user["nome_completo"],
+        "matricula":     current_user["matricula"],
+        "email":         current_user["email"],
+        "perfil":        current_user["perfil"],
+        "is_ativo":      current_user.get("is_ativo", True),
+        "criado_em":     current_user.get("criado_em"),
+        "atualizado_em": current_user.get("atualizado_em"),
+    }
