@@ -2,7 +2,9 @@ import { Component, inject, OnInit, CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } 
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { AreaService } from '../../../core/services/area.service';
+import { AdminService } from '../../../core/services/admin.service';
 
 @Component({
   selector: 'app-gestao-areas',
@@ -13,10 +15,12 @@ import { AreaService } from '../../../core/services/area.service';
 })
 export class GestaoAreasComponent implements OnInit {
   private fb = inject(FormBuilder);
-  private areaService = inject(AreaService);
+  private areaService  = inject(AreaService);
+  private adminService = inject(AdminService);
   private cdr = inject(ChangeDetectorRef);
 
   areas: any[] = [];
+  estagiarios: any[] = [];     // todos estagiários ativos (com area_atendimento)
   areaEditando: any = null;
   isLoading = false;
   isLoadingLista = true;
@@ -60,10 +64,31 @@ export class GestaoAreasComponent implements OnInit {
 
   carregarAreas() {
     this.isLoadingLista = true;
-    this.areaService.listar().subscribe({
-      next: (dados) => { this.areas = dados; this.isLoadingLista = false; this.cdr.detectChanges(); },
-      error: () => { this.errorMessage = 'Erro ao carregar áreas.'; this.isLoadingLista = false; this.cdr.detectChanges(); }
+    // Carrega áreas + estagiários em paralelo para compor a visão expandível
+    forkJoin({
+      areas:       this.areaService.listar(),
+      estagiarios: this.adminService.listarEstagiarios()
+    }).subscribe({
+      next: ({ areas, estagiarios }) => {
+        this.areas = areas.map((a: any) => ({ ...a, aberto: false }));
+        this.estagiarios = estagiarios || [];
+        this.isLoadingLista = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.errorMessage = 'Erro ao carregar áreas.';
+        this.isLoadingLista = false;
+        this.cdr.detectChanges();
+      }
     });
+  }
+
+  toggleArea(area: any) {
+    area.aberto = !area.aberto;
+  }
+
+  getEstagiariosDaArea(nomeArea: string): any[] {
+    return this.estagiarios.filter(e => e.area_atendimento === nomeArea);
   }
 
   iniciarEdicao(area: any) {

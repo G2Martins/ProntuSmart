@@ -104,35 +104,88 @@
       <table class="w-full text-sm text-left">
         <thead class="bg-gray-50 text-xs text-gray-500 uppercase tracking-wider">
           <tr>
+            <th class="px-4 py-3 w-10"></th>
             <th class="px-6 py-3 w-1/2">Identificação Visual</th>
+            <th class="px-6 py-3">Estagiários</th>
             <th class="px-6 py-3">Status</th>
             <th class="px-6 py-3 text-right">Ações</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
-          <tr *ngFor="let a of areas" class="hover:bg-gray-50 transition-colors">
-            
-            <td class="px-6 py-4">
-              <span class="px-3 py-1.5 rounded-full text-sm font-bold border inline-flex items-center shadow-sm" [ngClass]="getBadgeClasses(a.cor)">
-                <iconify-icon [icon]="a.icone" class="mr-2 text-lg"></iconify-icon>
-                {{ a.nome }}
-              </span>
-              <p *ngIf="a.descricao" class="text-xs text-gray-400 mt-2 ml-1">{{ a.descricao }}</p>
-            </td>
-            
-            <td class="px-6 py-4">
-              <span [class]="a.is_ativo ? 'text-green-600' : 'text-red-500 font-medium'"><iconify-icon [icon]="a.is_ativo ? 'ph:check-circle-fill' : 'ph:x-circle-fill'" class="mr-1 align-middle"></iconify-icon> {{ a.is_ativo ? 'Ativa' : 'Inativa' }}</span>
-            </td>
-            
-            <td class="px-6 py-4 text-right space-x-3">
-              <button (click)="toggleStatus(a)" [title]="a.is_ativo ? 'Inativar' : 'Ativar'" [class]="a.is_ativo ? 'text-red-500 hover:text-red-700' : 'text-green-600 hover:text-green-800'" class="transition-colors">
-                <iconify-icon [icon]="a.is_ativo ? 'ph:power-bold' : 'ph:power-bold'" class="text-xl align-middle"></iconify-icon>
-              </button>
-              <button (click)="iniciarEdicao(a)" class="text-blue-600 hover:text-blue-800 transition-colors" title="Editar">
-                <iconify-icon icon="ph:pencil-simple-bold" class="text-xl align-middle"></iconify-icon>
-              </button>
-            </td>
-          </tr>
+          <ng-container *ngFor="let a of areas">
+            <tr class="hover:bg-gray-50 transition-colors">
+
+              <!-- Setinha de expansão -->
+              <td class="px-4 py-4 text-center">
+                <button type="button" (click)="toggleArea(a)"
+                  class="text-gray-400 hover:text-blue-600 transition-colors"
+                  [title]="a.aberto ? 'Ocultar estagiários' : 'Ver estagiários vinculados'">
+                  <iconify-icon
+                    [icon]="a.aberto ? 'ph:caret-down-bold' : 'ph:caret-right-bold'"
+                    class="text-lg transition-transform"></iconify-icon>
+                </button>
+              </td>
+
+              <td class="px-6 py-4">
+                <span class="px-3 py-1.5 rounded-full text-sm font-bold border inline-flex items-center shadow-sm" [ngClass]="getBadgeClasses(a.cor)">
+                  <iconify-icon [icon]="a.icone" class="mr-2 text-lg"></iconify-icon>
+                  {{ a.nome }}
+                </span>
+                <p *ngIf="a.descricao" class="text-xs text-gray-400 mt-2 ml-1">{{ a.descricao }}</p>
+              </td>
+
+              <!-- Contador de estagiários vinculados -->
+              <td class="px-6 py-4">
+                <span class="inline-flex items-center gap-1.5 text-xs text-purple-700 bg-purple-50 border border-purple-100 rounded-full px-2.5 py-1">
+                  <iconify-icon icon="ph:student-bold" class="text-sm shrink-0"></iconify-icon>
+                  <span class="font-semibold">{{ getEstagiariosDaArea(a.nome).length }}</span>
+                  vinculado{{ getEstagiariosDaArea(a.nome).length === 1 ? '' : 's' }}
+                </span>
+              </td>
+
+              <td class="px-6 py-4">
+                <span [class]="a.is_ativo ? 'text-green-600' : 'text-red-500 font-medium'"><iconify-icon [icon]="a.is_ativo ? 'ph:check-circle-fill' : 'ph:x-circle-fill'" class="mr-1 align-middle"></iconify-icon> {{ a.is_ativo ? 'Ativa' : 'Inativa' }}</span>
+              </td>
+
+              <td class="px-6 py-4 text-right space-x-3">
+                <button (click)="toggleStatus(a)" [title]="a.is_ativo ? 'Inativar' : 'Ativar'" [class]="a.is_ativo ? 'text-red-500 hover:text-red-700' : 'text-green-600 hover:text-green-800'" class="transition-colors">
+                  <iconify-icon [icon]="a.is_ativo ? 'ph:power-bold' : 'ph:power-bold'" class="text-xl align-middle"></iconify-icon>
+                </button>
+                <button (click)="iniciarEdicao(a)" class="text-blue-600 hover:text-blue-800 transition-colors" title="Editar">
+                  <iconify-icon icon="ph:pencil-simple-bold" class="text-xl align-middle"></iconify-icon>
+                </button>
+              </td>
+            </tr>
+
+            <!-- Linha expandida: lista de estagiários vinculados à área -->
+            <tr *ngIf="a.aberto" class="bg-gray-50/60">
+              <td></td>
+              <td colspan="4" class="px-6 py-4">
+                <div *ngIf="getEstagiariosDaArea(a.nome).length === 0"
+                  class="text-sm text-gray-400 italic flex items-center gap-2">
+                  <iconify-icon icon="ph:user-minus-bold" class="text-base"></iconify-icon>
+                  Nenhum estagiário vinculado a esta área.
+                </div>
+                <div *ngIf="getEstagiariosDaArea(a.nome).length > 0"
+                  class="flex flex-wrap gap-2">
+                  <div *ngFor="let est of getEstagiariosDaArea(a.nome)"
+                    class="flex items-center gap-2 bg-white border border-purple-100 rounded-lg px-3 py-2 shadow-sm">
+                    <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-xs uppercase shrink-0">
+                      {{ (est.nome_completo || '?').charAt(0) }}
+                    </div>
+                    <div class="flex flex-col leading-tight">
+                      <span class="text-sm font-medium text-gray-800">{{ est.nome_completo }}</span>
+                      <span class="text-xs text-gray-400 font-mono">{{ est.matricula }}</span>
+                    </div>
+                    <span *ngIf="!est.is_ativo"
+                      class="ml-1 text-[10px] bg-red-50 text-red-600 border border-red-100 rounded-full px-1.5 py-0.5">
+                      inativo
+                    </span>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </ng-container>
         </tbody>
       </table>
     </div>
