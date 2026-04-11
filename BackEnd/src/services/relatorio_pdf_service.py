@@ -298,6 +298,7 @@ def gerar_pdf_completo(
     prontuario: dict,
     evolucoes:  list[dict],
     metas:      list[dict],
+    docentes_revisores: list[dict] | None = None,
 ) -> bytes:
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -426,6 +427,23 @@ def gerar_pdf_completo(
                 ("Feedback docente", ev.get("feedback_docente") or "—"),
             ]))
             story.append(Spacer(1, 6))
+
+    # ── Equipe Supervisora (docentes que revisaram evoluções) ─
+    story.append(Paragraph("Equipe Supervisora", styles["secao"]))
+    if not docentes_revisores:
+        story.append(Paragraph(
+            "Nenhuma evolução deste prontuário foi revisada por docente até o momento.",
+            styles["valor"]
+        ))
+    else:
+        linhas_doc = []
+        for d in docentes_revisores:
+            linhas_doc.append((
+                d.get("nome_completo", "—"),
+                f"Mat. {d.get('matricula','—')} · {d.get('email','—')} · "
+                f"<b>{d.get('total_revisoes', 0)}</b> evolução(ões) revisada(s)"
+            ))
+        story.append(_kv_table(linhas_doc, col_label_width=6 * cm))
 
     # ── Assinaturas ─────────────────────────────────────────
     story.append(Paragraph("Assinaturas Digitais", styles["secao"]))

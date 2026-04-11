@@ -11,7 +11,7 @@ import { AuthService } from '../../../core/services/auth.service';
 @Component({
   selector: 'app-gerar-relatorio',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './gerar-relatorio.html'
 })
@@ -43,6 +43,9 @@ export class GerarRelatorioComponent implements OnInit {
 
   // Formulário do relatório
   tipoSelecionado: 'Padrao' | 'Completo' = 'Padrao';
+  docenteSelecionado = '';
+  docentesDisponiveis: any[] = [];
+  isLoadingDocentes = false;
   form = {
     diagnostico_clinico:           '',
     queixa_principal:              '',
@@ -93,6 +96,9 @@ export class GerarRelatorioComponent implements OnInit {
           this.form.objetivos_tratamento = `Abordar ${pront.problema_funcional_prioritario.toLowerCase()}, ${pront.prioridade_terapeutica || ''}`.trim();
         }
 
+        // Carrega lista de docentes disponíveis para assinar (apenas no relatório padrão)
+        this.carregarDocentesDisponiveis();
+
         if (pront.paciente_id) {
           this.pacienteService.buscarPorId(pront.paciente_id).subscribe({
             next: (pac) => {
@@ -109,6 +115,29 @@ export class GerarRelatorioComponent implements OnInit {
       error: () => {
         this.errorMessage = 'Erro ao carregar prontuário.';
         this.isLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  carregarDocentesDisponiveis() {
+    if (!this.prontuarioId) return;
+    this.isLoadingDocentes = true;
+    this.relatorioService.listarDocentesDisponiveis(this.prontuarioId).subscribe({
+      next: (docs) => {
+        this.docentesDisponiveis = docs || [];
+        // Pré-seleciona o primeiro docente revisor (se houver)
+        const revisor = this.docentesDisponiveis.find(d => d.ja_revisou);
+        if (revisor) {
+          this.docenteSelecionado = revisor._id;
+        } else if (this.docentesDisponiveis.length > 0) {
+          this.docenteSelecionado = this.docentesDisponiveis[0]._id;
+        }
+        this.isLoadingDocentes = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.isLoadingDocentes = false;
         this.cdr.detectChanges();
       }
     });
@@ -172,13 +201,23 @@ export class GerarRelatorioComponent implements OnInit {
 
   criarRascunho() {
     if (!this.prontuarioId) return;
+
+    // Validação local: tipo padrão exige docente
+    if (this.tipoSelecionado === 'Padrao' && !this.docenteSelecionado) {
+      this.errorMessage = 'Selecione o docente que assinará o relatório padrão.';
+      return;
+    }
+
     this.isSalvando = true;
     this.errorMessage = '';
-    const payload = {
+    const payload: any = {
       prontuario_id: this.prontuarioId,
       tipo: this.tipoSelecionado,
       ...this.form,
     };
+    if (this.tipoSelecionado === 'Padrao') {
+      payload.docente_id = this.docenteSelecionado;
+    }
     this.relatorioService.criar(payload).subscribe({
       next: (rel) => {
         this.relatorio = rel;

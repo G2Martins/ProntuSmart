@@ -1,4 +1,27 @@
+"""
+Seed do ProntuSMART — popula uma visão padrão completa do sistema.
+
+Coleções limpas:
+- dim_usuario, dim_area, dim_indicador
+- dim_paciente, fato_prontuario, fato_meta_smart
+- fato_evolucao, fato_medicao, fato_relatorio
+
+Coleção PRESERVADA:
+- dim_cid (base oficial de 14k registros)
+
+Cenário criado:
+- 1 Administrador
+- 2 Docentes (Profa. Ana Lima — Neurologia/Traumato; Prof. Carlos Mendes — Geriatria/Cardio)
+- 2 Estagiários:
+    • João Victor      → área Neurologia Adulto
+    • Maria Eduarda    → área Geriatria
+- 4 Pacientes em 4 áreas distintas, com triagem completa, avaliação funcional,
+  metas SMART, evoluções e revisões cruzadas dos 2 docentes.
+- 3 Relatórios de exemplo (1 rascunho, 1 aguardando docente, 1 finalizado).
+"""
 import asyncio
+import hashlib
+import json
 from datetime import datetime, timezone, timedelta
 from motor.motor_asyncio import AsyncIOMotorClient
 
@@ -7,6 +30,7 @@ from src.core.security import get_password_hash
 from src.models.dim_usuario import TipoPerfil
 from src.models.dim_indicador import DirecaoMelhora
 from src.models.dim_status import StatusMeta, StatusProntuario
+from src.models.fato_relatorio import TipoRelatorio, StatusRelatorio
 
 
 # ── helper: busca CID na base dos 14k, insere se não encontrar ────────────────
@@ -25,16 +49,23 @@ async def _get_cid(db, codigo: str, descricao_fallback: str):
     return res.inserted_id
 
 
+def _hash_doc(payload: dict) -> str:
+    """SHA256 de um dicionário — usado para gerar hash de assinatura nas seeds."""
+    base = {k: v for k, v in payload.items() if k not in ("assinatura_estagiario", "assinatura_docente", "_id", "criado_em", "atualizado_em")}
+    raw  = json.dumps(base, default=str, sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
 async def rodar_seed():
     print("🌱 Iniciando seed do ProntuSMART...")
     client = AsyncIOMotorClient(settings.MONGODB_URL)
     db = client[settings.DATABASE_NAME]
 
-    # ── Limpa coleções — dim_cid PRESERVADA (14k registros) ──────────────────
+    # ── Limpa coleções — dim_cid PRESERVADA ─────────────────────────────────
     colecoes = [
         "dim_usuario", "dim_area", "dim_indicador",
         "dim_paciente", "fato_prontuario", "fato_meta_smart",
-        "fato_evolucao", "fato_medicao",
+        "fato_evolucao", "fato_medicao", "fato_relatorio",
     ]
     for col in colecoes:
         await db[col].drop()
@@ -43,55 +74,88 @@ async def rodar_seed():
 
     agora = datetime.now(timezone.utc)
 
-    # ── 1. ÁREAS ─────────────────────────────────────────────────────────────
+    # ────────────────────────────────────────────────────────────────────────
+    # 1. ÁREAS
+    # ────────────────────────────────────────────────────────────────────────
     areas = [
-        {"nome": "Saúde da Mulher e do Homem",  "descricao": "Fisioterapia pélvica e saúde preventiva",       "icone": "ph:person-simple-walk-bold", "cor": "rose",    "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
-        {"nome": "Geriatria",                    "descricao": "Saúde do idoso e prevenção de quedas",          "icone": "ph:wheelchair-bold",         "cor": "amber",   "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
-        {"nome": "Neurologia Adulto",            "descricao": "Reabilitação neurofuncional para adultos",      "icone": "ph:brain-bold",              "cor": "purple",  "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
-        {"nome": "Neuropediatria",               "descricao": "Reabilitação neurofuncional pediátrica",        "icone": "ph:baby-bold",               "cor": "cyan",    "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
-        {"nome": "Traumato-Ortopedia",           "descricao": "Reabilitação de fraturas e lesões",             "icone": "ph:bone-bold",               "cor": "blue",    "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
-        {"nome": "Cardiorrespiratória",          "descricao": "Reabilitação cardíaca e pulmonar",              "icone": "ph:lungs-bold",              "cor": "emerald", "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
+        {"nome": "Saúde do Homem e da Mulher", "descricao": "Fisioterapia pélvica e saúde preventiva", "icone": "ph:person-simple-walk-bold", "cor": "rose",    "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
+        {"nome": "Geriatria",                  "descricao": "Saúde do idoso e prevenção de quedas",     "icone": "ph:wheelchair-bold",         "cor": "amber",   "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
+        {"nome": "Neurologia Adulto",          "descricao": "Reabilitação neurofuncional para adultos", "icone": "ph:brain-bold",              "cor": "purple",  "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
+        {"nome": "Neuropediatria",             "descricao": "Reabilitação neurofuncional pediátrica",   "icone": "ph:baby-bold",               "cor": "cyan",    "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
+        {"nome": "Traumato-Ortopedia",         "descricao": "Reabilitação de fraturas e lesões",        "icone": "ph:bone-bold",               "cor": "blue",    "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
+        {"nome": "Cardiorrespiratória",        "descricao": "Reabilitação cardíaca e pulmonar",         "icone": "ph:lungs-bold",              "cor": "emerald", "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
     ]
     for a in areas:
         await db.dim_area.insert_one(a)
     print(f"  ✅ {len(areas)} Áreas cadastradas")
 
-    # ── 2. INDICADORES ────────────────────────────────────────────────────────
+    # ────────────────────────────────────────────────────────────────────────
+    # 2. INDICADORES
+    # ────────────────────────────────────────────────────────────────────────
     indicadores = [
-        {"nome": "Escala Visual Analógica (EVA)",     "unidade_medida": "pontos (0-10)",   "direcao_melhora": DirecaoMelhora.MENOR_MELHOR, "descricao": "Intensidade da dor relatada pelo paciente.",                    "areas_vinculadas": ["Todas"],                                                "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
-        {"nome": "Escala de Berg",                    "unidade_medida": "pontos (0-56)",   "direcao_melhora": DirecaoMelhora.MAIOR_MELHOR, "descricao": "Avalia equilíbrio funcional — ≤45 indica risco de queda.",     "areas_vinculadas": ["Geriatria", "Neurologia Adulto"],                       "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
-        {"nome": "Time Up and Go (TUG)",              "unidade_medida": "segundos",        "direcao_melhora": DirecaoMelhora.MENOR_MELHOR, "descricao": "Avalia mobilidade, equilíbrio e risco de quedas.",             "areas_vinculadas": ["Geriatria", "Neurologia Adulto"],                       "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
-        {"nome": "Distância de Marcha",               "unidade_medida": "metros",          "direcao_melhora": DirecaoMelhora.MAIOR_MELHOR, "descricao": "Distância percorrida com ou sem dispositivo auxiliar.",        "areas_vinculadas": ["Geriatria", "Neurologia Adulto", "Traumato-Ortopedia"], "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
-        {"nome": "Tempo em Ortostatismo Estável",     "unidade_medida": "segundos",        "direcao_melhora": DirecaoMelhora.MAIOR_MELHOR, "descricao": "Tempo em pé sem perda de equilíbrio.",                        "areas_vinculadas": ["Geriatria", "Neurologia Adulto"],                       "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
-        {"nome": "Força Muscular (Grau 0-5)",         "unidade_medida": "grau",            "direcao_melhora": DirecaoMelhora.MAIOR_MELHOR, "descricao": "Graduação da força muscular por grupo muscular.",              "areas_vinculadas": ["Traumato-Ortopedia", "Neurologia Adulto"],              "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
-        {"nome": "Amplitude de Movimento (ADM)",      "unidade_medida": "graus",           "direcao_melhora": DirecaoMelhora.MAIOR_MELHOR, "descricao": "Amplitude articular em goniometria.",                         "areas_vinculadas": ["Traumato-Ortopedia"],                                   "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
-        {"nome": "SpO2 em Repouso",                   "unidade_medida": "%",               "direcao_melhora": DirecaoMelhora.MAIOR_MELHOR, "descricao": "Saturação periférica de oxigênio.",                           "areas_vinculadas": ["Cardiorrespiratória"],                                  "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
+        {"nome": "Escala Visual Analógica (EVA)", "unidade_medida": "pontos (0-10)", "direcao_melhora": DirecaoMelhora.MENOR_MELHOR, "descricao": "Intensidade da dor relatada pelo paciente.",          "areas_vinculadas": ["Todas"],                                                "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
+        {"nome": "Escala de Berg",                "unidade_medida": "pontos (0-56)", "direcao_melhora": DirecaoMelhora.MAIOR_MELHOR, "descricao": "Avalia equilíbrio funcional — ≤45 indica risco de queda.", "areas_vinculadas": ["Geriatria", "Neurologia Adulto"],                       "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
+        {"nome": "Time Up and Go (TUG)",          "unidade_medida": "segundos",      "direcao_melhora": DirecaoMelhora.MENOR_MELHOR, "descricao": "Avalia mobilidade, equilíbrio e risco de quedas.",        "areas_vinculadas": ["Geriatria", "Neurologia Adulto"],                       "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
+        {"nome": "Distância de Marcha",           "unidade_medida": "metros",        "direcao_melhora": DirecaoMelhora.MAIOR_MELHOR, "descricao": "Distância percorrida com ou sem dispositivo auxiliar.",   "areas_vinculadas": ["Geriatria", "Neurologia Adulto", "Traumato-Ortopedia"], "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
+        {"nome": "Tempo em Ortostatismo Estável", "unidade_medida": "segundos",      "direcao_melhora": DirecaoMelhora.MAIOR_MELHOR, "descricao": "Tempo em pé sem perda de equilíbrio.",                    "areas_vinculadas": ["Geriatria", "Neurologia Adulto"],                       "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
+        {"nome": "Força Muscular (Grau 0-5)",     "unidade_medida": "grau",          "direcao_melhora": DirecaoMelhora.MAIOR_MELHOR, "descricao": "Graduação da força muscular por grupo muscular.",         "areas_vinculadas": ["Traumato-Ortopedia", "Neurologia Adulto"],              "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
+        {"nome": "Amplitude de Movimento (ADM)",  "unidade_medida": "graus",         "direcao_melhora": DirecaoMelhora.MAIOR_MELHOR, "descricao": "Amplitude articular em goniometria.",                    "areas_vinculadas": ["Traumato-Ortopedia"],                                   "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
+        {"nome": "SpO2 em Repouso",               "unidade_medida": "%",             "direcao_melhora": DirecaoMelhora.MAIOR_MELHOR, "descricao": "Saturação periférica de oxigênio.",                      "areas_vinculadas": ["Cardiorrespiratória"],                                  "is_ativo": True, "criado_em": agora, "atualizado_em": agora},
     ]
     for ind in indicadores:
         await db.dim_indicador.insert_one(ind)
     print(f"  ✅ {len(indicadores)} Indicadores cadastrados")
 
-    # ── 3. USUÁRIOS ───────────────────────────────────────────────────────────
+    # ────────────────────────────────────────────────────────────────────────
+    # 3. USUÁRIOS — 1 admin + 2 docentes + 2 estagiários
+    # ────────────────────────────────────────────────────────────────────────
     senha_hash = get_password_hash("ucb@1234")
     usuarios = [
-        {"nome_completo": "Administrador Sistema",       "matricula": "admin01",   "email": "admin@ucb.br",       "senha_hash": senha_hash, "perfil": TipoPerfil.ADMINISTRADOR, "is_ativo": True, "precisa_trocar_senha": False, "criado_em": agora, "atualizado_em": agora},
-        {"nome_completo": "Profa. Ana Lima",             "matricula": "docente01", "email": "ana.lima@ucb.br",    "senha_hash": senha_hash, "perfil": TipoPerfil.DOCENTE,       "is_ativo": True, "precisa_trocar_senha": False, "criado_em": agora, "atualizado_em": agora},
-        {"nome_completo": "João Victor Rodrigues Pinto", "matricula": "est01",     "email": "joao.victor@ucb.br", "senha_hash": senha_hash, "perfil": TipoPerfil.ESTAGIARIO,   "is_ativo": True, "precisa_trocar_senha": False, "criado_em": agora, "atualizado_em": agora},
-        {"nome_completo": "Maria Eduarda Santos",        "matricula": "est02",     "email": "m.eduarda@ucb.br",   "senha_hash": senha_hash, "perfil": TipoPerfil.ESTAGIARIO,   "is_ativo": True, "precisa_trocar_senha": False, "criado_em": agora, "atualizado_em": agora},
+        # Administrador
+        {"nome_completo": "Administrador Sistema", "matricula": "admin01", "email": "admin@ucb.br",
+         "senha_hash": senha_hash, "perfil": TipoPerfil.ADMINISTRADOR, "area_atendimento": None,
+         "is_ativo": True, "precisa_trocar_senha": False, "criado_em": agora, "atualizado_em": agora},
+
+        # Docente 1 — Profa. Ana Lima (Neurologia + Traumato)
+        {"nome_completo": "Profa. Ana Lima", "matricula": "doc01", "email": "ana.lima@ucb.br",
+         "senha_hash": senha_hash, "perfil": TipoPerfil.DOCENTE, "area_atendimento": None,
+         "is_ativo": True, "precisa_trocar_senha": False, "criado_em": agora, "atualizado_em": agora},
+
+        # Docente 2 — Prof. Carlos Mendes (Geriatria + Cardio)
+        {"nome_completo": "Prof. Carlos Mendes", "matricula": "doc02", "email": "carlos.mendes@ucb.br",
+         "senha_hash": senha_hash, "perfil": TipoPerfil.DOCENTE, "area_atendimento": None,
+         "is_ativo": True, "precisa_trocar_senha": False, "criado_em": agora, "atualizado_em": agora},
+
+        # Estagiário 1 — João Victor (Neurologia Adulto)
+        {"nome_completo": "João Victor Rodrigues Pinto", "matricula": "est01", "email": "joao.victor@ucb.br",
+         "senha_hash": senha_hash, "perfil": TipoPerfil.ESTAGIARIO, "area_atendimento": "Neurologia Adulto",
+         "is_ativo": True, "precisa_trocar_senha": False, "criado_em": agora, "atualizado_em": agora},
+
+        # Estagiário 2 — Maria Eduarda (Geriatria)
+        {"nome_completo": "Maria Eduarda Santos", "matricula": "est02", "email": "m.eduarda@ucb.br",
+         "senha_hash": senha_hash, "perfil": TipoPerfil.ESTAGIARIO, "area_atendimento": "Geriatria",
+         "is_ativo": True, "precisa_trocar_senha": False, "criado_em": agora, "atualizado_em": agora},
     ]
     ids_u: dict = {}
     for u in usuarios:
         res = await db.dim_usuario.insert_one(u)
         ids_u[u["matricula"]] = res.inserted_id
     print(f"  ✅ {len(usuarios)} Usuários cadastrados")
+    print(f"     • Docente Ana Lima → revisora de Neuro + Traumato")
+    print(f"     • Docente Carlos Mendes → revisor de Geriatria + Cardio")
+    print(f"     • Estagiário João Victor → área Neurologia Adulto")
+    print(f"     • Estagiária Maria Eduarda → área Geriatria")
 
-    docente_id = ids_u["docente01"]
-    est01_id   = ids_u["est01"]   # João Victor
-    est02_id   = ids_u["est02"]   # Maria Eduarda
+    docente_ana    = ids_u["doc01"]   # Profa. Ana Lima
+    docente_carlos = ids_u["doc02"]   # Prof. Carlos Mendes
+    est01_id       = ids_u["est01"]   # João Victor
+    est02_id       = ids_u["est02"]   # Maria Eduarda
 
-    # ── 4. PACIENTES ──────────────────────────────────────────────────────────
+    # ────────────────────────────────────────────────────────────────────────
+    # 4. PACIENTES
+    # ────────────────────────────────────────────────────────────────────────
     pacientes_data = [
-        # Paciente 1 — existente, mantido idêntico
+        # Paciente 1 — Neurologia Adulto (estagiário João Victor / docente Ana)
         {
             "nome_completo": "Carlos Alberto Ferreira", "cpf": "123.456.789-00",
             "data_nascimento": "1958-03-12", "sexo": "Masculino",
@@ -101,7 +165,7 @@ async def rodar_seed():
             "queixa_principal": "Dificuldade para andar sozinho dentro de casa",
             "is_ativo": True, "criado_em": agora - timedelta(days=30), "atualizado_em": agora,
         },
-        # Paciente 2 — Geriatria, dor registrada → alerta de risco
+        # Paciente 2 — Geriatria (estagiária Maria Eduarda / docente Carlos)
         {
             "nome_completo": "Maria das Graças Oliveira", "cpf": "234.567.890-11",
             "data_nascimento": "1945-07-22", "sexo": "Feminino",
@@ -111,7 +175,7 @@ async def rodar_seed():
             "queixa_principal": "Dor lombar crônica com dificuldade de deambulação",
             "is_ativo": True, "criado_em": agora - timedelta(days=45), "atualizado_em": agora,
         },
-        # Paciente 3 — Traumato-Ortopedia, pós-operatório
+        # Paciente 3 — Traumato-Ortopedia (estagiário João Victor / docente Ana)
         {
             "nome_completo": "Roberto Lima da Silva", "cpf": "345.678.901-22",
             "data_nascimento": "1962-11-05", "sexo": "Masculino",
@@ -121,7 +185,7 @@ async def rodar_seed():
             "queixa_principal": "Limitação de movimentos e dor no quadril esquerdo pós-fratura",
             "is_ativo": True, "criado_em": agora - timedelta(days=20), "atualizado_em": agora,
         },
-        # Paciente 4 — Cardiorrespiratória, DPOC
+        # Paciente 4 — Cardiorrespiratória (estagiária Maria Eduarda / docente Carlos)
         {
             "nome_completo": "Sandra Costa Mendes", "cpf": "456.789.012-33",
             "data_nascimento": "1955-02-18", "sexo": "Feminino",
@@ -140,13 +204,17 @@ async def rodar_seed():
 
     pac1_id, pac2_id, pac3_id, pac4_id = ids_pac
 
-    # ── 5. CIDs ───────────────────────────────────────────────────────────────
-    cid1_id = await _get_cid(db, "I63.9",  "Acidente vascular cerebral isquêmico, não especificado")
-    cid2_id = await _get_cid(db, "M54.5",  "Dor lombar")
-    cid3_id = await _get_cid(db, "S72.0",  "Fratura do colo do fêmur")
-    cid4_id = await _get_cid(db, "J44.1",  "Doença pulmonar obstrutiva crônica com exacerbação aguda")
+    # ────────────────────────────────────────────────────────────────────────
+    # 5. CIDs
+    # ────────────────────────────────────────────────────────────────────────
+    cid1_id = await _get_cid(db, "I63.9", "Acidente vascular cerebral isquêmico, não especificado")
+    cid2_id = await _get_cid(db, "M54.5", "Dor lombar")
+    cid3_id = await _get_cid(db, "S72.0", "Fratura do colo do fêmur")
+    cid4_id = await _get_cid(db, "J44.1", "Doença pulmonar obstrutiva crônica com exacerbação aguda")
 
-    # ── 6. INDICADORES (busca IDs pelo nome) ──────────────────────────────────
+    # ────────────────────────────────────────────────────────────────────────
+    # 6. INDICADORES (busca IDs pelo nome)
+    # ────────────────────────────────────────────────────────────────────────
     async def ind(nome):
         doc = await db.dim_indicador.find_one({"nome": nome})
         assert doc is not None, f"Indicador '{nome}' não encontrado!"
@@ -159,12 +227,16 @@ async def rodar_seed():
     ind_forca     = await ind("Força Muscular (Grau 0-5)")
     ind_spo2      = await ind("SpO2 em Repouso")
 
-    # ── 7. PRONTUÁRIOS ────────────────────────────────────────────────────────
+    # ────────────────────────────────────────────────────────────────────────
+    # 7. PRONTUÁRIOS
+    # NOTA: docente_id NÃO é mais setado no prontuário — o vínculo
+    # docente↔paciente é feito por meio das revisões de evoluções.
+    # ────────────────────────────────────────────────────────────────────────
 
-    # Prontuário 1 — Carlos Alberto (Neurologia Adulto) — est01, dor: False
+    # Prontuário 1 — Carlos Alberto (Neurologia Adulto, est01)
     pront1 = {
         "paciente_id": str(pac1_id), "estagiario_id": str(est01_id),
-        "docente_id":  str(docente_id), "cid_id": str(cid1_id),
+        "docente_id":  None, "cid_id": str(cid1_id),
         "area_atendimento": "Neurologia Adulto",
         "numero_prontuario": f"UCB-{agora.year}-00001",
         "status": StatusProntuario.ATIVO,
@@ -181,7 +253,7 @@ async def rodar_seed():
         "marcha_dispositivo": True, "distancia_tolerada": "5 metros",
         "funcao_mmss": "Parcialmente comprometida", "funcao_mmii": "Parcialmente comprometida",
         "equilibrio": "Alterado", "risco_queda": "Alto",
-        "dor": False,  # sem alerta de dor
+        "dor": False,
         "fadiga_funcional": True, "compreende_comandos": True, "comunicacao_preservada": True,
         "avd_banho": "AP", "avd_vestir": "AP", "avd_higiene": "AP",
         "avd_locomocao": "D", "avd_alimentacao": "I", "avd_banheiro": "AP",
@@ -195,10 +267,10 @@ async def rodar_seed():
         "criado_em": agora - timedelta(days=30), "atualizado_em": agora,
     }
 
-    # Prontuário 2 — Maria das Graças (Geriatria) — est02, dor: True → alerta
+    # Prontuário 2 — Maria das Graças (Geriatria, est02) — alerta de dor
     pront2 = {
         "paciente_id": str(pac2_id), "estagiario_id": str(est02_id),
-        "docente_id":  str(docente_id), "cid_id": str(cid2_id),
+        "docente_id":  None, "cid_id": str(cid2_id),
         "area_atendimento": "Geriatria",
         "numero_prontuario": f"UCB-{agora.year}-00002",
         "status": StatusProntuario.ATIVO,
@@ -215,7 +287,7 @@ async def rodar_seed():
         "marcha_dispositivo": True, "distancia_tolerada": "50 metros",
         "funcao_mmss": "Preservada", "funcao_mmii": "Comprometida por dor",
         "equilibrio": "Levemente alterado", "risco_queda": "Moderado",
-        "dor": True,  # ← ALERTA DE RISCO: dor registrada
+        "dor": True,
         "dor_intensidade_local": "7/10 — região lombar baixa com irradiação para glúteos",
         "fadiga_funcional": True, "compreende_comandos": True, "comunicacao_preservada": True,
         "avd_banho": "I", "avd_vestir": "I", "avd_higiene": "I",
@@ -230,10 +302,10 @@ async def rodar_seed():
         "criado_em": agora - timedelta(days=45), "atualizado_em": agora,
     }
 
-    # Prontuário 3 — Roberto Lima (Traumato-Ortopedia) — est01
+    # Prontuário 3 — Roberto Lima (Traumato-Ortopedia, est01)
     pront3 = {
         "paciente_id": str(pac3_id), "estagiario_id": str(est01_id),
-        "docente_id":  str(docente_id), "cid_id": str(cid3_id),
+        "docente_id":  None, "cid_id": str(cid3_id),
         "area_atendimento": "Traumato-Ortopedia",
         "numero_prontuario": f"UCB-{agora.year}-00003",
         "status": StatusProntuario.ATIVO,
@@ -265,10 +337,10 @@ async def rodar_seed():
         "criado_em": agora - timedelta(days=20), "atualizado_em": agora,
     }
 
-    # Prontuário 4 — Sandra Costa (Cardiorrespiratória) — est02
+    # Prontuário 4 — Sandra Costa (Cardiorrespiratória, est02)
     pront4 = {
         "paciente_id": str(pac4_id), "estagiario_id": str(est02_id),
-        "docente_id":  str(docente_id), "cid_id": str(cid4_id),
+        "docente_id":  None, "cid_id": str(cid4_id),
         "area_atendimento": "Cardiorrespiratória",
         "numero_prontuario": f"UCB-{agora.year}-00004",
         "status": StatusProntuario.ATIVO,
@@ -307,10 +379,11 @@ async def rodar_seed():
     pront1_id, pront2_id, pront3_id, pront4_id = ids_pront
     print(f"  ✅ {len(ids_pront)} Prontuários criados")
 
-    # ── 8. METAS SMART ────────────────────────────────────────────────────────
-
+    # ────────────────────────────────────────────────────────────────────────
+    # 8. METAS SMART
+    # ────────────────────────────────────────────────────────────────────────
     metas = [
-        # Pront1 — Carlos Alberto — Meta 1: Distância de Marcha (em andamento, futura)
+        # Pront1 — Carlos Alberto — Distância de Marcha
         {
             "prontuario_id": str(pront1_id), "indicador_id": str(ind_distancia),
             "estagiario_id": str(est01_id),
@@ -326,7 +399,7 @@ async def rodar_seed():
             "status": StatusMeta.EM_ANDAMENTO, "progresso_percentual": 60.0,
             "historico_alteracoes": [], "criado_em": agora - timedelta(days=30), "atualizado_em": agora,
         },
-        # Pront1 — Carlos Alberto — Meta 2: Escala de Berg (em andamento, futura)
+        # Pront1 — Carlos Alberto — Escala de Berg
         {
             "prontuario_id": str(pront1_id), "indicador_id": str(ind_berg),
             "estagiario_id": str(est01_id),
@@ -342,7 +415,7 @@ async def rodar_seed():
             "status": StatusMeta.EM_ANDAMENTO, "progresso_percentual": 47.0,
             "historico_alteracoes": [], "criado_em": agora - timedelta(days=30), "atualizado_em": agora,
         },
-        # Pront2 — Maria das Graças — Meta TUG: ATRASADA + progresso < 30% → alerta
+        # Pront2 — Maria das Graças — TUG (atrasada)
         {
             "prontuario_id": str(pront2_id), "indicador_id": str(ind_tug),
             "estagiario_id": str(est02_id),
@@ -353,12 +426,12 @@ async def rodar_seed():
             "condicao_execucao": "Com bengala, sem analgésico prévio",
             "alcancavel": "Redução esperada com controle da dor e fortalecimento",
             "relevante": "TUG ≤ 14s indica marcha segura e independente na comunidade",
-            "data_limite": agora - timedelta(days=14),  # ← PASSADA — meta atrasada
+            "data_limite": agora - timedelta(days=14),
             "data_reavaliacao": agora + timedelta(days=7),
-            "status": StatusMeta.EM_ANDAMENTO, "progresso_percentual": 15.0,  # ← < 30% — estagnada
+            "status": StatusMeta.EM_ANDAMENTO, "progresso_percentual": 15.0,
             "historico_alteracoes": [], "criado_em": agora - timedelta(days=45), "atualizado_em": agora,
         },
-        # Pront3 — Roberto Lima — ADM de quadril
+        # Pront3 — Roberto Lima — ADM
         {
             "prontuario_id": str(pront3_id), "indicador_id": str(ind_adm),
             "estagiario_id": str(est01_id),
@@ -394,10 +467,13 @@ async def rodar_seed():
     await db.fato_meta_smart.insert_many(metas)
     print(f"  ✅ {len(metas)} Metas SMART criadas")
 
-    # ── 9. EVOLUÇÕES ──────────────────────────────────────────────────────────
-
+    # ────────────────────────────────────────────────────────────────────────
+    # 9. EVOLUÇÕES — REVISÕES CRUZADAS DOS 2 DOCENTES
+    # Profa. Ana Lima  → revisora de Pront1 (Neuro) e Pront3 (Traumato)
+    # Prof. Carlos Mendes → revisor de Pront2 (Geriatria) e Pront4 (Cardio)
+    # ────────────────────────────────────────────────────────────────────────
     evolucoes = [
-        # ── João Victor (est01) / Pront1 Carlos Alberto ─────────────────────
+        # ── Pront1 Carlos Alberto (Neuro) — revisora: Ana ──────────────────
         {
             "prontuario_id": str(pront1_id), "autor_id": str(est01_id),
             "texto_clinico": (
@@ -408,13 +484,11 @@ async def rodar_seed():
                 "P - Progredir distância de marcha para 8m e iniciar treino de equilíbrio dinâmico."
             ),
             "medicoes": [
-                {"indicador_id": str(ind_distancia), "nome_indicador": "Distância de Marcha",
-                 "valor_registrado": "7", "unidade": "metros"},
-                {"indicador_id": str(ind_berg), "nome_indicador": "Escala de Berg",
-                 "valor_registrado": "34", "unidade": "pontos (0-56)"},
+                {"indicador_id": str(ind_distancia), "nome_indicador": "Distância de Marcha", "valor_registrado": "7", "unidade": "metros"},
+                {"indicador_id": str(ind_berg),      "nome_indicador": "Escala de Berg",      "valor_registrado": "34", "unidade": "pontos (0-56)"},
             ],
             "status": "Aprovado e Assinado",
-            "docente_revisor_id": str(docente_id),
+            "docente_revisor_id": str(docente_ana),
             "feedback_docente": None,
             "criado_em": agora - timedelta(days=21),
         },
@@ -428,14 +502,12 @@ async def rodar_seed():
                 "P - Tentar alcançar 10m na próxima sessão. Iniciar treino sem andador com apoio de parede."
             ),
             "medicoes": [
-                {"indicador_id": str(ind_distancia), "nome_indicador": "Distância de Marcha",
-                 "valor_registrado": "8.5", "unidade": "metros"},
-                {"indicador_id": str(ind_berg), "nome_indicador": "Escala de Berg",
-                 "valor_registrado": "38", "unidade": "pontos (0-56)"},
+                {"indicador_id": str(ind_distancia), "nome_indicador": "Distância de Marcha", "valor_registrado": "8.5", "unidade": "metros"},
+                {"indicador_id": str(ind_berg),      "nome_indicador": "Escala de Berg",      "valor_registrado": "38",  "unidade": "pontos (0-56)"},
             ],
             "status": "Aprovado e Assinado",
-            "docente_revisor_id": str(docente_id),
-            "feedback_docente": None,
+            "docente_revisor_id": str(docente_ana),
+            "feedback_docente": "Excelente progressão. Continue documentando o tempo gasto em cada deslocamento.",
             "criado_em": agora - timedelta(days=10),
         },
         {
@@ -447,10 +519,8 @@ async def rodar_seed():
                 "P - Consolidar ganhos de marcha. Focar no treino de equilíbrio para atingir 45 pts Berg."
             ),
             "medicoes": [
-                {"indicador_id": str(ind_distancia), "nome_indicador": "Distância de Marcha",
-                 "valor_registrado": "10", "unidade": "metros"},
-                {"indicador_id": str(ind_berg), "nome_indicador": "Escala de Berg",
-                 "valor_registrado": "42", "unidade": "pontos (0-56)"},
+                {"indicador_id": str(ind_distancia), "nome_indicador": "Distância de Marcha", "valor_registrado": "10", "unidade": "metros"},
+                {"indicador_id": str(ind_berg),      "nome_indicador": "Escala de Berg",      "valor_registrado": "42", "unidade": "pontos (0-56)"},
             ],
             "status": "Pendente de Revisão",
             "docente_revisor_id": None,
@@ -458,7 +528,7 @@ async def rodar_seed():
             "criado_em": agora - timedelta(days=2),
         },
 
-        # ── João Victor (est01) / Pront3 Roberto Lima ────────────────────────
+        # ── Pront3 Roberto Lima (Traumato) — revisora: Ana ─────────────────
         {
             "prontuario_id": str(pront3_id), "autor_id": str(est01_id),
             "texto_clinico": (
@@ -469,13 +539,11 @@ async def rodar_seed():
                 "P - Progredir ADM para 75°. Iniciar exercícios em cadeia cinética fechada."
             ),
             "medicoes": [
-                {"indicador_id": str(ind_adm), "nome_indicador": "Amplitude de Movimento (ADM)",
-                 "valor_registrado": "60", "unidade": "graus"},
-                {"indicador_id": str(ind_forca), "nome_indicador": "Força Muscular (Grau 0-5)",
-                 "valor_registrado": "3", "unidade": "grau"},
+                {"indicador_id": str(ind_adm),   "nome_indicador": "Amplitude de Movimento (ADM)", "valor_registrado": "60", "unidade": "graus"},
+                {"indicador_id": str(ind_forca), "nome_indicador": "Força Muscular (Grau 0-5)",    "valor_registrado": "3",  "unidade": "grau"},
             ],
             "status": "Aprovado e Assinado",
-            "docente_revisor_id": str(docente_id),
+            "docente_revisor_id": str(docente_ana),
             "feedback_docente": None,
             "criado_em": agora - timedelta(days=12),
         },
@@ -488,10 +556,8 @@ async def rodar_seed():
                 "P - Progredir para 90° de flexão. Treino de subida/descida de degrau baixo."
             ),
             "medicoes": [
-                {"indicador_id": str(ind_adm), "nome_indicador": "Amplitude de Movimento (ADM)",
-                 "valor_registrado": "75", "unidade": "graus"},
-                {"indicador_id": str(ind_forca), "nome_indicador": "Força Muscular (Grau 0-5)",
-                 "valor_registrado": "4", "unidade": "grau"},
+                {"indicador_id": str(ind_adm),   "nome_indicador": "Amplitude de Movimento (ADM)", "valor_registrado": "75", "unidade": "graus"},
+                {"indicador_id": str(ind_forca), "nome_indicador": "Força Muscular (Grau 0-5)",    "valor_registrado": "4",  "unidade": "grau"},
             ],
             "status": "Pendente de Revisão",
             "docente_revisor_id": None,
@@ -499,7 +565,7 @@ async def rodar_seed():
             "criado_em": agora - timedelta(days=5),
         },
 
-        # ── Maria Eduarda (est02) / Pront2 Maria das Graças ─────────────────
+        # ── Pront2 Maria das Graças (Geriatria) — revisor: Carlos ──────────
         {
             "prontuario_id": str(pront2_id), "autor_id": str(est02_id),
             "texto_clinico": (
@@ -510,11 +576,10 @@ async def rodar_seed():
                 "P - Rever conduta analgésica. Priorizar técnicas de controle de dor antes de progredir marcha."
             ),
             "medicoes": [
-                {"indicador_id": str(ind_tug), "nome_indicador": "Time Up and Go (TUG)",
-                 "valor_registrado": "20", "unidade": "segundos"},
+                {"indicador_id": str(ind_tug), "nome_indicador": "Time Up and Go (TUG)", "valor_registrado": "20", "unidade": "segundos"},
             ],
             "status": "Ajustes Solicitados",
-            "docente_revisor_id": str(docente_id),
+            "docente_revisor_id": str(docente_carlos),
             "feedback_docente": (
                 "Boa observação clínica. Inclua na próxima evolução a mensuração da EVA antes e após "
                 "a sessão para acompanhar o efeito imediato das técnicas. Descreva também as técnicas "
@@ -532,12 +597,11 @@ async def rodar_seed():
                 "P - Manter TENS + iniciar estabilização lombar em decúbito dorsal."
             ),
             "medicoes": [
-                {"indicador_id": str(ind_tug), "nome_indicador": "Time Up and Go (TUG)",
-                 "valor_registrado": "19.5", "unidade": "segundos"},
+                {"indicador_id": str(ind_tug), "nome_indicador": "Time Up and Go (TUG)", "valor_registrado": "19.5", "unidade": "segundos"},
             ],
             "status": "Aprovado e Assinado",
-            "docente_revisor_id": str(docente_id),
-            "feedback_docente": None,
+            "docente_revisor_id": str(docente_carlos),
+            "feedback_docente": "Ótimo ajuste. Documentação muito mais consistente.",
             "criado_em": agora - timedelta(days=18),
         },
         {
@@ -550,8 +614,7 @@ async def rodar_seed():
                 "P - Progredir estabilização para sedestação instável. Aumentar tempo de caminhada contínua."
             ),
             "medicoes": [
-                {"indicador_id": str(ind_tug), "nome_indicador": "Time Up and Go (TUG)",
-                 "valor_registrado": "18", "unidade": "segundos"},
+                {"indicador_id": str(ind_tug), "nome_indicador": "Time Up and Go (TUG)", "valor_registrado": "18", "unidade": "segundos"},
             ],
             "status": "Pendente de Revisão",
             "docente_revisor_id": None,
@@ -559,7 +622,7 @@ async def rodar_seed():
             "criado_em": agora - timedelta(days=3),
         },
 
-        # ── Maria Eduarda (est02) / Pront4 Sandra Costa ─────────────────────
+        # ── Pront4 Sandra Costa (Cardio) — revisor: Carlos ─────────────────
         {
             "prontuario_id": str(pront4_id), "autor_id": str(est02_id),
             "texto_clinico": (
@@ -570,11 +633,10 @@ async def rodar_seed():
                 "P - Iniciar treino de músculos respiratórios com threshold. Ensinar posição de alívio da dispneia."
             ),
             "medicoes": [
-                {"indicador_id": str(ind_spo2), "nome_indicador": "SpO2 em Repouso",
-                 "valor_registrado": "91", "unidade": "%"},
+                {"indicador_id": str(ind_spo2), "nome_indicador": "SpO2 em Repouso", "valor_registrado": "91", "unidade": "%"},
             ],
             "status": "Aprovado e Assinado",
-            "docente_revisor_id": str(docente_id),
+            "docente_revisor_id": str(docente_carlos),
             "feedback_docente": None,
             "criado_em": agora - timedelta(days=10),
         },
@@ -588,8 +650,7 @@ async def rodar_seed():
                 "P - Progredir carga do threshold. Incluir treino em posição ortostática."
             ),
             "medicoes": [
-                {"indicador_id": str(ind_spo2), "nome_indicador": "SpO2 em Repouso",
-                 "valor_registrado": "92", "unidade": "%"},
+                {"indicador_id": str(ind_spo2), "nome_indicador": "SpO2 em Repouso", "valor_registrado": "92", "unidade": "%"},
             ],
             "status": "Pendente de Revisão",
             "docente_revisor_id": None,
@@ -606,22 +667,123 @@ async def rodar_seed():
         ev.setdefault("motivo_ajuste", None)
         ev.setdefault("proxima_revisao", None)
         await db.fato_evolucao.insert_one(ev)
-
     print(f"  ✅ {len(evolucoes)} Evoluções criadas")
 
+    # ────────────────────────────────────────────────────────────────────────
+    # 10. RELATÓRIOS DE EXEMPLO
+    # ────────────────────────────────────────────────────────────────────────
+
+    # Relatório 1 — PADRÃO FINALIZADO
+    # Pront1 Carlos Alberto (est01 João Victor) → docente Ana já assinou
+    rel1_base = {
+        "prontuario_id":  str(pront1_id), "paciente_id": str(pac1_id),
+        "estagiario_id":  str(est01_id),  "docente_id":  str(docente_ana),
+        "numero_relatorio": f"REL-{agora.year}-10001",
+        "tipo":   TipoRelatorio.PADRAO,
+        "status": StatusRelatorio.FINALIZADO,
+        "diagnostico_clinico":          "Acidente vascular cerebral isquêmico",
+        "queixa_principal":             "Dificuldade para andar sozinho dentro de casa",
+        "diagnostico_fisioterapeutico": "Déficit de mobilidade funcional com prejuízo de marcha, transferências e equilíbrio",
+        "objetivos_tratamento":         "Melhorar a marcha funcional, ganhar equilíbrio dinâmico, treinar transferências e segurança nas AVDs",
+        "atividades_realizadas":        "Treino de marcha com andador, exercícios de equilíbrio em ortostatismo, fortalecimento de MMII e treino funcional para transferências",
+        "observacoes_evolucao":         "Durante o tratamento foi possível observar ganho expressivo na distância de marcha (5m → 10m) e na pontuação da Escala de Berg (28 → 42 pontos). Equilíbrio dinâmico ainda em progressão.",
+        "consideracoes_finais":         "Desde já, me coloco à disposição para maiores esclarecimentos sobre o quadro funcional e musculoesquelético do paciente.",
+        "data_emissao": agora - timedelta(days=1),
+        "criado_em":    agora - timedelta(days=2),
+        "atualizado_em": agora - timedelta(days=1),
+    }
+    rel1_hash = _hash_doc(rel1_base)
+    rel1_base["hash_integridade"] = rel1_hash
+    rel1_base["assinatura_estagiario"] = {
+        "usuario_id":      str(est01_id),
+        "nome_completo":   "João Victor Rodrigues Pinto",
+        "matricula":       "est01",
+        "perfil":          "Estagiario",
+        "data_assinatura": agora - timedelta(days=2),
+        "hash_documento":  rel1_hash,
+    }
+    rel1_base["assinatura_docente"] = {
+        "usuario_id":      str(docente_ana),
+        "nome_completo":   "Profa. Ana Lima",
+        "matricula":       "doc01",
+        "perfil":          "Docente",
+        "data_assinatura": agora - timedelta(days=1),
+        "hash_documento":  rel1_hash,
+    }
+    await db.fato_relatorio.insert_one(rel1_base)
+
+    # Relatório 2 — PADRÃO AGUARDANDO DOCENTE
+    # Pront2 Maria das Graças (est02 Maria Eduarda) → estagiária assinou, docente Carlos pendente
+    rel2_base = {
+        "prontuario_id":  str(pront2_id), "paciente_id": str(pac2_id),
+        "estagiario_id":  str(est02_id),  "docente_id":  str(docente_carlos),
+        "numero_relatorio": f"REL-{agora.year}-10002",
+        "tipo":   TipoRelatorio.PADRAO,
+        "status": StatusRelatorio.AGUARDANDO_DOCENTE,
+        "diagnostico_clinico":          "Lombalgia crônica com irradiação para membros inferiores",
+        "queixa_principal":             "Dor lombar crônica com dificuldade de deambulação",
+        "diagnostico_fisioterapeutico": "Síndrome dolorosa lombar com limitação funcional de marcha e mobilidade",
+        "objetivos_tratamento":         "Reduzir intensidade da dor, melhorar tolerância à marcha e devolver autonomia para deslocamentos comunitários",
+        "atividades_realizadas":        "Aplicação de TENS lombar, alongamentos da musculatura paravertebral, exercícios de estabilização lombar e treino de marcha com bengala",
+        "observacoes_evolucao":         "Houve redução da dor (EVA 7/10 → 6/10) e melhora discreta no TUG (22s → 18s). Paciente recuperou autonomia para ir à padaria do bairro durante o tratamento.",
+        "consideracoes_finais":         "",
+        "criado_em":     agora - timedelta(hours=12),
+        "atualizado_em": agora - timedelta(hours=8),
+    }
+    rel2_hash = _hash_doc(rel2_base)
+    rel2_base["assinatura_estagiario"] = {
+        "usuario_id":      str(est02_id),
+        "nome_completo":   "Maria Eduarda Santos",
+        "matricula":       "est02",
+        "perfil":          "Estagiario",
+        "data_assinatura": agora - timedelta(hours=8),
+        "hash_documento":  rel2_hash,
+    }
+    await db.fato_relatorio.insert_one(rel2_base)
+
+    # Relatório 3 — COMPLETO RASCUNHO
+    # Pront3 Roberto Lima — estagiário ainda não assinou
+    rel3_base = {
+        "prontuario_id":  str(pront3_id), "paciente_id": str(pac3_id),
+        "estagiario_id":  str(est01_id),  "docente_id":  None,
+        "numero_relatorio": f"REL-{agora.year}-10003",
+        "tipo":   TipoRelatorio.COMPLETO,
+        "status": StatusRelatorio.RASCUNHO,
+        "diagnostico_clinico":          "Fratura do colo do fêmur esquerdo — pós-artroplastia total de quadril",
+        "queixa_principal":             "Limitação de movimentos e dor no quadril esquerdo pós-operatória",
+        "diagnostico_fisioterapeutico": "Limitação de ADM de quadril e déficit de força em MMII",
+        "objetivos_tratamento":         "Recuperar amplitude de movimento de flexão de quadril, ganhar força em MMII e devolver marcha segura",
+        "atividades_realizadas":        "Mobilização articular passiva e ativa-assistida, fortalecimento isométrico, exercícios em cadeia cinética fechada e treino de marcha com muletas",
+        "observacoes_evolucao":         "Boa evolução. ADM passou de 45° para 75° de flexão. Força muscular passou de grau 3 para grau 4.",
+        "consideracoes_finais":         "",
+        "criado_em":     agora - timedelta(hours=4),
+        "atualizado_em": agora - timedelta(hours=4),
+    }
+    await db.fato_relatorio.insert_one(rel3_base)
+
+    print(f"  ✅ 3 Relatórios de exemplo criados")
+    print(f"     • REL-{agora.year}-10001 → Padrão FINALIZADO (Carlos Alberto)")
+    print(f"     • REL-{agora.year}-10002 → Padrão AGUARDANDO DOCENTE (Maria das Graças)")
+    print(f"     • REL-{agora.year}-10003 → Completo RASCUNHO (Roberto Lima)")
+
+    # ────────────────────────────────────────────────────────────────────────
+    # FIM
+    # ────────────────────────────────────────────────────────────────────────
     print("\n🚀 Seed finalizado com sucesso!")
-    print(f"   {len(pacientes_data)} pacientes | {len(ids_pront)} prontuários | {len(metas)} metas | {len(evolucoes)} evoluções")
+    print(f"   {len(pacientes_data)} pacientes | {len(ids_pront)} prontuários | {len(metas)} metas | {len(evolucoes)} evoluções | 3 relatórios")
     print()
     print("   Credenciais (senha: ucb@1234):")
-    print("   admin01   → Administrador Sistema")
-    print("   docente01 → Profa. Ana Lima")
-    print("   est01     → João Victor Rodrigues Pinto")
-    print("   est02     → Maria Eduarda Santos")
+    print("   admin01  → Administrador Sistema")
+    print("   doc01    → Profa. Ana Lima       (revisora Neuro + Traumato)")
+    print("   doc02    → Prof. Carlos Mendes   (revisor Geriatria + Cardio)")
+    print("   est01    → João Victor (Neurologia Adulto)")
+    print("   est02    → Maria Eduarda (Geriatria)")
     print()
     print("   Dashboard — dados de demonstração:")
-    print("   📊 4 CIDs distintos | 4 áreas clínicas | 2 estagiários")
+    print("   📊 4 CIDs distintos | 4 áreas clínicas | 2 estagiários | 2 docentes")
     print("   ⚠️  Alertas de risco: 2 prontuários com dor | 1 meta estagnada/atrasada")
     print("   ✅ Evoluções: 6 aprovadas | 4 pendentes | 1 devolvida")
+    print("   📄 Relatórios: 1 finalizado | 1 aguardando docente | 1 rascunho")
     client.close()
 
 

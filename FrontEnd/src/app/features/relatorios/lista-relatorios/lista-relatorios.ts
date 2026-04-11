@@ -18,7 +18,7 @@ interface PacienteVinculado {
 @Component({
   selector: 'app-lista-relatorios',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './lista-relatorios.html'
 })

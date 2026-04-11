@@ -121,6 +121,65 @@ async def _prontuario_acessivel(db, prontuario_id: str, current_user: dict) -> d
 #  Endpoints
 # ════════════════════════════════════════════════════════════════
 
+@router.get("/docentes-disponiveis/{prontuario_id}")
+async def listar_docentes_disponiveis(
+    prontuario_id: str,
+    db = Depends(get_database),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Lista docentes elegíveis para assinar o relatório PADRÃO de um prontuário.
+
+    Critérios:
+    - Prioridade: docentes que JÁ REVISARAM alguma evolução desse prontuário
+      (esses são os "supervisores de fato" do paciente)
+    - Fallback: todos os docentes ativos (caso nenhuma evolução tenha sido revisada)
+    """
+    # Verifica acesso ao prontuário
+    await _prontuario_acessivel(db, prontuario_id, current_user)
+
+    # Busca docentes únicos que já revisaram evoluções desse prontuário
+    cursor = db.fato_evolucao.find(
+        {"prontuario_id": prontuario_id, "docente_revisor_id": {"$ne": None}},
+        {"docente_revisor_id": 1},
+    )
+    docente_ids = set()
+    async for ev in cursor:
+        if ev.get("docente_revisor_id"):
+            docente_ids.add(ev["docente_revisor_id"])
+
+    revisores = []
+    for did in docente_ids:
+        try:
+            d = await db.dim_usuario.find_one({"_id": ObjectId(did)})
+            if d and d.get("is_ativo"):
+                revisores.append({
+                    "_id":           str(d["_id"]),
+                    "nome_completo": d.get("nome_completo"),
+                    "matricula":     d.get("matricula"),
+                    "email":         d.get("email"),
+                    "ja_revisou":    True,
+                })
+        except Exception:
+            continue
+
+    if revisores:
+        return revisores
+
+    # Fallback: todos docentes ativos
+    cursor = db.dim_usuario.find(
+        {"perfil": TipoPerfil.DOCENTE, "is_ativo": True}
+    ).sort("nome_completo", 1)
+    todos = await cursor.to_list(length=200)
+    return [{
+        "_id":           str(d["_id"]),
+        "nome_completo": d.get("nome_completo"),
+        "matricula":     d.get("matricula"),
+        "email":         d.get("email"),
+        "ja_revisou":    False,
+    } for d in todos]
+
+
 @router.post("/", response_model=RelatorioResponse, status_code=status.HTTP_201_CREATED)
 async def criar_relatorio(
     payload: RelatorioCreate,
@@ -129,12 +188,34 @@ async def criar_relatorio(
 ):
     """
     Cria um rascunho de relatório a partir de um prontuário.
-    Apenas Estagiário e Docente podem solicitar.
+    Apenas Estagiário/Docente/Admin podem solicitar.
+
+    Para tipo PADRÃO o estagiário DEVE escolher qual docente assinará
+    (via dropdown alimentado por GET /docentes-disponiveis/{prontuario_id}).
+    Para tipo COMPLETO docente_id é ignorado (não é assinado por um docente único).
     """
     if current_user.get("perfil") not in (TipoPerfil.ESTAGIARIO, TipoPerfil.DOCENTE, TipoPerfil.ADMINISTRADOR):
         raise HTTPException(status_code=403, detail="Acesso negado.")
 
     pront = await _prontuario_acessivel(db, payload.prontuario_id, current_user)
+
+    # Validação: relatório padrão exige docente designado
+    if payload.tipo == TipoRelatorio.PADRAO and not payload.docente_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Selecione o docente que assinará o relatório padrão."
+        )
+
+    # Verifica se o docente existe e está ativo (caso fornecido)
+    if payload.docente_id:
+        try:
+            doc = await db.dim_usuario.find_one({"_id": ObjectId(payload.docente_id)})
+            if not doc or doc.get("perfil") != TipoPerfil.DOCENTE or not doc.get("is_ativo"):
+                raise HTTPException(status_code=400, detail="Docente selecionado é inválido ou inativo.")
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(status_code=400, detail="Docente selecionado é inválido.")
 
     # Numeração sequencial
     ano = datetime.now().year
@@ -144,8 +225,8 @@ async def criar_relatorio(
     relatorio = FatoRelatorio(
         prontuario_id  = payload.prontuario_id,
         paciente_id    = pront["paciente_id"],
-        estagiario_id  = pront["estagiario_id"],  # vínculo formal: o estagiário do prontuário
-        docente_id     = pront.get("docente_id"),
+        estagiario_id  = pront["estagiario_id"],
+        docente_id     = payload.docente_id if payload.tipo == TipoRelatorio.PADRAO else None,
         numero_relatorio = numero,
         tipo   = payload.tipo,
         status = StatusRelatorio.RASCUNHO,
@@ -289,10 +370,18 @@ async def assinar_relatorio(
             raise HTTPException(status_code=400, detail="O estagiário precisa assinar primeiro.")
         if rel.get("assinatura_docente"):
             raise HTTPException(status_code=400, detail="Este relatório já foi assinado pelo docente.")
+        # Apenas o docente designado pode assinar (admins ignoram essa restrição)
+        if perfil == TipoPerfil.DOCENTE and rel.get("docente_id") and rel["docente_id"] != user_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Apenas o docente designado para este relatório pode assiná-lo."
+            )
         update_data["assinatura_docente"] = assinatura.model_dump()
         update_data["status"]       = StatusRelatorio.FINALIZADO
         update_data["data_emissao"] = datetime.now(timezone.utc)
-        update_data["docente_id"]   = user_id  # registra o docente que assinou
+        # Se o relatório não tinha docente designado (ex.: completo), grava o que assinou
+        if not rel.get("docente_id"):
+            update_data["docente_id"] = user_id
         update_data["hash_integridade"] = _hash_documento(rel)
     else:
         raise HTTPException(status_code=403, detail="Perfil sem permissão para assinar.")
@@ -351,7 +440,28 @@ async def baixar_pdf(
         evolucoes = await evolucoes_cursor.to_list(length=500)
         metas_cursor = db.fato_meta_smart.find({"prontuario_id": rel["prontuario_id"]}).sort("criado_em", 1)
         metas = await metas_cursor.to_list(length=500)
-        pdf_bytes = gerar_pdf_completo(rel, paciente, prontuario, evolucoes, metas)
+
+        # Computa lista única de docentes que revisaram evoluções deste prontuário
+        contagem: dict = {}
+        for ev in evolucoes:
+            did = ev.get("docente_revisor_id")
+            if did:
+                contagem[did] = contagem.get(did, 0) + 1
+        docentes_revisores = []
+        for did, total in contagem.items():
+            try:
+                d = await db.dim_usuario.find_one({"_id": ObjectId(did)})
+                if d:
+                    docentes_revisores.append({
+                        "nome_completo": d.get("nome_completo"),
+                        "matricula":     d.get("matricula"),
+                        "email":         d.get("email"),
+                        "total_revisoes": total,
+                    })
+            except Exception:
+                continue
+
+        pdf_bytes = gerar_pdf_completo(rel, paciente, prontuario, evolucoes, metas, docentes_revisores)
         filename  = f"{rel['numero_relatorio']}_completo.pdf"
     else:
         pdf_bytes = gerar_pdf_padrao(rel, paciente, prontuario)

@@ -8,6 +8,7 @@ class RelatorioCreate(BaseModel):
     """Cria um rascunho de relatório a partir de um prontuário."""
     prontuario_id: str
     tipo:          TipoRelatorio = TipoRelatorio.PADRAO
+    docente_id:    Optional[str] = None  # Obrigatório para tipo PADRÃO
     # Conteúdo opcional na criação — pode ser preenchido depois
     diagnostico_clinico:          Optional[str] = None
     queixa_principal:             Optional[str] = None

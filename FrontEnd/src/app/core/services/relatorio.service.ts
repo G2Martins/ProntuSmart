@@ -50,4 +50,11 @@ export class RelatorioService {
       responseType: 'blob'
     });
   }
+
+  /** Lista docentes elegíveis para assinar relatório padrão de um prontuário. */
+  listarDocentesDisponiveis(prontuarioId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/docentes-disponiveis/${prontuarioId}`, {
+      headers: this.headers()
+    });
+  }
 }
