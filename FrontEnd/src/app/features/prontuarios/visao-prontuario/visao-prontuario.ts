@@ -7,6 +7,8 @@ import { PacienteService } from '../../../core/services/paciente.service';
 import { EvolucaoService } from '../../../core/services/evolucao.service';
 import { MetaSmartService } from '../../../core/services/meta-smart.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { IndicadorService } from '../../../core/services/indicador.service';
+import { Indicador } from '../../../shared/models/indicador.model';
 
 @Component({
   selector: 'app-visao-prontuario',
@@ -25,18 +27,26 @@ export class VisaoProntuario implements OnInit {
   private metaService       = inject(MetaSmartService);
   private authService       = inject(AuthService);
   private cdr               = inject(ChangeDetectorRef);
+  private indicadorService  = inject(IndicadorService);
 
-  prontuario: any  = null;
-  paciente: any    = null;
-  evolucoes: any[] = [];
-  metas: any[]     = [];
+  prontuario: any   = null;
+  paciente: any     = null;
+  evolucoes: any[]  = [];
+  metas: any[]      = [];
+  indicadores: Indicador[] = [];
 
-  isLoadingProntuario = true;
-  isLoadingEvolucoes  = true;
-  isLoadingMetas      = true;
+  isLoadingProntuario  = true;
+  isLoadingEvolucoes   = true;
+  isLoadingMetas       = true;
+  isLoadingIndicadores = false;
 
   perfil: string | null = '';
-  abaAtiva: 'evolucoes' | 'metas' = 'evolucoes';
+  abaAtiva: 'evolucoes' | 'metas' | 'graficos' = 'evolucoes';
+
+  // ── SVG Chart constants ────────────────────────────────────
+  readonly svgW   = 560;
+  readonly svgH   = 200;
+  readonly svgPad = { top: 16, right: 28, bottom: 44, left: 52 };
 
   // ── Modal de Edição de Meta ──────────────────────────────
   modalEditarAberto    = false;
@@ -64,6 +74,7 @@ export class VisaoProntuario implements OnInit {
       this.carregarProntuario(id);
       this.carregarEvolucoes(id);
       this.carregarMetas(id);
+      this.carregarIndicadores();
     }
   }
 
@@ -214,5 +225,181 @@ export class VisaoProntuario implements OnInit {
     if (pct >= 60)  return 'bg-blue-500';
     if (pct >= 30)  return 'bg-yellow-500';
     return 'bg-orange-400';
+  }
+
+  // ── Indicadores / Gráficos ───────────────────────────────
+  carregarIndicadores() {
+    this.isLoadingIndicadores = true;
+    this.indicadorService.listar(false).subscribe({
+      next: (inds) => {
+        this.indicadores = inds;
+        this.isLoadingIndicadores = false;
+        this.cdr.detectChanges();
+      },
+      error: () => { this.isLoadingIndicadores = false; this.cdr.detectChanges(); }
+    });
+  }
+
+  get isLoadingGraficos(): boolean {
+    return this.isLoadingEvolucoes || this.isLoadingMetas || this.isLoadingIndicadores;
+  }
+
+  get dadosGraficos(): any[] {
+    const series = new Map<string, any>();
+
+    // 1. Seed from metas: valor_inicial como ponto de partida
+    for (const meta of this.metas) {
+      if (!meta.indicador_id) continue;
+      const indId  = String(meta.indicador_id);
+      const ind    = this.indicadores.find(i => i._id === indId);
+
+      if (!series.has(indId)) {
+        const pontoInicial: any[] = (meta.valor_inicial != null && meta.criado_em)
+          ? [{ data: new Date(meta.criado_em), valor: Number(meta.valor_inicial), label: 'Inicial' }]
+          : [];
+        series.set(indId, {
+          indicador_id:    indId,
+          nome:            ind?.nome            || 'Indicador',
+          unidade:         ind?.unidade_medida  || '',
+          direcao_melhora: ind?.direcao_melhora || 'maior_melhor',
+          valor_alvo:      meta.valor_alvo ?? null,
+          pontos:          pontoInicial,
+        });
+      } else {
+        // Se existir meta posterior, atualizar o alvo
+        const s = series.get(indId)!;
+        if (meta.valor_alvo != null) s.valor_alvo = meta.valor_alvo;
+      }
+    }
+
+    // 2. Adicionar medições das evoluções (ordem cronológica)
+    const evs = [...this.evolucoes].sort(
+      (a, b) => new Date(a.criado_em).getTime() - new Date(b.criado_em).getTime()
+    );
+    for (const ev of evs) {
+      for (const med of (ev.medicoes || [])) {
+        if (!med.indicador_id) continue;
+        const indId = String(med.indicador_id);
+        const valor = parseFloat(String(med.valor_registrado));
+        if (isNaN(valor)) continue;
+
+        if (!series.has(indId)) {
+          const ind = this.indicadores.find(i => i._id === indId);
+          series.set(indId, {
+            indicador_id:    indId,
+            nome:            med.nome_indicador || ind?.nome            || 'Indicador',
+            unidade:         med.unidade        || ind?.unidade_medida  || '',
+            direcao_melhora: ind?.direcao_melhora || 'maior_melhor',
+            valor_alvo:      null,
+            pontos:          [],
+          });
+        }
+
+        const s = series.get(indId)!;
+        if (!s.nome || s.nome === 'Indicador') s.nome = med.nome_indicador || s.nome;
+        if (!s.unidade) s.unidade = med.unidade || '';
+        s.pontos.push({ data: new Date(ev.criado_em), valor });
+      }
+    }
+
+    return Array.from(series.values()).filter(s => s.pontos.length >= 1);
+  }
+
+  // ── SVG helpers (chart internals) ────────────────────────
+  private get plotW(): number { return this.svgW - this.svgPad.left - this.svgPad.right; }
+  private get plotH(): number { return this.svgH - this.svgPad.top  - this.svgPad.bottom; }
+
+  private yBounds(pontos: { valor: number }[], valorAlvo: number | null) {
+    const vals   = pontos.map(p => p.valor);
+    if (valorAlvo != null) vals.push(valorAlvo);
+    const rawMin = Math.min(...vals);
+    const rawMax = Math.max(...vals);
+    const range  = rawMax - rawMin;
+    const pad    = range * 0.15 || Math.abs(rawMin) * 0.1 || 5;
+    return { min: rawMin - pad, max: rawMax + pad };
+  }
+
+  calcularSvgPts(pontos: { valor: number }[], valorAlvo: number | null): string {
+    if (!pontos.length) return '';
+    const { min, max } = this.yBounds(pontos, valorAlvo);
+    const r = max - min || 1;
+    return pontos.map((p, i) => {
+      const x = this.svgPad.left + (pontos.length > 1 ? (i / (pontos.length - 1)) * this.plotW : this.plotW / 2);
+      const y = this.svgPad.top  + this.plotH - ((p.valor - min) / r) * this.plotH;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+  }
+
+  calcularAreaPath(pontos: { valor: number }[], valorAlvo: number | null): string {
+    if (pontos.length < 2) return '';
+    const { min, max } = this.yBounds(pontos, valorAlvo);
+    const r        = max - min || 1;
+    const baseline = this.svgH - this.svgPad.bottom;
+    const pts      = pontos.map((p, i) => ({
+      x: this.svgPad.left + (i / (pontos.length - 1)) * this.plotW,
+      y: this.svgPad.top  + this.plotH - ((p.valor - min) / r) * this.plotH,
+    }));
+    const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    return `${line} L${pts[pts.length - 1].x.toFixed(1)},${baseline} L${pts[0].x.toFixed(1)},${baseline} Z`;
+  }
+
+  getXCoord(i: number, n: number): number {
+    return this.svgPad.left + (n > 1 ? (i / (n - 1)) * this.plotW : this.plotW / 2);
+  }
+
+  getYCoord(valor: number, pontos: { valor: number }[], valorAlvo: number | null): number {
+    const { min, max } = this.yBounds(pontos, valorAlvo);
+    const r = max - min || 1;
+    return this.svgPad.top + this.plotH - ((valor - min) / r) * this.plotH;
+  }
+
+  getYTicks(pontos: { valor: number }[], valorAlvo: number | null): { y: number; label: string }[] {
+    const { min, max } = this.yBounds(pontos, valorAlvo);
+    const r = max - min || 1;
+    return [0, 0.25, 0.5, 0.75, 1].map(t => {
+      const val = min + r * t;
+      const y   = this.svgPad.top + this.plotH * (1 - t);
+      return { y: parseFloat(y.toFixed(1)), label: val % 1 === 0 ? val.toFixed(0) : val.toFixed(1) };
+    });
+  }
+
+  formatDataCurta(d: Date | string): string {
+    const dt = d instanceof Date ? d : new Date(d);
+    return `${dt.getDate().toString().padStart(2, '0')}/${(dt.getMonth() + 1).toString().padStart(2, '0')}`;
+  }
+
+  getCorLinha(serie: { pontos: { valor: number }[]; direcao_melhora: string }): string {
+    if (serie.pontos.length < 2) return '#3b82f6';
+    const prev = serie.pontos[0].valor;
+    const curr = serie.pontos[serie.pontos.length - 1].valor;
+    if (prev === curr) return '#6b7280';
+    const melhora = serie.direcao_melhora === 'maior_melhor' ? curr > prev : curr < prev;
+    return melhora ? '#16a34a' : '#dc2626';
+  }
+
+  getCorLinhaClass(serie: { pontos: { valor: number }[]; direcao_melhora: string }): string {
+    if (serie.pontos.length < 2) return 'text-blue-600';
+    const prev = serie.pontos[0].valor;
+    const curr = serie.pontos[serie.pontos.length - 1].valor;
+    if (prev === curr) return 'text-gray-600';
+    const melhora = serie.direcao_melhora === 'maior_melhor' ? curr > prev : curr < prev;
+    return melhora ? 'text-green-600' : 'text-red-600';
+  }
+
+  getTendenciaBadge(serie: { pontos: { valor: number }[]; direcao_melhora: string; unidade: string }): { texto: string; cor: string } {
+    if (serie.pontos.length < 2) return { texto: '1 registro', cor: 'text-gray-400' };
+    const prev = serie.pontos[0].valor;
+    const curr = serie.pontos[serie.pontos.length - 1].valor;
+    const diff = curr - prev;
+    if (diff === 0) return { texto: 'Sem variação', cor: 'text-gray-500' };
+    const pct      = Math.abs(diff / (prev || 1)) * 100;
+    const melhora  = serie.direcao_melhora === 'maior_melhor' ? diff > 0 : diff < 0;
+    const sinal    = diff > 0 ? '▲' : '▼';
+    const absDiff  = Math.abs(diff);
+    const diffStr  = absDiff % 1 === 0 ? absDiff.toFixed(0) : absDiff.toFixed(1);
+    return {
+      texto: `${sinal} ${diffStr} ${serie.unidade} (${pct.toFixed(0)}%)`,
+      cor:   melhora ? 'text-green-600' : 'text-red-600',
+    };
   }
 }

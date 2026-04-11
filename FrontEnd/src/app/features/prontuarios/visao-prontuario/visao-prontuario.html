@@ -176,6 +176,18 @@
             {{ metas.length }}
           </span>
         </button>
+        <button (click)="abaAtiva = 'graficos'"
+          class="px-6 py-4 text-sm font-semibold flex items-center gap-2 transition-colors border-b-2 -mb-px"
+          [ngClass]="abaAtiva === 'graficos'
+            ? 'border-blue-600 text-blue-600'
+            : 'border-transparent text-gray-500 hover:text-gray-700'">
+          <iconify-icon icon="ph:chart-line-up-bold" class="text-base"></iconify-icon>
+          Gráficos
+          <span *ngIf="!isLoadingGraficos && dadosGraficos.length > 0"
+            class="ml-1 bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full">
+            {{ dadosGraficos.length }}
+          </span>
+        </button>
       </div>
 
       <!-- ── Aba: Evoluções ─────────────────────────────── -->
@@ -401,6 +413,176 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- ── Aba: Gráficos de Evolução ──────────────────── -->
+      <div *ngIf="abaAtiva === 'graficos'" class="p-6">
+
+        <!-- Loading -->
+        <div *ngIf="isLoadingGraficos" class="py-10 text-center text-gray-400">
+          <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-3xl text-blue-400 mb-2"></iconify-icon>
+          <p class="text-sm mt-1">Carregando gráficos de evolução...</p>
+        </div>
+
+        <!-- Estado vazio -->
+        <div *ngIf="!isLoadingGraficos && dadosGraficos.length === 0"
+          class="py-14 text-center text-gray-400">
+          <iconify-icon icon="ph:chart-line-up-bold" class="text-6xl mb-4"></iconify-icon>
+          <p class="font-semibold text-gray-600 text-lg">Nenhum indicador mensurado</p>
+          <p class="text-sm mt-1">
+            Registre evoluções com medições de indicadores clínicos para visualizar os gráficos de progresso.
+          </p>
+        </div>
+
+        <!-- Cards de Gráfico -->
+        <div *ngIf="!isLoadingGraficos && dadosGraficos.length > 0" class="space-y-8">
+          <div *ngFor="let serie of dadosGraficos"
+            class="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
+
+            <!-- Cabeçalho do card -->
+            <div class="bg-gray-50 px-5 py-4 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
+                  <iconify-icon icon="ph:chart-line-up-bold" class="text-lg"></iconify-icon>
+                </div>
+                <div>
+                  <h4 class="font-bold text-gray-800 text-base">{{ serie.nome }}</h4>
+                  <p class="text-xs text-gray-400">Unidade: <strong>{{ serie.unidade || '—' }}</strong></p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 flex-wrap">
+                <span class="text-xs px-3 py-1 rounded-full font-semibold border"
+                  [ngClass]="serie.direcao_melhora === 'maior_melhor'
+                    ? 'bg-green-50 text-green-700 border-green-200'
+                    : 'bg-blue-50 text-blue-700 border-blue-200'">
+                  {{ serie.direcao_melhora === 'maior_melhor' ? '↑ Quanto maior, melhor' : '↓ Quanto menor, melhor' }}
+                </span>
+                <span class="text-sm font-bold" [ngClass]="getTendenciaBadge(serie).cor">
+                  {{ getTendenciaBadge(serie).texto }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Linha de resumo: Inicial → Atual → Alvo -->
+            <div class="grid grid-cols-3 divide-x divide-gray-100 border-b border-gray-100">
+              <div class="px-4 py-3 text-center">
+                <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Inicial</p>
+                <p class="text-xl font-bold text-gray-600">
+                  {{ serie.pontos[0].valor }}<span class="text-xs font-normal text-gray-400 ml-1">{{ serie.unidade }}</span>
+                </p>
+                <p class="text-xs text-gray-400">{{ formatDataCurta(serie.pontos[0].data) }}</p>
+              </div>
+              <div class="px-4 py-3 text-center">
+                <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Atual</p>
+                <p class="text-2xl font-extrabold" [ngClass]="getCorLinhaClass(serie)">
+                  {{ serie.pontos[serie.pontos.length - 1].valor }}<span class="text-xs font-normal text-gray-400 ml-1">{{ serie.unidade }}</span>
+                </p>
+                <p class="text-xs text-gray-400">{{ formatDataCurta(serie.pontos[serie.pontos.length - 1].data) }}</p>
+              </div>
+              <div class="px-4 py-3 text-center">
+                <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Meta / Alvo</p>
+                <p *ngIf="serie.valor_alvo != null" class="text-xl font-bold text-purple-600">
+                  {{ serie.valor_alvo }}<span class="text-xs font-normal text-purple-400 ml-1">{{ serie.unidade }}</span>
+                </p>
+                <p *ngIf="serie.valor_alvo == null" class="text-sm text-gray-400 italic pt-1">Não definida</p>
+              </div>
+            </div>
+
+            <!-- Gráfico SVG (2+ pontos) -->
+            <div *ngIf="serie.pontos.length >= 2" class="p-4 bg-white">
+              <svg viewBox="0 0 560 200" class="w-full" style="overflow: visible">
+
+                <!-- Grid horizontal + labels do eixo Y -->
+                <ng-container *ngFor="let tick of getYTicks(serie.pontos, serie.valor_alvo)">
+                  <line [attr.x1]="svgPad.left" [attr.y1]="tick.y"
+                        [attr.x2]="svgW - svgPad.right" [attr.y2]="tick.y"
+                        stroke="#f3f4f6" stroke-width="1"/>
+                  <text [attr.x]="svgPad.left - 6" [attr.y]="tick.y + 4"
+                        text-anchor="end" font-size="10" fill="#9ca3af">{{ tick.label }}</text>
+                </ng-container>
+
+                <!-- Linha tracejada da Meta (valor_alvo) -->
+                <ng-container *ngIf="serie.valor_alvo != null">
+                  <line [attr.x1]="svgPad.left"
+                        [attr.y1]="getYCoord(serie.valor_alvo, serie.pontos, serie.valor_alvo)"
+                        [attr.x2]="svgW - svgPad.right"
+                        [attr.y2]="getYCoord(serie.valor_alvo, serie.pontos, serie.valor_alvo)"
+                        stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="6,3"/>
+                  <text [attr.x]="svgW - svgPad.right + 4"
+                        [attr.y]="getYCoord(serie.valor_alvo, serie.pontos, serie.valor_alvo) + 4"
+                        font-size="9" fill="#7c3aed" font-weight="600">Alvo</text>
+                </ng-container>
+
+                <!-- Eixos X e Y -->
+                <line [attr.x1]="svgPad.left" [attr.y1]="svgPad.top"
+                      [attr.x2]="svgPad.left" [attr.y2]="svgH - svgPad.bottom"
+                      stroke="#e5e7eb" stroke-width="1.5"/>
+                <line [attr.x1]="svgPad.left" [attr.y1]="svgH - svgPad.bottom"
+                      [attr.x2]="svgW - svgPad.right" [attr.y2]="svgH - svgPad.bottom"
+                      stroke="#e5e7eb" stroke-width="1.5"/>
+
+                <!-- Área sombreada sob a linha -->
+                <path [attr.d]="calcularAreaPath(serie.pontos, serie.valor_alvo)"
+                      [attr.fill]="getCorLinha(serie)" fill-opacity="0.07"/>
+
+                <!-- Linha de dados -->
+                <polyline
+                  [attr.points]="calcularSvgPts(serie.pontos, serie.valor_alvo)"
+                  fill="none" [attr.stroke]="getCorLinha(serie)"
+                  stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+
+                <!-- Pontos de dados + labels de valor + labels do eixo X -->
+                <ng-container *ngFor="let ponto of serie.pontos; let i = index">
+                  <g>
+                    <title>{{ ponto.label || formatDataCurta(ponto.data) }}: {{ ponto.valor }} {{ serie.unidade }}</title>
+                    <!-- Halo externo -->
+                    <circle
+                      [attr.cx]="getXCoord(i, serie.pontos.length)"
+                      [attr.cy]="getYCoord(ponto.valor, serie.pontos, serie.valor_alvo)"
+                      r="7" [attr.fill]="getCorLinha(serie)" fill-opacity="0.12"/>
+                    <!-- Ponto central -->
+                    <circle
+                      [attr.cx]="getXCoord(i, serie.pontos.length)"
+                      [attr.cy]="getYCoord(ponto.valor, serie.pontos, serie.valor_alvo)"
+                      r="4" [attr.fill]="getCorLinha(serie)"
+                      stroke="white" stroke-width="1.5"/>
+                    <!-- Label de valor acima do ponto -->
+                    <text
+                      [attr.x]="getXCoord(i, serie.pontos.length)"
+                      [attr.y]="getYCoord(ponto.valor, serie.pontos, serie.valor_alvo) - 11"
+                      text-anchor="middle" font-size="10" font-weight="600"
+                      [attr.fill]="getCorLinha(serie)">{{ ponto.valor }}</text>
+                    <!-- Label de data no eixo X -->
+                    <text
+                      [attr.x]="getXCoord(i, serie.pontos.length)"
+                      [attr.y]="svgH - svgPad.bottom + 16"
+                      text-anchor="middle" font-size="10" fill="#9ca3af">
+                      {{ ponto.label || formatDataCurta(ponto.data) }}
+                    </text>
+                  </g>
+                </ng-container>
+
+              </svg>
+            </div>
+
+            <!-- Estado de 1 único registro -->
+            <div *ngIf="serie.pontos.length === 1" class="px-5 py-6 flex items-center gap-4 bg-white">
+              <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center flex-shrink-0">
+                <iconify-icon icon="ph:clock-countdown-bold" class="text-xl"></iconify-icon>
+              </div>
+              <div>
+                <p class="font-semibold text-gray-700">
+                  Registro atual: <strong>{{ serie.pontos[0].valor }} {{ serie.unidade }}</strong>
+                </p>
+                <p class="text-xs text-gray-400 mt-0.5">
+                  O gráfico de evolução aparecerá quando houver mais medições.
+                </p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
       </div>
 
 <!-- ══ MODAL: Editar Meta ══════════════════════════════════════════ -->
