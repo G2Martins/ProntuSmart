@@ -1,751 +1,284 @@
-# ProntuSMART — Backend API 🚀
+<div align="center">
 
-**Production-grade REST API** para gerenciamento de prontuários eletrônicos e acompanhamento de tratamento fisioterapêutico em ambiente clínico-acadêmico.
+# ProntuSMART — Backend API
+
+### API REST para o Sistema de Prontuário Eletrônico da Clínica Escola de Fisioterapia — UCB
+
+<br>
+
+<p>
+  <img src="https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
+  &nbsp;&nbsp;
+  <img src="https://img.shields.io/badge/FastAPI-0.110.0-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI">
+  &nbsp;&nbsp;
+  <img src="https://img.shields.io/badge/MongoDB-4.4+-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB">
+  <br><br>
+  <img src="https://img.shields.io/badge/Auth-JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white" alt="JWT">
+  &nbsp;&nbsp;
+  <img src="https://img.shields.io/badge/Docs-Swagger_UI-85EA2D?style=for-the-badge&logo=swagger&logoColor=black" alt="Swagger">
+  &nbsp;&nbsp;
+  <img src="https://img.shields.io/badge/Async-Motor_3.6+-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="Motor">
+</p>
+
+</div>
 
 ---
 
-## Visão Geral
+## Sobre
 
-ProntuSMART é um sistema de Prontuário Eletrônico (EMR - Electronic Medical Record) desenvolvido para a **Clínica Escola de Fisioterapia da Universidade Católica de Brasília (UCB)**. A plataforma implementa o **método SMART** (Específico, Mensurável, Atingível, Relevante e Temporal) para registro estruturado de metas clínicas, evolução funcional de pacientes e garantia de continuidade de atendimento entre estagiários supervisionados, mantendo a autonomia clínica dos profissionais.
-
-### Características Principais
-
-- ✅ **Autenticação JWT** com suporte a múltiplos perfis de acesso (Estagiário, Docente, Administrador)
-- ✅ **API REST RESTful** com versionamento semântico (`/api/v1`)
-- ✅ **Validação rigorosa de dados** via Pydantic V2 com type hints completos
-- ✅ **Operações assíncronas** em 100% do stack (FastAPI + Motor + MongoDB)
-- ✅ **Rastreamento temporal completo** de todas as entidades (timestamps criação/atualização)
-- ✅ **Cálculo automático de progresso** de metas baseado em direção de melhora
-- ✅ **Imutabilidade de dados clínicos** com soft delete para auditoria
-- ✅ **Documentação interativa** via Swagger/OpenAPI
+API REST da plataforma ProntuSMART, responsável pela autenticação, controle de acesso por perfil (RBAC), persistência de dados clínicos e geração de indicadores analíticos. Construída com FastAPI e MongoDB em arquitetura modular em camadas, garantindo operações assíncronas em 100% do stack.
 
 ---
 
 ## Stack Tecnológico
 
-| Componente | Tecnologia | Versão | Propósito |
-|-----------|-----------|--------|-----------|
-| **Runtime** | Python | 3.10+ | Linguagem principal |
-| **Framework Web** | FastAPI | 0.110.0 | Web framework assíncrono ASGI |
-| **Servidor WSGI** | Uvicorn | 0.29.0 | Application server |
-| **Driver Async BD** | Motor | 3.6+ | Wrapper MongoDB para AsyncIO |
-| **Validação/ODM** | Pydantic | 2.6.3+ | Type validation e serialização |
-| **Autenticação** | Python-Jose | 3.3.0 | JWT signing e verification |
-| **Hash Senha** | Bcrypt | 4.1.2 | Password hashing criptográfico |
-| **Config** | Pydantic Settings | 2.2.1 | Environment-based configuration |
-| **Banco de Dados** | MongoDB | 4.4+ | NoSQL document database |
-
----
-
-## Arquitetura e Organização
-
-A aplicação segue arquitetura **modular em camadas** com separação clara de responsabilidades (SoC), facilitando testes unitários, manutenção e escalabilidade horizontal:
-
-```
-BackEnd/
-├── src/
-│   ├── main.py                              # Entry point FastAPI + CORS middleware + lifespan
-│   │
-│   ├── api/v1/
-│   │   ├── router.py                        # Agregador de rotas versionadas
-│   │   └── routes/                          # Endpoints organizados por domínio
-│   │       ├── auth.py                      # POST /auth/login, /auth/register
-│   │       ├── pacientes.py                 # CRUD de pacientes
-│   │       ├── prontuarios.py               # Gerenciamento de prontuários
-│   │       ├── metas_smart.py               # Criação e rastreamento de metas SMART
-│   │       ├── evolucoes.py                 # Registro de sessões de tratamento
-│   │       ├── medicoes.py                  # Captura de medições e cálculo de progresso
-│   │       ├── indicadores.py               # Referência e lookup de indicadores clínicos
-│   │       ├── admin.py                     # Operações administrativas e seed
-│   │
-│   ├── core/
-│   │   ├── config.py                        # Settings com pydantic-settings + .env
-│   │   ├── database.py                      # Motor AsyncIOClient + connection pooling
-│   │   └── security.py                      # JWT creation/verification + bcrypt + OAuth2
-│   │
-│   ├── models/                              # Data models (Pydantic schemas para serialização BSON)
-│   │   ├── base.py                          # MongoBaseModel base + PyObjectId converter
-│   │   ├── dim_usuario.py                   # Dimensão: Usuários do sistema
-│   │   ├── dim_paciente.py                  # Dimensão: Pacientes
-│   │   ├── dim_area.py                      # Dimensão: Áreas de tratamento clínico
-│   │   ├── dim_cid.py                       # Dimensão: Códigos CID-10
-│   │   ├── dim_indicador.py                 # Dimensão: Indicadores funcionais de progresso
-│   │   ├── dim_status.py                    # Dimensão: Enums de status (Ativo, Alta, etc)
-│   │   ├── fato_prontuario.py               # Fato: Prontuários de pacientes
-│   │   ├── fato_meta_smart.py               # Fato: Objetivos SMART traçados
-│   │   ├── fato_evolucao.py                 # Fato: Sessões de atendimento (imutável)
-│   │   └── fato_medicao.py                  # Fato: Medições de progresso (auditada)
-│   │
-│   ├── schemas/                             # Schemas de validação (request/response)
-│   │   ├── auth.py                          # LoginRequest, TokenResponse
-│   │   ├── usuario.py                       # UsuarioCreate, UsuarioResponse
-│   │   ├── paciente.py                      # PacienteCreate, PacienteUpdate
-│   │   ├── prontuario.py                    # ProntuarioCreate, ProntuarioResponse
-│   │   ├── meta_smart.py                    # MetaSMARTCreate, MetaSMARTResponse
-│   │   ├── evolucao.py                      # EvolucaoCreate, EvolucaoResponse
-│   │   └── medicao.py                       # MedicaoCreate, MedicaoResponse
-│   │
-│   ├── services/                            # Lógica de negócio (business logic layer)
-│   │   ├── auth_service.py                  # Autenticação, registro e autorização
-│   │   ├── paciente_service.py              # CRUD pacientes + validações
-│   │   ├── prontuario_service.py            # Ciclo de vida do prontuário
-│   │   ├── meta_smart_service.py            # Criação + rastreamento de metas
-│   │   ├── evolucao_service.py              # Registro de sessões + desnormalização
-│   │   ├── medicao_service.py               # Medições + cálculo de progresso
-│   │   └── indicador_service.py             # Gerenciamento de indicadores
-│   │
-│   └── utils/
-│       ├── helpers.py                       # calcular_progresso(), gerar_numero_prontuario()
-│       └── seed.py                          # Popula dim iniciais + cria docente default
-│
-├── tests/
-│   └── test_auth.py                         # Testes unitários de autenticação
-│
-├── .env.example                             # Template de variáveis de ambiente
-├── .gitignore                               # Exclusões de versionamento
-├── requirements.txt                         # Dependências do projeto
-└── README.md                                # Este arquivo
-```
-
-### Padrão de Dados: Modelo em Estrela (Star Schema)
-
-O banco de dados segue um padrão **dimensional** compatível com Data Warehouse analytics:
-
-- **Dimensões (DIM_\*)**: Tabelas de referência (usuários, pacientes, indicadores, áreas, CIDs)
-  - Dados relativamente estáticos
-  - Baixa cardinalidade
-  - Fácil de indexar
-
-- **Fatos (FATO_\*)**: Tabelas transacionais (prontuários, metas, evoluções, medições)
-  - Eventos e transações clínicas
-  - Crescem continuamente
-  - Conectam-se às dimensões via foreign keys
-
-**Benefícios**: Fácil análise agregada, rastreamento completo de eventos, separação clara entre referência e transação, otimização de queries.
-
----
-
-## Pré-Requisitos de Sistema
-
-- **Python 3.10+** instalado e disponível no PATH
-- **MongoDB 4.4+** (Atlas Cloud ☁️ ou instalação local 🖥️)
-  - Connection string com credenciais válidas
-  - Database criado e acessível
-  - Recomenda-se whitelist de IP para segurança
-- **pip** (gerenciador de pacotes Python)
-- **Git** (opcional, para controle de versão)
+| Componente | Tecnologia | Versão |
+|:---|:---|:---|
+| Linguagem | Python | 3.10+ |
+| Framework Web | FastAPI | 0.110.0 |
+| Servidor ASGI | Uvicorn | 0.29.0 |
+| Driver Async BD | Motor | 3.6+ |
+| Validação | Pydantic | 2.6.3+ |
+| Autenticação | python-jose (JWT) | 3.3.0 |
+| Hash de Senha | bcrypt | 4.1.2 |
+| Banco de Dados | MongoDB | 4.4+ |
 
 ---
 
 ## Instalação e Configuração
 
-### 1. Navegue até o diretório
+### 1. Pré-requisitos
+- Python 3.10+ instalado e disponível no PATH
+- MongoDB 4.4+ (local ou Atlas Cloud)
+- pip (gerenciador de pacotes Python)
 
+### 2. Ambiente Virtual
+
+**Windows:**
 ```bash
 cd BackEnd
-```
-
-### 2. Crie e Ative o Ambiente Virtual Python
-
-**Windows (PowerShell/CMD):**
-```bash
 python -m venv venv
 venv\Scripts\activate
 ```
 
-**Linux/macOS:**
+**Linux / macOS:**
 ```bash
+cd BackEnd
 python3 -m venv venv
 source venv/bin/activate
 ```
 
-Seu prompt deve mudar para indicar que o ambiente está ativo: `(venv) $`
-
-### 3. Instale Dependências
-
+### 3. Dependências
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Configure Variáveis de Ambiente
+### 4. Variáveis de Ambiente
 
-Crie um arquivo `.env` na raiz de `BackEnd/`. Use `.env.example` como template:
+Crie um arquivo `.env` na raiz de `BackEnd/` com base no `.env.example`:
 
 ```env
 PROJECT_NAME="ProntuSMART API"
 VERSION="1.0.0"
 API_V1_STR="/api/v1"
 
-# MongoDB (connection string com credenciais)
-# Formato: mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority
-MONGODB_URL="mongodb+srv://seu_usuario:sua_senha@seu_cluster.mongodb.net"
+MONGODB_URL="mongodb+srv://usuario:senha@cluster.mongodb.net"
 DATABASE_NAME="prontusmart_db"
 
-# Segurança (gere uma chave forte com: openssl rand -hex 32)
-# Exemplo: openssl rand -hex 32 → 7f8a9c3b1e2d4f6a9c3b1e2d4f6a9c3b1e2d4f6a
-SECRET_KEY="sua_chave_secreta_criptografica_com_minimo_32_caracteres"
+SECRET_KEY="sua_chave_secreta_com_minimo_32_caracteres"
 ALGORITHM="HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES=120
 ```
 
-**⚠️ Importante**: Adicione `.env` ao `.gitignore` para não versionizar credenciais.
+> **Importante:** Nunca versione o arquivo `.env`. Ele já está no `.gitignore`.
 
-### 5. Inicialize o Banco de Dados
+### 5. Seed do Banco de Dados
 
-Execute o seed para popular dimensões e criar o **Docente Admin** padrão:
+Popula as dimensões iniciais (áreas, indicadores, status) e cria o usuário administrador padrão:
 
 ```bash
 python -m src.utils.seed
 ```
 
-Saída esperada:
-```
-Populando dimensões (Áreas, Indicadores, Status)...
-Criando Docente Administrador padrão (matrícula: admin, senha: admin123)...
-Seed concluído com sucesso!
-```
+Credenciais padrão geradas: **matrícula:** `admin` | **senha:** `admin123`
 
-### 6. Inicie o Servidor
+### 6. Iniciar o Servidor
 
 ```bash
-# Modo desenvolvimento (com hot-reload ativado)
 uvicorn src.main:app --reload
 ```
 
-Servidor estará disponível em **http://localhost:8000**
+API disponível em **`http://localhost:8000`**
+Documentação Swagger em **`http://localhost:8000/docs`**
 
 ---
 
-## API Endpoints Principais
+## Arquitetura de Pastas
+
+```
+BackEnd/
+│
+├── src/                          # Código-fonte principal
+│   │
+│   ├── main.py                   # Entry point: instancia FastAPI, registra routers e configura CORS
+│   │
+│   ├── API/
+│   │   └── v1/
+│   │       ├── router.py         # Agrega todos os routers de domínio sob o prefixo /api/v1
+│   │       └── routes/           # Endpoints organizados por domínio de negócio
+│   │           ├── auth.py       # Login, registro de usuários e endpoint GET /auth/me
+│   │           ├── pacientes.py  # CRUD de pacientes (busca, cadastro, edição, soft delete)
+│   │           ├── prontuarios.py # Abertura, listagem e visão completa de prontuários
+│   │           ├── evolucoes.py  # Registro imutável de sessões de atendimento
+│   │           ├── metas_smart.py # Criação e rastreamento de metas SMART por prontuário
+│   │           ├── medicoes.py   # Registro de medições e cálculo automático de progresso
+│   │           ├── indicadores.py # CRUD de indicadores clínicos (admin) e lookup público
+│   │           ├── areas.py      # Gestão de áreas clínicas (ortopedia, neurologia, etc.)
+│   │           ├── cids.py       # Gestão de códigos CID-10 para diagnósticos
+│   │           ├── dashboard.py  # Endpoints de analytics e inteligência epidemiológica
+│   │           └── admin.py      # Operações administrativas: estatísticas e gestão de usuários
+│   │
+│   ├── core/                     # Infraestrutura central compartilhada por toda a aplicação
+│   │   ├── config.py             # Leitura e validação das variáveis de ambiente via pydantic-settings
+│   │   ├── database.py           # Conexão assíncrona com MongoDB via Motor (connection pooling)
+│   │   └── security.py           # Criação e verificação de JWT, hash bcrypt, OAuth2PasswordBearer
+│   │
+│   ├── models/                   # Modelos de dados Pydantic para serialização BSON ↔ JSON
+│   │   ├── base.py               # MongoBaseModel: converte ObjectId para string, define timestamps
+│   │   ├── dim_usuario.py        # Dimensão de usuários (estagiários, docentes, administradores)
+│   │   ├── dim_paciente.py       # Dimensão de pacientes atendidos pela clínica
+│   │   ├── dim_area.py           # Dimensão de áreas clínicas (ex: Fisioterapia Ortopédica)
+│   │   ├── dim_cid.py            # Dimensão de códigos diagnósticos CID-10
+│   │   ├── dim_indicador.py      # Dimensão de indicadores funcionais (força, dor EVA, etc.)
+│   │   ├── dim_status.py         # Enums de status: perfis de usuário, status de prontuário e meta
+│   │   ├── fato_prontuario.py    # Fato: prontuário do paciente (número UCB, sessões, status)
+│   │   ├── fato_meta_smart.py    # Fato: metas SMART com 5 componentes e progresso calculado
+│   │   ├── fato_evolucao.py      # Fato: registro imutável de cada sessão de atendimento
+│   │   └── fato_medicao.py       # Fato: medição de indicador vinculada a uma meta SMART
+│   │
+│   ├── schemas/                  # Schemas de validação de entrada e saída (request/response)
+│   │   ├── auth.py               # LoginRequest, TokenResponse, schemas de troca de senha
+│   │   ├── usuario.py            # UsuarioCreate, UsuarioUpdate, UsuarioResponse
+│   │   ├── paciente.py           # PacienteCreate, PacienteUpdate, PacienteResponse
+│   │   ├── prontuario.py         # ProntuarioCreate, ProntuarioResponse (com dados desnormalizados)
+│   │   ├── evolucao.py           # EvolucaoCreate, EvolucaoResponse
+│   │   ├── meta_smart.py         # MetaSMARTCreate, MetaSMARTResponse (com progresso_percentual)
+│   │   ├── medicao.py            # MedicaoCreate, MedicaoResponse
+│   │   ├── indicador.py          # IndicadorCreate, IndicadorUpdate, IndicadorResponse
+│   │   ├── area.py               # AreaCreate, AreaUpdate, AreaResponse
+│   │   └── cid.py                # CIDCreate, CIDUpdate, CIDResponse
+│   │
+│   ├── services/                 # Camada de lógica de negócio (desacoplada dos endpoints)
+│   │   ├── auth_service.py       # Autenticação, criação de usuários e verificação de perfil
+│   │   ├── paciente_service.py   # CRUD de pacientes com validações (CPF único, soft delete)
+│   │   ├── prontuario_service.py # Ciclo de vida do prontuário: abertura, visão completa, alta
+│   │   ├── evolucao_service.py   # Criação de evoluções, contagem de pendentes por docente
+│   │   ├── meta_smart_service.py # Criação de metas SMART e atualização de status/progresso
+│   │   ├── medicao_service.py    # Registro de medições e recalculo de progresso da meta
+│   │   ├── indicador_service.py  # CRUD de indicadores com controle de ativação
+│   │   └── dashboard_service.py  # Agregações analíticas para dashboards e epidemiologia
+│   │
+│   └── utils/                    # Utilitários auxiliares
+│       ├── helpers.py            # calcular_progresso() por direção de melhora, gerar_numero_prontuario()
+│       └── seed.py               # Popula dimensões iniciais e cria o usuário administrador padrão
+│
+├── tests/
+│   └── test_auth.py              # Testes unitários do fluxo de autenticação
+│
+├── .env.example                  # Template de variáveis de ambiente (não contém credenciais reais)
+├── .gitignore                    # Exclui venv/, .env, __pycache__, arquivos gerados
+├── requirements.txt              # Lista de dependências Python com versões fixas
+└── README.md                     # Este arquivo
+```
+
+### Modelo de Dados: Esquema em Estrela
+
+O banco segue um padrão **dimensional** que separa referências de transações:
+
+- **Dimensões (`dim_*`)** — Dados de referência relativamente estáticos (usuários, pacientes, áreas, CIDs, indicadores). Baixa cardinalidade, alta reutilização.
+- **Fatos (`fato_*`)** — Eventos e transações clínicas (prontuários, metas, evoluções, medições). Crescem continuamente. Conectam-se às dimensões por ID.
+
+---
+
+## Endpoints Principais
 
 ### Autenticação
-
-| Método | Rota | Descrição | Autenticação |
-|--------|------|-----------|----------------|
-| `POST` | `/api/v1/auth/login` | Autenticar via matrícula + senha | ❌ Pública |
-| `POST` | `/api/v1/auth/register` | Registrar novo usuário | ✅ Admin only |
-
-**Exemplo: POST /auth/login**
-```bash
-curl -X POST "http://localhost:8000/api/v1/auth/login" \
-  -H "Content-Type: application/json" \
-  -d '{"username": "admin", "password": "admin123"}'
-```
-
-**Response:**
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "bearer"
-}
-```
+| Método | Rota | Descrição | Acesso |
+|:---|:---|:---|:---|
+| `POST` | `/api/v1/auth/login` | Login com matrícula e senha, retorna JWT | Público |
+| `POST` | `/api/v1/auth/register` | Registrar novo usuário | Administrador |
+| `GET` | `/api/v1/auth/me` | Retorna dados do usuário autenticado | Autenticado |
+| `POST` | `/api/v1/auth/trocar-senha` | Troca de senha na sessão | Autenticado |
 
 ### Pacientes
-
-| Método | Rota | Descrição | Perfil |
-|--------|------|-----------|--------|
-| `GET` | `/api/v1/pacientes` | Listar pacientes ativos (paginado) | Estagiário+ |
+| Método | Rota | Descrição | Acesso |
+|:---|:---|:---|:---|
+| `GET` | `/api/v1/pacientes` | Listar pacientes (com busca por nome/CPF) | Estagiário+ |
 | `POST` | `/api/v1/pacientes` | Cadastrar novo paciente | Docente+ |
-| `GET` | `/api/v1/pacientes/{id}` | Obter paciente por ID | Estagiário+ |
+| `GET` | `/api/v1/pacientes/{id}` | Buscar paciente por ID | Estagiário+ |
 | `PATCH` | `/api/v1/pacientes/{id}` | Atualizar dados cadastrais | Docente+ |
 
-**Exemplo: GET /pacientes/{id}**
-```json
-{
-  "_id": "65f7a8c3d4e2f1a9b8c7d6e5",
-  "nome_completo": "João Silva Santos",
-  "cpf": "12345678901",
-  "data_nascimento": "1985-03-15",
-  "genero": "M",
-  "telefone": "61987654321",
-  "email": "joao@example.com",
-  "endereco": "Rua ABC, 123, Brasília-DF",
-  "is_ativo": true,
-  "criado_em": "2025-03-18T10:30:00Z",
-  "atualizado_em": "2025-03-18T10:30:00Z"
-}
-```
-
 ### Prontuários
+| Método | Rota | Descrição | Acesso |
+|:---|:---|:---|:---|
+| `POST` | `/api/v1/prontuarios` | Abrir prontuário e vincular estagiário | Docente+ |
+| `GET` | `/api/v1/prontuarios/meus` | Listar prontuários do usuário autenticado | Estagiário+ |
+| `GET` | `/api/v1/prontuarios/{id}` | Visão completa do prontuário | Estagiário+ |
 
-| Método | Rota | Descrição | Perfil |
-|--------|------|-----------|--------|
-| `POST` | `/api/v1/prontuarios` | Abrir novo prontuário | Docente+ |
-| `GET` | `/api/v1/prontuarios/{id}` | Recuperar prontuário | Estagiário+ |
-| `GET` | `/api/v1/prontuarios?paciente_id=...` | Listar prontuários do paciente | Estagiário+ |
-
-**Exemplo: POST /prontuarios**
-```json
-{
-  "paciente_id": "65f7a8c3d4e2f1a9b8c7d6e5",
-  "area_id": "65f49e1a2b3c4d5e6f7a8b9c",
-  "resumo_avaliacao_inicial": "Paciente chegou com queixa de dor lombar aguda após trauma. Mobilidade reduzida em flexão anterior. Teste de Lasègue positivo à esquerda..."
-}
-```
-
-**Response:**
-```json
-{
-  "_id": "65f7b9d4e5f3g2c1k9l8m7n6",
-  "numero_prontuario": "UCB-2025-00042",
-  "paciente_id": "65f7a8c3d4e2f1a9b8c7d6e5",
-  "area_id": "65f49e1a2b3c4d5e6f7a8b9c",
-  "status": "ATIVO",
-  "total_sessoes": 0,
-  "data_ultima_evolucao": null,
-  "resumo_avaliacao_inicial": "Paciente chegou com queixa de dor lombar...",
-  "criado_em": "2025-03-18T10:45:00Z"
-}
-```
-
-### Metas SMART
-
-| Método | Rota | Descrição | Perfil |
-|--------|------|-----------|--------|
-| `POST` | `/api/v1/metas-smart` | Criar nova meta SMART | Docente+ |
-| `GET` | `/api/v1/metas-smart/{id}` | Recuperar meta | Estagiário+ |
-| `GET` | `/api/v1/metas-smart?prontuario_id=...` | Listar metas do prontuário | Estagiário+ |
-
-**Exemplo: POST /metas-smart**
-```json
-{
-  "prontuario_id": "65f7b9d4e5f3g2c1k9l8m7n6",
-  "indicador_id": "65f49e2b3c4d5e6f7a8b9c0d",
-  "especifico": "Aumentar força muscular do quadríceps L4-L5",
-  "valor_inicial": 3.0,
-  "valor_alvo": 5.0,
-  "alcancavel": "Paciente tem capacidade motora preservada. Teste manual indicou possibilidade de ganho 2 graus",
-  "relevante": "Melhora da marcha, redução de quedas, independência funcional para atividades de vida diária",
-  "data_limite": "2025-06-18"
-}
-```
-
-**Response:**
-```json
-{
-  "_id": "65f7cab5f6g4h3d2l1m0n9o8",
-  "prontuario_id": "65f7b9d4e5f3g2c1k9l8m7n6",
-  "indicador_id": "65f49e2b3c4d5e6f7a8b9c0d",
-  "estagiario_id": "65f7a1c2d3e4f5g6h7i8j9k0",
-  "especifico": "Aumentar força muscular do quadríceps L4-L5",
-  "valor_inicial": 3.0,
-  "valor_alvo": 5.0,
-  "alcancavel": "Paciente tem capacidade motora preservada...",
-  "relevante": "Melhora da marcha, redução de quedas...",
-  "data_limite": "2025-06-18T00:00:00Z",
-  "status": "EM_ANDAMENTO",
-  "progresso_percentual": 0.0,
-  "criado_em": "2025-03-18T11:00:00Z"
-}
-```
-
-### Evoluções (Sessões de Atendimento)
-
-| Método | Rota | Descrição | Perfil | Imutável? |
-|--------|------|-----------|--------|-----------|
-| `POST` | `/api/v1/evolucoes` | Registrar nova sessão | Estagiário+ | Após criação |
-| `GET` | `/api/v1/evolucoes/{id}` | Recuperar evolução | Estagiário+ (própria) | - |
-| `GET` | `/api/v1/evolucoes?prontuario_id=...` | Listar histórico | Estagiário+ | - |
-
-**Request: POST /evolucoes**
-```json
-{
-  "prontuario_id": "65f7b9d4e5f3g2c1k9l8m7n6",
-  "observacoes_objetivas": "Paciente apresentou redução da espasticidade em membros inferiores. Amplitude de movimento em flexão de quadril aumentou 5 graus (mudou de 70° para 75°). Marcha sem auxílio apresentou melhora qualitativa. Paciência relatou redução de 2 pontos na escala de dor EVA (de 7 para 5).",
-  "data_atendimento": "2025-03-18T14:00:00Z"
-}
-```
-
-**⚠️ Importante**: Evoluções são **imutáveis** (sem edição/exclusão). Para corrigir, crie uma evolução de "Retificação" com novo registro.
+### Evoluções, Metas e Medições
+| Método | Rota | Descrição |
+|:---|:---|:---|
+| `POST` | `/api/v1/evolucoes` | Registrar sessão de atendimento (imutável após criação) |
+| `POST` | `/api/v1/metas-smart` | Criar meta SMART vinculada ao prontuário |
+| `POST` | `/api/v1/medicoes` | Registrar medição e recalcular progresso da meta |
 
 ---
 
-## Autenticação e Autorização
+## Autenticação e Controle de Acesso
 
-### Fluxo JWT (JSON Web Tokens)
+### Perfis (RBAC)
 
-```
-┌─────────────┐
-│   Cliente   │
-└──────┬──────┘
-       │ 1. POST /auth/login
-       │    (matrícula + senha)
-       ▼
-┌─────────────────────────┐
-│   API Backend FastAPI   │
-│ ┌─────────────────────┐ │
-│ │ Validar Credenciais │ │
-│ │ vs dim_usuario      │ │
-│ └─────────────────────┘ │
-│ ┌─────────────────────┐ │
-│ │ Gerar JWT com exp. │ │
-│ │ sub = user_id      │ │
-│ └─────────────────────┘ │
-└──────┬──────────────────┘
-       │ 2. Response: { access_token, token_type }
-       ▼
-┌─────────────┐
-│  Armazena  │
-│   Token     │
-│ localStorage│
-└──────┬──────┘
-       │ 3. Requisições protegidas
-       │    Authorization: Bearer <token>
-       ▼
-┌──────────────────────────┐
-│ API Valida Token JWT     │
-│ ┌──────────────────────┐ │
-│ │ Decode + Verificar  │ │
-│ │ Expiração + Assin.  │ │
-│ └──────────────────────┘ │
-│ ┌──────────────────────┐ │
-│ │ get_current_user()  │ │
-│ │ ↓ MongoDB lookup    │ │
-│ │ ↓ retorna usuário   │ │
-│ └──────────────────────┘ │
-└──────────────────────────┘
-```
+| Perfil | Permissões Principais |
+|:---|:---|
+| **Administrador** | CRUD de usuários, áreas, CIDs, indicadores; acesso a todas as estatísticas |
+| **Docente** | Abrir prontuários, vincular estagiários, revisar e assinar evoluções |
+| **Estagiário** | Registrar evoluções e medições em seus prontuários vinculados |
 
-### Configuração JWT
-
-- **Algorithm**: HS256 (HMAC-SHA256)
-- **Expiration**: 120 minutos (configurável via `ACCESS_TOKEN_EXPIRE_MINUTES`)
-- **Claim `sub`**: ID do usuário (ObjectId do MongoDB)
-- **Refresh**: Não implementado (cliente faz login novamente)
-
-### Perfis de Acesso (RBAC)
-
-| Perfil | Descrição | Permissões |
-|--------|-----------|-----------|
-| **ADMINISTRADOR** | Gestão sistêmica e técnica | ✅ CRUD usuários, ✅ CRUD parâmetros (dim_*), ✅ Acesso total |
-| **DOCENTE** | Supervisão clínica e acadêmica | ✅ CRUD prontuários, ✅ CRUD metas, ✅ Visualizar alunos supervisionados, ✅ Gerar relatórios |
-| **ESTAGIÁRIO** | Registro de dados clínicos | ✅ Criar evoluções (próprias), ✅ Criar medições (próprias), ✅ Visualizar prontuários atribuídos |
+### Fluxo JWT
+1. `POST /auth/login` retorna `access_token` (HS256, 120 min de validade).
+2. O cliente armazena o token e o envia em cada requisição: `Authorization: Bearer <token>`.
+3. O backend decodifica o token, busca o usuário no MongoDB e verifica o perfil.
 
 ---
 
-## Modelo de Dados
-
-### Dimensões (Tabelas de Referência)
-
-#### `dim_usuario`
-```javascript
-{
-  "_id": ObjectId,
-  "nome_completo": String,              // min 3, max 150
-  "matricula": String (unique),          // min 4, max 20
-  "email": EmailStr,
-  "senha_hash": String,                 // bcrypt hash
-  "perfil": Enum["Estagiario", "Docente", "Administrador"],
-  "is_ativo": Boolean,                  // Soft delete
-  "precisa_trocar_senha": Boolean,      // Força reset on login
-  "criado_em": DateTime (UTC),
-  "atualizado_em": DateTime (UTC)
-}
-```
-
-#### `dim_paciente`
-```javascript
-{
-  "_id": ObjectId,
-  "nome_completo": String,
-  "cpf": String (unique),
-  "data_nascimento": Date,
-  "genero": Enum["M", "F", "Outro"],
-  "telefone": String,
-  "email": EmailStr,
-  "endereco": String,
-  "is_ativo": Boolean,                  // Soft delete
-  "criado_em": DateTime (UTC),
-  "atualizado_em": DateTime (UTC)
-}
-```
-
-#### `dim_area`
-```javascript
-{
-  "_id": ObjectId,
-  "nome": String (unique),             // Ex: "Fisioterapia Ortopédica"
-  "descricao": String,
-  "is_ativo": Boolean,
-  "criado_em": DateTime (UTC)
-}
-```
-
-#### `dim_indicador`
-```javascript
-{
-  "_id": ObjectId,
-  "nome": String (unique),             // Ex: "Força Muscular", "Dor EVA"
-  "descricao": String,
-  "unidade": String,                   // Ex: "graus", "pontos", "kg"
-  "direcao_melhora": Enum["MAIOR_MELHOR", "MENOR_MELHOR"],
-  "valor_minimo": Float,
-  "valor_maximo": Float,
-  "is_ativo": Boolean,
-  "criado_em": DateTime (UTC)
-}
-```
-
-### Fatos (Tabelas Transacionais)
-
-#### `fato_prontuario`
-```javascript
-{
-  "_id": ObjectId,
-  "numero_prontuario": String (unique),  // Formato: UCB-YYYY-ZZZZZ
-  "paciente_id": ObjectId (ref: dim_paciente),
-  "area_id": ObjectId (ref: dim_area),
-  "status": Enum["ATIVO", "ALTA", "INTERROMPIDO"],
-  "total_sessoes": Integer,             // Desnormalizado (atualizado em cada evolução)
-  "data_ultima_evolucao": DateTime,     // Desnormalizado
-  "resumo_avaliacao_inicial": String,
-  "criado_em": DateTime (UTC),
-  "atualizado_em": DateTime (UTC)
-}
-```
-
-#### `fato_meta_smart`
-```javascript
-{
-  "_id": ObjectId,
-  "prontuario_id": ObjectId (ref: fato_prontuario),
-  "indicador_id": ObjectId (ref: dim_indicador),
-  "estagiario_id": ObjectId (ref: dim_usuario, quem criou),
-  
-  // Estrutura SMART (5 componentes)
-  "especifico": String,                // S - O quê será alcançado
-  "valor_inicial": Float,              // M - Base mensurável
-  "valor_alvo": Float,                 // M - Alvo mensurável
-  "alcancavel": String,                // A - Por que é realista
-  "relevante": String,                 // R - Importância funcional
-  "data_limite": DateTime,             // T - Prazo
-  
-  "status": Enum["EM_ANDAMENTO", "ALCANÇADA", "NÃO_ALCANÇADA"],
-  "progresso_percentual": Float,       // 0-100 (atualizado a cada medição)
-  "criado_em": DateTime (UTC),
-  "atualizado_em": DateTime (UTC)
-}
-```
-
-#### `fato_evolucao`
-```javascript
-{
-  "_id": ObjectId,
-  "prontuario_id": ObjectId (ref: fato_prontuario),
-  "estagiario_id": ObjectId (ref: dim_usuario),
-  "observacoes_objetivas": String,    // Descrição funcional (sem técnicas)
-  "data_atendimento": DateTime,
-  "criado_em": DateTime (UTC),
-  "atualizado_em": DateTime (UTC)     // NUNCA muda (imutável)
-}
-```
-
-#### `fato_medicao`
-```javascript
-{
-  "_id": ObjectId,
-  "meta_smart_id": ObjectId (ref: fato_meta_smart),
-  "estagiario_id": ObjectId (ref: dim_usuario),
-  "valor_medido": Float,
-  "data_medicao": DateTime,
-  "observacoes": String (opcional),
-  "criado_em": DateTime (UTC)
-}
-```
-
----
-
-## Fórmulas e Cálculos
-
-### Cálculo de Progresso de Meta
-
-Implementado em [src/utils/helpers.py](src/utils/helpers.py), calcula o percentual de progresso em relação à direção de melhora:
-
-**Para MAIOR_MELHOR** (ex: força muscular, mobilidade):
-$$P = \min\left(100, \frac{V_{atual} - V_{inicial}}{V_{alvo} - V_{inicial}} \times 100\right)$$
-
-**Para MENOR_MELHOR** (ex: dor, espasticidade):
-$$P = \min\left(100, \frac{V_{inicial} - V_{atual}}{V_{inicial} - V_{alvo}} \times 100\right)$$
-
-**Exemplo 1** (Força - MAIOR_MELHOR):
-- Inicial: 2.0, Alvo: 5.0, Atual: 3.5
-- P = (3.5 - 2.0) / (5.0 - 2.0) × 100 = **50%**
-
-**Exemplo 2** (Dor EVA - MENOR_MELHOR):
-- Inicial: 8, Alvo: 2, Atual: 5
-- P = (8 - 5) / (8 - 2) × 100 = **50%**
-
-### Geração de Número de Prontuário
-
-Formato: **UCB-YYYY-ZZZZZ**
-
-- `UCB` = Instituição (Universidade Católica de Brasília)
-- `YYYY` = Ano corrente (ex: 2025)
-- `ZZZZZ` = Sequencial zero-padded de 5 dígitos (ex: 00001, 00042, 10234)
-
-**Exemplos**: `UCB-2025-00001`, `UCB-2026-00042`
-
-Implementado em [src/utils/helpers.py](src/utils/helpers.py#L1).
-
----
-
-## Padrões de Código
-
-### 1. Imutabilidade de Dados Clínicos
-
-**Evoluções** e **Medições** representam eventos no tempo e são **legalmente imutáveis** em EMR:
-
-```python
-# ✅ PERMITIDO: Criar nova evolução
-POST /api/v1/evolucoes { prontuario_id, observacoes_objetivas }
-
-# ❌ PROIBIDO: Editar evolução existente
-PATCH /api/v1/evolucoes/{id}
-
-# ❌ PROIBIDO: Deletar evolução
-DELETE /api/v1/evolucoes/{id}
-
-# ✅ ALTERNATIVA: Criar evolução de "Retificação"
-POST /api/v1/evolucoes { 
-  prontuario_id, 
-  observacoes_objetivas: "RETIFICAÇÃO: A observação anterior deveria ler...",
-  data_atendimento: "mesma data"
-}
-```
-
-### 2. Soft Delete para Dados Cadastrais
-
-Para pacientes e usuários, evitamos DELETE físico (incompatível com auditoria):
-
-```python
-# ✅ CORRETO: Soft delete
-PATCH /api/v1/pacientes/{id} { is_ativo: False }
-
-# ❌ ERRADO: Hard delete
-DELETE /api/v1/pacientes/{id}
-
-# Resultado: Paciente desaparece das buscas mas histórico permanece
-SELECT * FROM dim_paciente WHERE is_ativo = True  # Não aparece
-SELECT * FROM fato_prontuario 
-  WHERE paciente_id = ObjectId(...)              # Histórico intacto
-```
-
-### 3. Validação com Pydantic V2
-
-Todos os schemas usam `BaseModel` com type hints completos:
-
-```python
-from pydantic import BaseModel, Field, EmailStr
-
-class UsuarioCreate(BaseModel):
-    nome_completo: str = Field(..., min_length=3, max_length=150)
-    matricula: str = Field(..., min_length=4, max_length=20, 
-                          description="Matrícula institucional única")
-    email: EmailStr = Field(..., description="E-mail válido")
-    senha: str = Field(..., min_length=8)
-    perfil: TipoPerfil = Field(default=TipoPerfil.ESTAGIARIO)
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "nome_completo": "João Silva",
-                "matricula": "202412345",
-                "email": "joao@ucb.br",
-                "senha": "Senha@Forte123",
-                "perfil": "Estagiario"
-            }
-        }
-```
-
-### 4. Async/Await em 100% do Stack
-
-FastAPI + Motor (AsyncIO MongoDB driver):
-
-```python
-from fastapi import Depends
-from src.core.database import get_database
-
-async def buscar_paciente(
-    paciente_id: str, 
-    db = Depends(get_database)
-):
-    paciente = await db.dim_paciente.find_one(
-        {"_id": ObjectId(paciente_id)}
-    )
-    if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
-    return paciente
-```
-
-### 5. Conversão ObjectId → String JSON
-
-MongoDB nativo retorna `ObjectId`, Pydantic serializa para string JSON:
-
-```python
-from pydantic import BaseModel, ConfigDict, Field
-from typing import Annotated, Optional
-from pydantic.functional_validators import BeforeValidator
-
-PyObjectId = Annotated[str, BeforeValidator(str)]
-
-class MongoBaseModel(BaseModel):
-    id: Optional[PyObjectId] = Field(alias="_id", default=None)
-    criado_em: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    
-    model_config = ConfigDict(
-        populate_by_name=True,
-        json_encoders={datetime: lambda dt: dt.isoformat()}
-    )
-```
-
----
-
-## Documentação Interativa (Swagger)
+## Documentação Interativa
 
 Com o servidor rodando, acesse:
 
-| Interface | URL | Descrição |
-|-----------|-----|-----------|
-| **Swagger UI** | http://localhost:8000/docs | Testa endpoints interativamente |
-| **ReDoc** | http://localhost:8000/redoc | Documentação offline formatada |
-| **OpenAPI JSON** | http://localhost:8000/api/v1/openapi.json | Schema em JSON puro |
+| Interface | URL |
+|:---|:---|
+| **Swagger UI** | `http://localhost:8000/docs` |
+| **ReDoc** | `http://localhost:8000/redoc` |
 
-**Para testar autenticado no Swagger**:
-1. Clique no botão **"Authorize"** (cadeado no topo)
-2. Digite o token JWT retornado de `/auth/login`
-3. Clique "Authorize" e feche o diálogo
-4. Todos os endpoints protegidos agora funcionarão
+Para testar endpoints autenticados no Swagger: clique em **Authorize**, cole o token JWT retornado pelo login e confirme.
 
 ---
 
 ## Troubleshooting
 
-| Problema | Causa | Solução |
-|----------|-------|---------|
-| `ConnectionError: Failed to connect to MongoDB` | Credenciais inválidas ou rede bloqueada | Verifique `MONGODB_URL`, IP whitelist, conexão de rede |
-| `401 Unauthorized` | Token expirado ou inválido | Re-autentique via `/auth/login` |
-| `ValidationError: invalid type for field` | Schema JSON não bate com Pydantic | Consulte `/docs` (Swagger) para estrutura esperada |
-| `"Matrícula já cadastrada"` | Tentativa registrar usuário duplicado | Escolha matrícula diferente |
-| `ModuleNotFoundError: No module named 'motor'` | Dependências não instaladas | Execute `pip install -r requirements.txt` |
-| `BSON decode error in connection pool` | Problema com constring do MongoDB | Teste a URI em ferramentas como MongoDB Compass |
+| Problema | Causa Provável | Solução |
+|:---|:---|:---|
+| `Failed to connect to MongoDB` | Connection string inválida ou IP não liberado | Verifique `MONGODB_URL` e o IP whitelist no Atlas |
+| `401 Unauthorized` | Token expirado ou ausente | Re-autentique via `/auth/login` |
+| `422 Unprocessable Entity` | Payload não passa na validação Pydantic | Consulte o Swagger (`/docs`) para a estrutura esperada |
+| `ModuleNotFoundError` | Dependências não instaladas | Execute `pip install -r requirements.txt` com o venv ativo |
+| Matrícula já cadastrada | Tentativa de registro duplicado | Escolha uma matrícula diferente |
 
 ---
 
-## Referências e Recursos
-
-- **FastAPI Documentation**: https://fastapi.tiangolo.com
-- **Pydantic V2**: https://docs.pydantic.dev/2.0/
-- **MongoDB Motor**: https://motor.readthedocs.io/
-- **JWT RFC 7519**: https://tools.ietf.org/html/rfc7519
-- **Method SMART Goals**: https://www.projectsmart.co.uk/smart-goals.php
-- **Web Security (OWASP)**: https://owasp.org/
-
----
-
-## Licença
-
-Desenvolvido para a **Clínica Escola de Fisioterapia — Universidade Católica de Brasília (UCB)**
-
-**Versão**: 1.0.0  
-**Última atualização**: Abril/2025  
-**Mantido por**: Gustavo Martins Gripaldi e João Victor Rodrigues Pinto
+<div align="center">
+  <br>
+  &copy; 2026 Clínica Escola de Fisioterapia — UCB. Todos os direitos reservados.
+  <br><br>
+  Desenvolvido por <strong>Gustavo Martins Gripaldi</strong> e <strong>João Victor Rodrigues Pinto</strong>
+</div>
