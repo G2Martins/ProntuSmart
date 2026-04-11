@@ -71,6 +71,10 @@ export const routes: Routes = [
         path: 'dashboard/epidemiologia',
         loadComponent: () => import('./features/dashboard/inteligencia-epidemiologica/inteligencia-epidemiologica').then(m => m.InteligenciaEpidemiologicaComponent)
       },
+      {
+        path: 'meu-perfil',
+        loadComponent: () => import('./features/perfil/meu-perfil/meu-perfil').then(m => m.MeuPerfilComponent)
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   },

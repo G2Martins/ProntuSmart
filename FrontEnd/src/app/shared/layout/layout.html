@@ -56,11 +56,32 @@
 
     <header class="h-16 bg-white shadow flex items-center justify-between px-6 z-10">
       <h1 class="text-xl font-semibold text-gray-800">Área Clínica</h1>
-      <div class="flex items-center space-x-4">
-        <span class="text-sm text-gray-600 font-medium">Olá, {{ userProfile }}</span>
-        <button (click)="logout()" class="text-red-500 hover:text-red-700 flex items-center">
-          <iconify-icon icon="ph:sign-out" class="text-xl mr-1"></iconify-icon> Sair
+      <div class="flex items-center gap-3">
+
+        <!-- Saudação -->
+        <span class="text-sm text-gray-500 font-medium hidden sm:inline">
+          Olá, <span class="text-gray-800 font-semibold">{{ primeiroNome }}</span>!
+        </span>
+
+        <!-- Avatar — link para Meu Perfil -->
+        <a routerLink="/meu-perfil" title="Meu Perfil"
+          class="w-9 h-9 rounded-full bg-gradient-to-br flex items-center justify-center
+                 text-white text-sm font-bold shadow-sm cursor-pointer select-none
+                 ring-2 ring-offset-1 ring-blue-200 hover:ring-blue-400 transition-all hover:shadow-md"
+          [ngClass]="avatarGradient">
+          {{ getInitials() }}
+        </a>
+
+        <!-- Divisor -->
+        <div class="w-px h-5 bg-gray-200"></div>
+
+        <!-- Sair -->
+        <button (click)="logout()"
+          class="text-red-500 hover:text-red-700 flex items-center gap-1 text-sm font-medium transition-colors">
+          <iconify-icon icon="ph:sign-out-bold" class="text-lg"></iconify-icon>
+          <span class="hidden sm:inline">Sair</span>
         </button>
+
       </div>
     </header>
 

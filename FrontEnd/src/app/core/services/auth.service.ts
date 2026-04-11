@@ -51,6 +51,33 @@ export class AuthService {
     }
   }
 
+  getUserName(): string {
+    const token = this.getToken();
+    if (!token) return '';
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.nome || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  getUserId(): string | null {
+    const token = this.getToken();
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.sub || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  getMe() {
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${this.getToken()}`);
+    return this.http.get<any>(`${this.apiUrl}/auth/me`, { headers });
+  }
+
   // --- NOVAS FUNÇÕES PARA TROCA DE SENHA ---
   // Lê o JWT e verifica se a flag de troca obrigatória é verdadeira
   needsPasswordChange(): boolean {

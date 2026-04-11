@@ -26,6 +26,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db = Depends(g
         data={
             "sub": str(usuario["_id"]),
             "perfil": usuario["perfil"],
+            "nome": usuario["nome_completo"],
             "precisa_trocar_senha": usuario.get("precisa_trocar_senha", False) # <-- INJETADO NO JWT!
         }
     )
@@ -55,3 +56,18 @@ async def efetivar_troca_senha(
     )
     
     return {"message": "Senha atualizada com sucesso!"}
+
+
+@router.get("/me")
+async def get_me(current_user: dict = Depends(get_current_user)):
+    """Retorna os dados do utilizador autenticado (sem senha_hash)."""
+    return {
+        "_id":           str(current_user["_id"]),
+        "nome_completo": current_user["nome_completo"],
+        "matricula":     current_user["matricula"],
+        "email":         current_user["email"],
+        "perfil":        current_user["perfil"],
+        "is_ativo":      current_user.get("is_ativo", True),
+        "criado_em":     current_user.get("criado_em"),
+        "atualizado_em": current_user.get("atualizado_em"),
+    }
