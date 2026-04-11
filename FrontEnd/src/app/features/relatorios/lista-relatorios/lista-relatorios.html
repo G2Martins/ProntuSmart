@@ -1,0 +1,239 @@
+<div class="max-w-7xl mx-auto space-y-6">
+
+  <!-- ── Cabeçalho ───────────────────────────────────────────── -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-3">
+        <iconify-icon icon="ph:file-text-bold" class="text-blue-600 text-3xl"></iconify-icon>
+        Relatórios Fisioterapêuticos
+      </h2>
+      <p class="text-gray-500 text-sm mt-1">
+        <span *ngIf="perfil === 'Estagiario'">Emita relatórios dos seus pacientes ou da sua área de atuação.</span>
+        <span *ngIf="perfil !== 'Estagiario'">Acompanhamento de todos os relatórios emitidos pela clínica.</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- ── Cards de estatísticas ──────────────────────────────── -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center">
+        <iconify-icon icon="ph:pencil-bold" class="text-xl"></iconify-icon>
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 font-semibold uppercase">Rascunhos</p>
+        <p class="text-2xl font-extrabold text-gray-700">{{ statRascunhos }}</p>
+      </div>
+    </div>
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center">
+        <iconify-icon icon="ph:clock-countdown-bold" class="text-xl"></iconify-icon>
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 font-semibold uppercase">Aguardando docente</p>
+        <p class="text-2xl font-extrabold text-amber-700">{{ statAguardando }}</p>
+      </div>
+    </div>
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-green-100 text-green-600 flex items-center justify-center">
+        <iconify-icon icon="ph:seal-check-bold" class="text-xl"></iconify-icon>
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 font-semibold uppercase">Finalizados</p>
+        <p class="text-2xl font-extrabold text-green-700">{{ statFinalizados }}</p>
+      </div>
+    </div>
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+        <iconify-icon icon="ph:file-text-bold" class="text-xl"></iconify-icon>
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 font-semibold uppercase">Total</p>
+        <p class="text-2xl font-extrabold text-blue-700">{{ relatorios.length }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tabs ────────────────────────────────────────────────── -->
+  <div class="bg-white shadow-sm rounded-lg border border-gray-100 overflow-hidden">
+    <div class="flex border-b border-gray-200">
+      <button (click)="abaAtiva = 'novo'"
+        class="px-6 py-4 text-sm font-semibold flex items-center gap-2 transition-colors border-b-2 -mb-px"
+        [ngClass]="abaAtiva === 'novo' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'">
+        <iconify-icon icon="ph:file-plus-bold" class="text-base"></iconify-icon>
+        Emitir Novo Relatório
+      </button>
+      <button (click)="abaAtiva = 'historico'"
+        class="px-6 py-4 text-sm font-semibold flex items-center gap-2 transition-colors border-b-2 -mb-px"
+        [ngClass]="abaAtiva === 'historico' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'">
+        <iconify-icon icon="ph:clock-counter-clockwise-bold" class="text-base"></iconify-icon>
+        Histórico
+        <span *ngIf="!isLoadingRelatorios" class="ml-1 bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">
+          {{ relatorios.length }}
+        </span>
+      </button>
+    </div>
+
+    <!-- ── Aba: Novo Relatório (lista de pacientes) ─────────── -->
+    <div *ngIf="abaAtiva === 'novo'" class="p-6">
+
+      <!-- Busca -->
+      <div class="relative w-full sm:w-96 mb-5">
+        <iconify-icon icon="ph:magnifying-glass-bold"
+          class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></iconify-icon>
+        <input type="text" [(ngModel)]="filtroPaciente"
+          class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+          placeholder="Buscar paciente, prontuário ou área...">
+      </div>
+
+      <div *ngIf="isLoadingPacientes" class="py-12 text-center text-gray-400">
+        <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-3xl text-blue-400 mb-2"></iconify-icon>
+        <p>Carregando pacientes vinculados...</p>
+      </div>
+
+      <div *ngIf="!isLoadingPacientes && pacientesFiltrados.length === 0" class="py-12 text-center text-gray-400">
+        <iconify-icon icon="ph:folder-open-bold" class="text-5xl mb-3"></iconify-icon>
+        <p class="font-semibold text-gray-600">Nenhum paciente disponível para emissão.</p>
+      </div>
+
+      <div *ngIf="!isLoadingPacientes && pacientesFiltrados.length > 0"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div *ngFor="let p of pacientesFiltrados"
+          class="border border-gray-200 rounded-xl p-4 bg-gray-50 hover:border-blue-300 hover:bg-white transition-all cursor-pointer flex flex-col gap-3"
+          (click)="novoRelatorio(p)">
+          <div class="flex items-start gap-3">
+            <div class="w-11 h-11 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-base uppercase shrink-0">
+              {{ (p.nome_paciente || '?').charAt(0) }}
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="font-semibold text-gray-800 text-sm truncate">{{ p.nome_paciente }}</p>
+              <p class="text-xs text-gray-400 font-mono truncate">{{ p.numero_prontuario }}</p>
+              <p class="text-xs text-gray-500 mt-1 flex items-center gap-1 truncate">
+                <iconify-icon icon="ph:stethoscope-bold" class="text-blue-400 shrink-0"></iconify-icon>
+                {{ p.area_atendimento }}
+              </p>
+              <p *ngIf="perfil !== 'Estagiario' && p.nome_estagiario" class="text-xs text-purple-500 mt-0.5 flex items-center gap-1 truncate">
+                <iconify-icon icon="ph:student-bold" class="shrink-0"></iconify-icon>
+                {{ p.nome_estagiario }}
+              </p>
+            </div>
+          </div>
+          <button class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors">
+            <iconify-icon icon="ph:file-plus-bold"></iconify-icon>
+            Emitir Relatório
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Aba: Histórico de Relatórios ─────────────────────── -->
+    <div *ngIf="abaAtiva === 'historico'" class="p-6">
+
+      <!-- Filtros -->
+      <div class="flex flex-col sm:flex-row gap-3 mb-5">
+        <div class="relative flex-1">
+          <iconify-icon icon="ph:magnifying-glass-bold"
+            class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></iconify-icon>
+          <input type="text" [(ngModel)]="filtroPaciente"
+            class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+            placeholder="Buscar por paciente ou número...">
+        </div>
+        <select [(ngModel)]="filtroStatus"
+          class="border border-gray-200 rounded-lg px-3 py-2.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+          <option value="">Todos os status</option>
+          <option value="Rascunho">Rascunho</option>
+          <option value="Aguardando Assinatura do Docente">Aguardando docente</option>
+          <option value="Finalizado">Finalizado</option>
+          <option value="Cancelado">Cancelado</option>
+        </select>
+        <select [(ngModel)]="filtroTipo"
+          class="border border-gray-200 rounded-lg px-3 py-2.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+          <option value="">Todos os tipos</option>
+          <option value="Padrao">Padrão (UCB)</option>
+          <option value="Completo">Completo</option>
+        </select>
+      </div>
+
+      <div *ngIf="isLoadingRelatorios" class="py-12 text-center text-gray-400">
+        <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-3xl text-blue-400 mb-2"></iconify-icon>
+        <p>Carregando histórico...</p>
+      </div>
+
+      <div *ngIf="!isLoadingRelatorios && relatoriosFiltrados.length === 0" class="py-14 text-center text-gray-400">
+        <iconify-icon icon="ph:files-bold" class="text-6xl mb-3"></iconify-icon>
+        <p class="font-semibold text-gray-600 text-lg">Nenhum relatório encontrado</p>
+        <p class="text-sm mt-1">Os relatórios emitidos aparecerão aqui.</p>
+      </div>
+
+      <!-- Tabela / Lista -->
+      <div *ngIf="!isLoadingRelatorios && relatoriosFiltrados.length > 0" class="overflow-x-auto">
+        <table class="w-full text-sm text-left">
+          <thead class="bg-gray-50 text-xs text-gray-500 uppercase tracking-wider">
+            <tr>
+              <th class="px-5 py-3">Número</th>
+              <th class="px-5 py-3">Paciente</th>
+              <th class="px-5 py-3">Tipo</th>
+              <th class="px-5 py-3">Status</th>
+              <th class="px-5 py-3">Solicitado em</th>
+              <th class="px-5 py-3">Assinaturas</th>
+              <th class="px-5 py-3 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr *ngFor="let r of relatoriosFiltrados"
+              class="hover:bg-blue-50/30 transition-colors cursor-pointer"
+              (click)="abrirRelatorio(r)">
+              <td class="px-5 py-4">
+                <span class="font-mono text-xs text-blue-700 bg-blue-50 border border-blue-100 px-2 py-1 rounded">
+                  {{ r.numero_relatorio }}
+                </span>
+              </td>
+              <td class="px-5 py-4">
+                <p class="font-medium text-gray-800">{{ r.nome_paciente || '—' }}</p>
+                <p class="text-xs text-gray-400 font-mono">{{ r.numero_prontuario }}</p>
+              </td>
+              <td class="px-5 py-4">
+                <span class="text-xs font-semibold px-2.5 py-1 rounded-full border" [ngClass]="getTipoBadge(r.tipo)">
+                  {{ r.tipo }}
+                </span>
+              </td>
+              <td class="px-5 py-4">
+                <span class="text-xs font-semibold px-2.5 py-1 rounded-full border inline-flex items-center gap-1" [ngClass]="getStatusClass(r.status)">
+                  <iconify-icon [icon]="getStatusIcon(r.status)" class="text-sm"></iconify-icon>
+                  {{ r.status }}
+                </span>
+              </td>
+              <td class="px-5 py-4 text-gray-600 text-xs">
+                {{ r.criado_em | date:'dd/MM/yyyy · HH:mm' }}
+              </td>
+              <td class="px-5 py-4">
+                <div class="flex items-center gap-2">
+                  <span title="Estagiário" [ngClass]="r.assinatura_estagiario ? 'text-green-600' : 'text-gray-300'">
+                    <iconify-icon icon="ph:student-bold" class="text-base"></iconify-icon>
+                    <iconify-icon *ngIf="r.assinatura_estagiario" icon="ph:check-circle-fill" class="text-xs"></iconify-icon>
+                  </span>
+                  <span title="Docente" [ngClass]="r.assinatura_docente ? 'text-green-600' : 'text-gray-300'">
+                    <iconify-icon icon="ph:chalkboard-teacher-bold" class="text-base"></iconify-icon>
+                    <iconify-icon *ngIf="r.assinatura_docente" icon="ph:check-circle-fill" class="text-xs"></iconify-icon>
+                  </span>
+                </div>
+              </td>
+              <td class="px-5 py-4 text-right whitespace-nowrap space-x-2">
+                <button (click)="baixarPdf(r, $event)"
+                  class="text-blue-600 hover:text-blue-800 transition-colors inline-flex items-center"
+                  title="Baixar PDF">
+                  <iconify-icon icon="ph:download-simple-bold" class="text-lg"></iconify-icon>
+                </button>
+                <button *ngIf="r.status === 'Rascunho'" (click)="cancelarRelatorio(r, $event)"
+                  class="text-red-500 hover:text-red-700 transition-colors inline-flex items-center"
+                  title="Excluir rascunho">
+                  <iconify-icon icon="ph:trash-bold" class="text-lg"></iconify-icon>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

@@ -75,6 +75,18 @@ export const routes: Routes = [
         path: 'meu-perfil',
         loadComponent: () => import('./features/perfil/meu-perfil/meu-perfil').then(m => m.MeuPerfilComponent)
       },
+      {
+        path: 'relatorios',
+        loadComponent: () => import('./features/relatorios/lista-relatorios/lista-relatorios').then(m => m.ListaRelatoriosComponent)
+      },
+      {
+        path: 'relatorios/novo/:prontuarioId',
+        loadComponent: () => import('./features/relatorios/gerar-relatorio/gerar-relatorio').then(m => m.GerarRelatorioComponent)
+      },
+      {
+        path: 'relatorios/visualizar/:id',
+        loadComponent: () => import('./features/relatorios/gerar-relatorio/gerar-relatorio').then(m => m.GerarRelatorioComponent)
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   },

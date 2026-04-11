@@ -150,4 +150,35 @@ async def buscar_prontuario(
     if not pront:
         raise HTTPException(status_code=404, detail="Prontuário não encontrado.")
     pront["_id"] = str(pront["_id"])
+
+    # Enriquecimento — estagiário responsável
+    try:
+        estagiario = await db.dim_usuario.find_one({"_id": ObjectId(pront["estagiario_id"])})
+        if estagiario:
+            pront["nome_estagiario"]      = estagiario.get("nome_completo")
+            pront["email_estagiario"]     = estagiario.get("email")
+            pront["matricula_estagiario"] = estagiario.get("matricula")
+            pront["area_estagiario"]      = estagiario.get("area_atendimento")
+    except Exception:
+        pront["nome_estagiario"] = None
+
+    # Enriquecimento — docente (caso atribuído)
+    try:
+        if pront.get("docente_id"):
+            docente = await db.dim_usuario.find_one({"_id": ObjectId(pront["docente_id"])})
+            if docente:
+                pront["nome_docente"]  = docente.get("nome_completo")
+                pront["email_docente"] = docente.get("email")
+    except Exception:
+        pront["nome_docente"] = None
+
+    # Enriquecimento — CID
+    try:
+        cid = await db.dim_cid.find_one({"_id": ObjectId(pront["cid_id"])})
+        if cid:
+            pront["cid_codigo"]    = cid.get("codigo")
+            pront["cid_descricao"] = cid.get("descricao")
+    except Exception:
+        pront["cid_codigo"] = None
+
     return pront

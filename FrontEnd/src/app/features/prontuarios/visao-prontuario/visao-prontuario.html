@@ -112,6 +112,45 @@
       </div>
     </div>
 
+    <!-- ── Card: Estagiário Responsável ───────────────────── -->
+    <div class="bg-gradient-to-r from-purple-50 to-white rounded-lg shadow-sm border border-purple-100 overflow-hidden">
+      <div class="px-5 py-4 flex items-center gap-4 flex-wrap">
+        <div class="h-14 w-14 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-xl uppercase flex-shrink-0 border-2 border-white shadow-sm">
+          {{ (prontuario.nome_estagiario || '?').charAt(0) }}
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs text-purple-600 font-semibold uppercase tracking-wider flex items-center gap-1.5">
+            <iconify-icon icon="ph:student-bold" class="text-sm"></iconify-icon>
+            Estagiário Responsável
+          </p>
+          <p class="font-bold text-gray-800 text-lg leading-tight truncate">
+            {{ prontuario.nome_estagiario || 'Não atribuído' }}
+          </p>
+          <div class="flex items-center gap-3 text-xs text-gray-500 mt-1 flex-wrap">
+            <span *ngIf="prontuario.matricula_estagiario" class="font-mono">
+              <iconify-icon icon="ph:identification-card-bold" class="text-purple-400 align-middle"></iconify-icon>
+              {{ prontuario.matricula_estagiario }}
+            </span>
+            <span *ngIf="prontuario.email_estagiario" class="truncate">
+              <iconify-icon icon="ph:envelope-simple-bold" class="text-purple-400 align-middle"></iconify-icon>
+              {{ prontuario.email_estagiario }}
+            </span>
+            <span *ngIf="prontuario.area_estagiario" class="inline-flex items-center gap-1">
+              <iconify-icon icon="ph:stethoscope-bold" class="text-purple-400 align-middle"></iconify-icon>
+              {{ prontuario.area_estagiario }}
+            </span>
+          </div>
+        </div>
+        <div *ngIf="prontuario.nome_docente" class="border-l border-purple-100 pl-4 ml-auto hidden md:block">
+          <p class="text-xs text-blue-600 font-semibold uppercase tracking-wider flex items-center gap-1.5">
+            <iconify-icon icon="ph:chalkboard-teacher-bold" class="text-sm"></iconify-icon>
+            Supervisor
+          </p>
+          <p class="font-semibold text-gray-700 text-sm mt-0.5">{{ prontuario.nome_docente }}</p>
+        </div>
+      </div>
+    </div>
+
     <!-- ── Dados Clínicos Iniciais (se preenchidos) ───────── -->
     <div *ngIf="prontuario.diagnostico_medico || prontuario.diagnostico_fisioterapeutico"
       class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
@@ -186,6 +225,17 @@
           <span *ngIf="!isLoadingGraficos && dadosGraficos.length > 0"
             class="ml-1 bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full">
             {{ dadosGraficos.length }}
+          </span>
+        </button>
+        <button (click)="abaAtiva = 'detalhado'"
+          class="px-6 py-4 text-sm font-semibold flex items-center gap-2 transition-colors border-b-2 -mb-px"
+          [ngClass]="abaAtiva === 'detalhado'
+            ? 'border-blue-600 text-blue-600'
+            : 'border-transparent text-gray-500 hover:text-gray-700'">
+          <iconify-icon icon="ph:identification-card-bold" class="text-base"></iconify-icon>
+          Ficha Detalhada
+          <span class="ml-1 bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">
+            {{ percentualPreenchimento() }}%
           </span>
         </button>
       </div>
@@ -581,6 +631,391 @@
             </div>
 
           </div>
+        </div>
+
+      </div>
+
+      <!-- ══ Aba: Ficha Detalhada ══════════════════════════════════════ -->
+      <div *ngIf="abaAtiva === 'detalhado'" class="p-6 space-y-6">
+
+        <!-- Cabeçalho com indicador de completude -->
+        <div class="flex items-center justify-between flex-wrap gap-3 pb-4 border-b border-gray-100">
+          <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
+              <iconify-icon icon="ph:identification-card-bold" class="text-2xl"></iconify-icon>
+            </div>
+            <div>
+              <h3 class="font-bold text-gray-800 text-lg">Ficha Clínica Completa</h3>
+              <p class="text-xs text-gray-500">Consolidação dos dados de triagem, avaliação funcional e síntese fisioterapêutica.</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Completude</p>
+            <p class="text-2xl font-extrabold"
+              [ngClass]="percentualPreenchimento() >= 80 ? 'text-emerald-600' : (percentualPreenchimento() >= 50 ? 'text-amber-600' : 'text-red-500')">
+              {{ percentualPreenchimento() }}%
+            </p>
+          </div>
+        </div>
+
+        <!-- ── Seção: Identificação Clínica & CID ───────────── -->
+        <div class="border border-gray-200 rounded-xl overflow-hidden">
+          <div class="bg-blue-50 border-b border-blue-100 px-5 py-3 flex items-center gap-2">
+            <iconify-icon icon="ph:user-circle-bold" class="text-blue-600 text-lg"></iconify-icon>
+            <h4 class="font-semibold text-blue-800 text-sm uppercase tracking-wider">Identificação Clínica</h4>
+          </div>
+          <div class="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 text-sm">
+            <div>
+              <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Número do Prontuário</p>
+              <p class="text-gray-800 font-mono">{{ prontuario.numero_prontuario }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Aberto em</p>
+              <p class="text-gray-800">{{ prontuario.criado_em | date:'dd/MM/yyyy · HH:mm' }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Área de Atendimento</p>
+              <p class="text-gray-800">{{ prontuario.area_atendimento }}</p>
+            </div>
+            <div class="sm:col-span-2 lg:col-span-3">
+              <p class="text-xs text-gray-400 font-semibold uppercase mb-1">CID-10 Principal</p>
+              <p *ngIf="prontuario.cid_codigo" class="text-gray-800">
+                <span class="font-mono font-bold text-blue-700 mr-2">{{ prontuario.cid_codigo }}</span>
+                {{ prontuario.cid_descricao }}
+              </p>
+              <p *ngIf="!prontuario.cid_codigo" class="text-gray-400 italic">CID não localizado</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Seção: Triagem (Tela 1) ───────────────────────── -->
+        <div class="border border-gray-200 rounded-xl overflow-hidden">
+          <div class="bg-amber-50 border-b border-amber-100 px-5 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <iconify-icon icon="ph:clipboard-text-bold" class="text-amber-600 text-lg"></iconify-icon>
+              <h4 class="font-semibold text-amber-800 text-sm uppercase tracking-wider">Triagem & Dados Iniciais</h4>
+            </div>
+            <span class="text-xs px-2 py-1 rounded-full font-semibold border"
+              [ngClass]="secaoTriagemPreenchida() ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-500 border-gray-200'">
+              {{ secaoTriagemPreenchida() ? 'Preenchida' : 'Não preenchida' }}
+            </span>
+          </div>
+          <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-5 text-sm">
+            <div>
+              <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Diagnóstico Médico</p>
+              <p class="text-gray-700 leading-relaxed">{{ fmt(prontuario.diagnostico_medico) }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Diagnóstico Fisioterapêutico</p>
+              <p class="text-gray-700 leading-relaxed">{{ fmt(prontuario.diagnostico_fisioterapeutico) }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Queixa Principal</p>
+              <p class="text-gray-700 leading-relaxed">{{ fmt(prontuario.queixa_principal) }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Objetivo do Paciente</p>
+              <p class="text-gray-700 leading-relaxed">{{ fmt(prontuario.objetivo_paciente) }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Tempo de Evolução</p>
+              <p class="text-gray-700">{{ fmt(prontuario.tempo_evolucao) }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Dispositivo Auxiliar</p>
+              <p class="text-gray-700">{{ fmt(prontuario.dispositivo_auxiliar) }}</p>
+            </div>
+            <div class="sm:col-span-2">
+              <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Comorbidades</p>
+              <p class="text-gray-700 leading-relaxed">{{ fmt(prontuario.comorbidades) }}</p>
+            </div>
+            <div class="sm:col-span-2">
+              <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Medicamentos em uso</p>
+              <p class="text-gray-700 leading-relaxed">{{ fmt(prontuario.medicamentos) }}</p>
+            </div>
+            <div class="sm:col-span-2">
+              <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Barreiras Ambientais</p>
+              <p class="text-gray-700 leading-relaxed">{{ fmt(prontuario.barreiras_ambientais) }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Seção: Avaliação Funcional (Tela 2) ──────────── -->
+        <div class="border border-gray-200 rounded-xl overflow-hidden">
+          <div class="bg-blue-50 border-b border-blue-100 px-5 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <iconify-icon icon="ph:person-simple-walk-bold" class="text-blue-600 text-lg"></iconify-icon>
+              <h4 class="font-semibold text-blue-800 text-sm uppercase tracking-wider">Avaliação Funcional</h4>
+            </div>
+            <span class="text-xs px-2 py-1 rounded-full font-semibold border"
+              [ngClass]="secaoAvaliacaoPreenchida() ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-500 border-gray-200'">
+              {{ secaoAvaliacaoPreenchida() ? 'Preenchida' : 'Não preenchida' }}
+            </span>
+          </div>
+
+          <div class="p-5 space-y-6">
+
+            <!-- Mobilidade -->
+            <div>
+              <h5 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <iconify-icon icon="ph:armchair-bold" class="text-blue-500"></iconify-icon>
+                Mobilidade Básica
+              </h5>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="border border-gray-100 rounded-lg p-3">
+                  <p class="text-xs text-gray-400 mb-1">Sedestação</p>
+                  <span class="text-xs font-semibold px-2 py-1 rounded-full border" [ngClass]="getNivelClass(prontuario.sedestacao)">{{ fmt(prontuario.sedestacao) }}</span>
+                </div>
+                <div class="border border-gray-100 rounded-lg p-3">
+                  <p class="text-xs text-gray-400 mb-1">Ortostatismo</p>
+                  <span class="text-xs font-semibold px-2 py-1 rounded-full border" [ngClass]="getNivelClass(prontuario.ortostatismo)">{{ fmt(prontuario.ortostatismo) }}</span>
+                </div>
+                <div class="border border-gray-100 rounded-lg p-3">
+                  <p class="text-xs text-gray-400 mb-1">Transferências</p>
+                  <span class="text-xs font-semibold px-2 py-1 rounded-full border" [ngClass]="getNivelClass(prontuario.transferencias)">{{ fmt(prontuario.transferencias) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Marcha -->
+            <div>
+              <h5 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <iconify-icon icon="ph:footprints-bold" class="text-blue-500"></iconify-icon>
+                Marcha
+              </h5>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="border border-gray-100 rounded-lg p-3">
+                  <p class="text-xs text-gray-400 mb-1">Realiza marcha</p>
+                  <span class="text-xs font-semibold px-2 py-1 rounded-full border" [ngClass]="getBoolClass(prontuario.realiza_marcha)">{{ fmtBool(prontuario.realiza_marcha) }}</span>
+                </div>
+                <div class="border border-gray-100 rounded-lg p-3">
+                  <p class="text-xs text-gray-400 mb-1">Usa dispositivo</p>
+                  <span class="text-xs font-semibold px-2 py-1 rounded-full border" [ngClass]="getBoolClass(prontuario.marcha_dispositivo)">{{ fmtBool(prontuario.marcha_dispositivo) }}</span>
+                </div>
+                <div class="border border-gray-100 rounded-lg p-3">
+                  <p class="text-xs text-gray-400 mb-1">Distância tolerada</p>
+                  <p class="text-sm text-gray-700 font-medium">{{ fmt(prontuario.distancia_tolerada) }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Função Motora & Equilíbrio -->
+            <div>
+              <h5 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <iconify-icon icon="ph:hand-bold" class="text-blue-500"></iconify-icon>
+                Função Motora & Equilíbrio
+              </h5>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div class="border border-gray-100 rounded-lg p-3">
+                  <p class="text-xs text-gray-400 mb-1">Função MMSS</p>
+                  <span class="text-xs font-semibold px-2 py-1 rounded-full border" [ngClass]="getNivelClass(prontuario.funcao_mmss)">{{ fmt(prontuario.funcao_mmss) }}</span>
+                </div>
+                <div class="border border-gray-100 rounded-lg p-3">
+                  <p class="text-xs text-gray-400 mb-1">Função MMII</p>
+                  <span class="text-xs font-semibold px-2 py-1 rounded-full border" [ngClass]="getNivelClass(prontuario.funcao_mmii)">{{ fmt(prontuario.funcao_mmii) }}</span>
+                </div>
+                <div class="border border-gray-100 rounded-lg p-3">
+                  <p class="text-xs text-gray-400 mb-1">Equilíbrio</p>
+                  <span class="text-xs font-semibold px-2 py-1 rounded-full border" [ngClass]="getNivelClass(prontuario.equilibrio)">{{ fmt(prontuario.equilibrio) }}</span>
+                </div>
+                <div class="border border-gray-100 rounded-lg p-3">
+                  <p class="text-xs text-gray-400 mb-1">Risco de Queda</p>
+                  <span class="text-xs font-semibold px-2 py-1 rounded-full border" [ngClass]="getNivelClass(prontuario.risco_queda)">{{ fmt(prontuario.risco_queda) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sintomas -->
+            <div>
+              <h5 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <iconify-icon icon="ph:first-aid-bold" class="text-blue-500"></iconify-icon>
+                Sintomas
+              </h5>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="border border-gray-100 rounded-lg p-3">
+                  <p class="text-xs text-gray-400 mb-1">Apresenta dor</p>
+                  <span class="text-xs font-semibold px-2 py-1 rounded-full border" [ngClass]="getBoolClass(prontuario.dor)">{{ fmtBool(prontuario.dor) }}</span>
+                </div>
+                <div class="border border-gray-100 rounded-lg p-3 sm:col-span-2">
+                  <p class="text-xs text-gray-400 mb-1">Intensidade / Local</p>
+                  <p class="text-sm text-gray-700">{{ fmt(prontuario.dor_intensidade_local) }}</p>
+                </div>
+                <div class="border border-gray-100 rounded-lg p-3 sm:col-span-3">
+                  <p class="text-xs text-gray-400 mb-1">Fadiga funcional</p>
+                  <span class="text-xs font-semibold px-2 py-1 rounded-full border" [ngClass]="getBoolClass(prontuario.fadiga_funcional)">{{ fmtBool(prontuario.fadiga_funcional) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Cognição -->
+            <div>
+              <h5 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <iconify-icon icon="ph:brain-bold" class="text-blue-500"></iconify-icon>
+                Cognição & Comunicação
+              </h5>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="border border-gray-100 rounded-lg p-3">
+                  <p class="text-xs text-gray-400 mb-1">Compreende comandos</p>
+                  <span class="text-xs font-semibold px-2 py-1 rounded-full border" [ngClass]="getBoolClass(prontuario.compreende_comandos)">{{ fmtBool(prontuario.compreende_comandos) }}</span>
+                </div>
+                <div class="border border-gray-100 rounded-lg p-3">
+                  <p class="text-xs text-gray-400 mb-1">Comunicação preservada</p>
+                  <span class="text-xs font-semibold px-2 py-1 rounded-full border" [ngClass]="getBoolClass(prontuario.comunicacao_preservada)">{{ fmtBool(prontuario.comunicacao_preservada) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- AVDs -->
+            <div>
+              <h5 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <iconify-icon icon="ph:house-bold" class="text-blue-500"></iconify-icon>
+                Atividades de Vida Diária (AVDs)
+              </h5>
+              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <div class="border border-gray-100 rounded-lg p-3 text-center">
+                  <p class="text-xs text-gray-400 mb-1">Banho</p>
+                  <span class="text-xs font-semibold px-2 py-1 rounded-full border inline-block" [ngClass]="getAvdClass(prontuario.avd_banho)">{{ getAvdLabel(prontuario.avd_banho) }}</span>
+                </div>
+                <div class="border border-gray-100 rounded-lg p-3 text-center">
+                  <p class="text-xs text-gray-400 mb-1">Vestir</p>
+                  <span class="text-xs font-semibold px-2 py-1 rounded-full border inline-block" [ngClass]="getAvdClass(prontuario.avd_vestir)">{{ getAvdLabel(prontuario.avd_vestir) }}</span>
+                </div>
+                <div class="border border-gray-100 rounded-lg p-3 text-center">
+                  <p class="text-xs text-gray-400 mb-1">Higiene</p>
+                  <span class="text-xs font-semibold px-2 py-1 rounded-full border inline-block" [ngClass]="getAvdClass(prontuario.avd_higiene)">{{ getAvdLabel(prontuario.avd_higiene) }}</span>
+                </div>
+                <div class="border border-gray-100 rounded-lg p-3 text-center">
+                  <p class="text-xs text-gray-400 mb-1">Locomoção</p>
+                  <span class="text-xs font-semibold px-2 py-1 rounded-full border inline-block" [ngClass]="getAvdClass(prontuario.avd_locomocao)">{{ getAvdLabel(prontuario.avd_locomocao) }}</span>
+                </div>
+                <div class="border border-gray-100 rounded-lg p-3 text-center">
+                  <p class="text-xs text-gray-400 mb-1">Alimentação</p>
+                  <span class="text-xs font-semibold px-2 py-1 rounded-full border inline-block" [ngClass]="getAvdClass(prontuario.avd_alimentacao)">{{ getAvdLabel(prontuario.avd_alimentacao) }}</span>
+                </div>
+                <div class="border border-gray-100 rounded-lg p-3 text-center">
+                  <p class="text-xs text-gray-400 mb-1">Banheiro</p>
+                  <span class="text-xs font-semibold px-2 py-1 rounded-full border inline-block" [ngClass]="getAvdClass(prontuario.avd_banheiro)">{{ getAvdLabel(prontuario.avd_banheiro) }}</span>
+                </div>
+              </div>
+              <p class="text-[10px] text-gray-400 mt-2 italic">Legenda: I = Independente · S = Supervisão · AP = Ajuda Parcial · D = Dependente</p>
+            </div>
+
+            <!-- Participação & Testes -->
+            <div>
+              <h5 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <iconify-icon icon="ph:users-three-bold" class="text-blue-500"></iconify-icon>
+                Participação & Testes Aplicados
+              </h5>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                <div class="border border-gray-100 rounded-lg p-3">
+                  <p class="text-xs text-gray-400 mb-1">Atividade mais impactada</p>
+                  <p class="text-gray-700">{{ fmt(prontuario.atividade_mais_impactada) }}</p>
+                </div>
+                <div class="border border-gray-100 rounded-lg p-3">
+                  <p class="text-xs text-gray-400 mb-1">Principal limitação</p>
+                  <p class="text-gray-700">{{ fmt(prontuario.principal_limitacao) }}</p>
+                </div>
+                <div class="border border-gray-100 rounded-lg p-3">
+                  <p class="text-xs text-gray-400 mb-1">Teste / Escala aplicada</p>
+                  <p class="text-gray-700">{{ fmt(prontuario.teste_escala_principal) }}</p>
+                </div>
+                <div class="border border-gray-100 rounded-lg p-3">
+                  <p class="text-xs text-gray-400 mb-1">Valor inicial do teste</p>
+                  <p class="text-gray-700 font-mono">{{ fmt(prontuario.valor_teste_inicial) }}</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── Seção: Síntese Fisioterapêutica (Tela 3) ─────── -->
+        <div class="border border-gray-200 rounded-xl overflow-hidden">
+          <div class="bg-purple-50 border-b border-purple-100 px-5 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <iconify-icon icon="ph:lightbulb-filament-bold" class="text-purple-600 text-lg"></iconify-icon>
+              <h4 class="font-semibold text-purple-800 text-sm uppercase tracking-wider">Síntese Fisioterapêutica</h4>
+            </div>
+            <span class="text-xs px-2 py-1 rounded-full font-semibold border"
+              [ngClass]="secaoSintesePreenchida() ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-500 border-gray-200'">
+              {{ secaoSintesePreenchida() ? 'Preenchida' : 'Não preenchida' }}
+            </span>
+          </div>
+          <div class="p-5 space-y-4 text-sm">
+            <div>
+              <p class="text-xs text-gray-400 font-semibold uppercase mb-1 flex items-center gap-1.5">
+                <iconify-icon icon="ph:warning-circle-bold" class="text-purple-500"></iconify-icon>
+                Problema Funcional Prioritário
+              </p>
+              <p class="text-gray-700 leading-relaxed bg-purple-50/40 border border-purple-100 rounded-lg p-3">
+                {{ fmt(prontuario.problema_funcional_prioritario) }}
+              </p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Atividade Comprometida</p>
+                <p class="text-gray-700 leading-relaxed">{{ fmt(prontuario.atividade_comprometida) }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Impacto na Independência</p>
+                <p class="text-gray-700 leading-relaxed">{{ fmt(prontuario.impacto_independencia) }}</p>
+              </div>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400 font-semibold uppercase mb-1 flex items-center gap-1.5">
+                <iconify-icon icon="ph:target-bold" class="text-purple-500"></iconify-icon>
+                Prioridade Terapêutica
+              </p>
+              <p class="text-gray-700 leading-relaxed bg-purple-50/40 border border-purple-100 rounded-lg p-3">
+                {{ fmt(prontuario.prioridade_terapeutica) }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Seção: Resumo Quantitativo ──────────────────── -->
+        <div class="border border-gray-200 rounded-xl overflow-hidden">
+          <div class="bg-emerald-50 border-b border-emerald-100 px-5 py-3 flex items-center gap-2">
+            <iconify-icon icon="ph:chart-bar-bold" class="text-emerald-600 text-lg"></iconify-icon>
+            <h4 class="font-semibold text-emerald-800 text-sm uppercase tracking-wider">Resumo Quantitativo</h4>
+          </div>
+          <div class="p-5 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+            <div class="bg-blue-50 border border-blue-100 rounded-lg p-3">
+              <p class="text-xs text-blue-600 font-semibold uppercase">Sessões</p>
+              <p class="text-2xl font-extrabold text-blue-700">{{ prontuario.total_sessoes }}</p>
+            </div>
+            <div class="bg-emerald-50 border border-emerald-100 rounded-lg p-3">
+              <p class="text-xs text-emerald-600 font-semibold uppercase">Evoluções</p>
+              <p class="text-2xl font-extrabold text-emerald-700">{{ evolucoes.length }}</p>
+            </div>
+            <div class="bg-purple-50 border border-purple-100 rounded-lg p-3">
+              <p class="text-xs text-purple-600 font-semibold uppercase">Metas SMART</p>
+              <p class="text-2xl font-extrabold text-purple-700">{{ metas.length }}</p>
+            </div>
+            <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-3">
+              <p class="text-xs text-indigo-600 font-semibold uppercase">Indicadores</p>
+              <p class="text-2xl font-extrabold text-indigo-700">{{ dadosGraficos.length }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Aviso para preencher avaliação se vazia -->
+        <div *ngIf="!secaoAvaliacaoPreenchida() && perfil === 'Estagiario'"
+          class="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start justify-between gap-4">
+          <div class="flex items-start gap-2">
+            <iconify-icon icon="ph:info-bold" class="text-blue-500 text-lg flex-shrink-0 mt-0.5"></iconify-icon>
+            <div>
+              <p class="text-sm font-bold text-blue-700 mb-0.5">Ficha incompleta</p>
+              <p class="text-xs text-blue-600 leading-relaxed">
+                A avaliação funcional ainda não foi preenchida. Complete a ficha clínica para enriquecer este prontuário.
+              </p>
+            </div>
+          </div>
+          <button (click)="router.navigate(['/prontuarios/avaliacao', prontuario._id])"
+            class="flex-shrink-0 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition-colors whitespace-nowrap">
+            <iconify-icon icon="ph:clipboard-text-bold"></iconify-icon>
+            Preencher Avaliação
+          </button>
         </div>
 
       </div>

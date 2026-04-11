@@ -21,6 +21,12 @@
         <iconify-icon icon="ph:users-three-bold" class="text-xl mr-3"></iconify-icon> Pacientes e Prontuários
       </a>
 
+      <a routerLink="/relatorios"
+         routerLinkActive="bg-blue-800"
+         class="flex items-center p-3 rounded hover:bg-blue-800 transition-colors cursor-pointer">
+        <iconify-icon icon="ph:file-text-bold" class="text-xl mr-3"></iconify-icon> Relatórios
+      </a>
+
       <a *ngIf="userProfile === 'Administrador'"
          routerLink="/usuarios"
          routerLinkActive="bg-blue-800"

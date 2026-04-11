@@ -41,7 +41,7 @@ export class VisaoProntuario implements OnInit {
   isLoadingIndicadores = false;
 
   perfil: string | null = '';
-  abaAtiva: 'evolucoes' | 'metas' | 'graficos' = 'evolucoes';
+  abaAtiva: 'evolucoes' | 'metas' | 'graficos' | 'detalhado' = 'evolucoes';
 
   // ── SVG Chart constants ────────────────────────────────────
   readonly svgW   = 560;
@@ -195,6 +195,93 @@ export class VisaoProntuario implements OnInit {
   // ── Helpers de UI ─────────────────────────────────────────
   irParaNovaEvolucao()  { this.router.navigate(['/prontuarios/evoluir', this.prontuario._id]); }
   voltar()              { this.router.navigate(['/pacientes']); }
+
+  // ── Helpers para a aba "Ficha Detalhada" ─────────────────
+  fmt(val: any): string {
+    if (val === null || val === undefined || val === '') return '—';
+    return String(val);
+  }
+
+  fmtBool(val: boolean | null | undefined): string {
+    if (val === true)  return 'Sim';
+    if (val === false) return 'Não';
+    return '—';
+  }
+
+  getBoolClass(val: boolean | null | undefined): string {
+    if (val === true)  return 'bg-green-50 text-green-700 border-green-200';
+    if (val === false) return 'bg-red-50 text-red-700 border-red-200';
+    return 'bg-gray-50 text-gray-500 border-gray-200';
+  }
+
+  getAvdLabel(val: string | null | undefined): string {
+    const map: any = {
+      'I':  'Independente',
+      'S':  'Supervisão',
+      'AP': 'Ajuda parcial',
+      'D':  'Dependente'
+    };
+    return val ? (map[val] || val) : '—';
+  }
+
+  getAvdClass(val: string | null | undefined): string {
+    switch (val) {
+      case 'I':  return 'bg-green-50 text-green-700 border-green-200';
+      case 'S':  return 'bg-blue-50  text-blue-700  border-blue-200';
+      case 'AP': return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'D':  return 'bg-red-50   text-red-700   border-red-200';
+      default:   return 'bg-gray-50  text-gray-400  border-gray-200';
+    }
+  }
+
+  getNivelClass(val: string | null | undefined): string {
+    if (!val) return 'bg-gray-50 text-gray-400 border-gray-200';
+    const v = val.toLowerCase();
+    if (v.includes('independente') || v.includes('preservad') || v.includes('baixo')) return 'bg-green-50 text-green-700 border-green-200';
+    if (v.includes('supervis')     || v.includes('alterad')   || v.includes('moder')) return 'bg-blue-50  text-blue-700  border-blue-200';
+    if (v.includes('parcial')      || v.includes('apoio'))                            return 'bg-amber-50 text-amber-700 border-amber-200';
+    if (v.includes('dependente')   || v.includes('comprometid') || v.includes('alto') || v.includes('não')) return 'bg-red-50 text-red-700 border-red-200';
+    return 'bg-gray-50 text-gray-600 border-gray-200';
+  }
+
+  // ── Completude da ficha clínica ──────────────────────────
+  secaoTriagemPreenchida(): boolean {
+    if (!this.prontuario) return false;
+    return !!(this.prontuario.diagnostico_medico || this.prontuario.diagnostico_fisioterapeutico ||
+              this.prontuario.queixa_principal   || this.prontuario.objetivo_paciente);
+  }
+
+  secaoAvaliacaoPreenchida(): boolean {
+    if (!this.prontuario) return false;
+    return !!(this.prontuario.sedestacao || this.prontuario.ortostatismo || this.prontuario.transferencias ||
+              this.prontuario.funcao_mmss || this.prontuario.funcao_mmii || this.prontuario.equilibrio ||
+              this.prontuario.avd_banho   || this.prontuario.avd_vestir);
+  }
+
+  secaoSintesePreenchida(): boolean {
+    if (!this.prontuario) return false;
+    return !!(this.prontuario.problema_funcional_prioritario || this.prontuario.atividade_comprometida ||
+              this.prontuario.impacto_independencia          || this.prontuario.prioridade_terapeutica);
+  }
+
+  percentualPreenchimento(): number {
+    if (!this.prontuario) return 0;
+    const campos = [
+      'diagnostico_medico','diagnostico_fisioterapeutico','queixa_principal','objetivo_paciente',
+      'tempo_evolucao','comorbidades','medicamentos','dispositivo_auxiliar','barreiras_ambientais',
+      'sedestacao','ortostatismo','transferencias','realiza_marcha','distancia_tolerada',
+      'funcao_mmss','funcao_mmii','equilibrio','risco_queda','dor','fadiga_funcional',
+      'compreende_comandos','comunicacao_preservada',
+      'avd_banho','avd_vestir','avd_higiene','avd_locomocao','avd_alimentacao','avd_banheiro',
+      'atividade_mais_impactada','principal_limitacao','teste_escala_principal','valor_teste_inicial',
+      'problema_funcional_prioritario','atividade_comprometida','impacto_independencia','prioridade_terapeutica'
+    ];
+    const preenchidos = campos.filter(c => {
+      const v = this.prontuario[c];
+      return v !== null && v !== undefined && v !== '';
+    }).length;
+    return Math.round((preenchidos / campos.length) * 100);
+  }
 
   calcularIdade(dataNascimento: string): number {
     if (!dataNascimento) return 0;

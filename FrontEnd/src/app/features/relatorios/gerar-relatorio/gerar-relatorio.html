@@ -1,0 +1,290 @@
+<div class="max-w-7xl mx-auto space-y-6">
+
+  <!-- Loading global -->
+  <div *ngIf="isLoading" class="py-20 text-center text-gray-400">
+    <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-5xl text-blue-500 mb-3"></iconify-icon>
+    <p>Carregando dados do relatório...</p>
+  </div>
+
+  <ng-container *ngIf="!isLoading">
+
+    <!-- ── Cabeçalho ──────────────────────────────────────── -->
+    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+      <div>
+        <button (click)="voltar()"
+          class="flex items-center text-gray-500 hover:text-blue-600 text-sm font-medium mb-2 transition-colors group">
+          <iconify-icon icon="ph:arrow-left-bold" class="mr-1 group-hover:-translate-x-1 transition-transform"></iconify-icon>
+          Voltar para Relatórios
+        </button>
+        <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-3 flex-wrap">
+          <iconify-icon icon="ph:file-text-bold" class="text-blue-600 text-3xl"></iconify-icon>
+          {{ modo === 'criar' ? 'Novo Relatório Fisioterapêutico' : (relatorio?.numero_relatorio || 'Relatório') }}
+          <span *ngIf="relatorio" class="text-sm font-semibold px-3 py-1 rounded-full border" [ngClass]="getStatusClass(relatorio.status)">
+            {{ relatorio.status }}
+          </span>
+        </h2>
+        <p *ngIf="paciente" class="text-gray-500 mt-1 text-sm">
+          {{ paciente.nome_completo }} · {{ paciente.sexo }} · {{ calcularIdade(paciente.data_nascimento) }} anos
+          <span *ngIf="prontuario"> · Prontuário {{ prontuario.numero_prontuario }}</span>
+        </p>
+      </div>
+
+      <!-- Ações principais -->
+      <div class="flex flex-wrap gap-2">
+        <button *ngIf="relatorio" (click)="baixarPdfDireto()"
+          class="border border-blue-300 text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold transition-colors">
+          <iconify-icon icon="ph:download-simple-bold"></iconify-icon>
+          Baixar PDF
+        </button>
+        <button *ngIf="!isReadonly()" (click)="salvarRascunho()" [disabled]="isSalvando"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg flex items-center gap-2 text-sm font-bold shadow transition-colors disabled:opacity-50">
+          <iconify-icon *ngIf="isSalvando" icon="ph:spinner-gap-bold" class="animate-spin"></iconify-icon>
+          <iconify-icon *ngIf="!isSalvando" icon="ph:floppy-disk-bold"></iconify-icon>
+          {{ isSalvando ? 'Salvando...' : (modo === 'criar' ? 'Salvar Rascunho' : 'Atualizar') }}
+        </button>
+        <button *ngIf="podeAssinarComoEstagiario()" (click)="abrirModalAssinatura()"
+          class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-lg flex items-center gap-2 text-sm font-bold shadow transition-colors">
+          <iconify-icon icon="ph:signature-bold"></iconify-icon>
+          Assinar como Estagiário
+        </button>
+        <button *ngIf="podeAssinarComoDocente()" (click)="abrirModalAssinatura()"
+          class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg flex items-center gap-2 text-sm font-bold shadow transition-colors">
+          <iconify-icon icon="ph:seal-check-bold"></iconify-icon>
+          Assinar como Docente
+        </button>
+      </div>
+    </div>
+
+    <!-- Mensagens -->
+    <div *ngIf="successMessage" class="bg-green-50 border-l-4 border-green-500 p-4 flex items-center rounded">
+      <iconify-icon icon="ph:check-circle-bold" class="text-green-500 mr-2 text-xl"></iconify-icon>
+      <p class="text-green-700">{{ successMessage }}</p>
+    </div>
+    <div *ngIf="errorMessage" class="bg-red-50 border-l-4 border-red-500 p-4 flex items-center rounded">
+      <iconify-icon icon="ph:warning-circle-bold" class="text-red-500 mr-2 text-xl"></iconify-icon>
+      <p class="text-red-700">{{ errorMessage }}</p>
+    </div>
+
+    <!-- Banner: status das assinaturas -->
+    <div *ngIf="relatorio" class="bg-white rounded-lg shadow-sm border border-gray-100 p-5">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Estagiário -->
+        <div class="border rounded-lg p-4 flex items-start gap-3"
+          [ngClass]="relatorio.assinatura_estagiario ? 'border-green-200 bg-green-50/40' : 'border-gray-200'">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+            [ngClass]="relatorio.assinatura_estagiario ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'">
+            <iconify-icon icon="ph:student-bold" class="text-xl"></iconify-icon>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs text-gray-400 font-semibold uppercase">Estagiário Autor</p>
+            <p class="font-bold text-gray-800 text-sm">{{ relatorio.nome_estagiario || '—' }}</p>
+            <div *ngIf="relatorio.assinatura_estagiario" class="mt-1">
+              <p class="text-xs text-green-700 font-semibold flex items-center gap-1">
+                <iconify-icon icon="ph:check-circle-fill"></iconify-icon>
+                Assinado em {{ relatorio.assinatura_estagiario.data_assinatura | date:'dd/MM/yyyy · HH:mm' }}
+              </p>
+              <p class="text-[10px] text-gray-400 font-mono mt-0.5 truncate">
+                SHA256: {{ relatorio.assinatura_estagiario.hash_documento?.substring(0, 32) }}…
+              </p>
+            </div>
+            <p *ngIf="!relatorio.assinatura_estagiario" class="text-xs text-gray-400 italic mt-1">Aguardando assinatura</p>
+          </div>
+        </div>
+        <!-- Docente -->
+        <div class="border rounded-lg p-4 flex items-start gap-3"
+          [ngClass]="relatorio.assinatura_docente ? 'border-green-200 bg-green-50/40' : 'border-gray-200'">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+            [ngClass]="relatorio.assinatura_docente ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'">
+            <iconify-icon icon="ph:chalkboard-teacher-bold" class="text-xl"></iconify-icon>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs text-gray-400 font-semibold uppercase">Fisioterapeuta Supervisor</p>
+            <p class="font-bold text-gray-800 text-sm">{{ relatorio.nome_docente || 'A definir' }}</p>
+            <div *ngIf="relatorio.assinatura_docente" class="mt-1">
+              <p class="text-xs text-green-700 font-semibold flex items-center gap-1">
+                <iconify-icon icon="ph:check-circle-fill"></iconify-icon>
+                Assinado em {{ relatorio.assinatura_docente.data_assinatura | date:'dd/MM/yyyy · HH:mm' }}
+              </p>
+              <p class="text-[10px] text-gray-400 font-mono mt-0.5 truncate">
+                SHA256: {{ relatorio.assinatura_docente.hash_documento?.substring(0, 32) }}…
+              </p>
+            </div>
+            <p *ngIf="!relatorio.assinatura_docente" class="text-xs text-gray-400 italic mt-1">Aguardando assinatura</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Layout em 2 colunas: Form + Preview PDF ─────────── -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- ─── Coluna esquerda: Formulário ─── -->
+      <div class="bg-white shadow-sm rounded-lg border border-gray-100 overflow-hidden">
+        <div class="bg-blue-50 border-b border-blue-100 px-5 py-3 flex items-center gap-2">
+          <iconify-icon icon="ph:clipboard-text-bold" class="text-blue-600 text-lg"></iconify-icon>
+          <h3 class="font-semibold text-blue-800">Conteúdo do Relatório</h3>
+        </div>
+
+        <div class="p-5 space-y-5">
+
+          <!-- Seleção de tipo -->
+          <div *ngIf="modo === 'criar'">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Tipo de Relatório</label>
+            <div class="grid grid-cols-2 gap-3">
+              <button type="button" (click)="tipoSelecionado = 'Padrao'"
+                class="border-2 rounded-lg p-4 text-left transition-all"
+                [ngClass]="tipoSelecionado === 'Padrao' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'">
+                <div class="flex items-center gap-2 mb-1">
+                  <iconify-icon icon="ph:file-text-bold" class="text-blue-600 text-lg"></iconify-icon>
+                  <span class="font-bold text-gray-800 text-sm">Padrão (UCB)</span>
+                </div>
+                <p class="text-xs text-gray-500 leading-snug">Modelo institucional de uma página, com marca d'água oficial e duas assinaturas digitais.</p>
+              </button>
+              <button type="button" (click)="tipoSelecionado = 'Completo'"
+                class="border-2 rounded-lg p-4 text-left transition-all"
+                [ngClass]="tipoSelecionado === 'Completo' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'">
+                <div class="flex items-center gap-2 mb-1">
+                  <iconify-icon icon="ph:files-bold" class="text-indigo-600 text-lg"></iconify-icon>
+                  <span class="font-bold text-gray-800 text-sm">Completo</span>
+                </div>
+                <p class="text-xs text-gray-500 leading-snug">Snapshot técnico — triagem, avaliação funcional, evoluções, metas e indicadores.</p>
+              </button>
+            </div>
+          </div>
+
+          <!-- Campos do relatório -->
+          <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Diagnóstico Clínico (médico)</label>
+            <textarea [(ngModel)]="form.diagnostico_clinico" rows="2" [readonly]="isReadonly()"
+              class="w-full rounded-md border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+              [ngClass]="isReadonly() ? 'bg-gray-50' : ''"
+              placeholder="Ex: neuropatia medicamentosa, parkinson, osteófitos em coluna lombar..."></textarea>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Queixa Principal (citação direta)</label>
+            <input type="text" [(ngModel)]="form.queixa_principal" [readonly]="isReadonly()"
+              class="w-full rounded-md border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              [ngClass]="isReadonly() ? 'bg-gray-50' : ''"
+              placeholder='Ex: "Dor em região lombar, ombro e tremores constantes"'>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Diagnóstico Fisioterapêutico</label>
+            <textarea [(ngModel)]="form.diagnostico_fisioterapeutico" rows="3" [readonly]="isReadonly()"
+              class="w-full rounded-md border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+              [ngClass]="isReadonly() ? 'bg-gray-50' : ''"
+              placeholder="Ex: déficit de força em MMSS, algia neuropática lombar..."></textarea>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Objetivos do Tratamento</label>
+            <textarea [(ngModel)]="form.objetivos_tratamento" rows="3" [readonly]="isReadonly()"
+              class="w-full rounded-md border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+              [ngClass]="isReadonly() ? 'bg-gray-50' : ''"
+              placeholder="Ex: mobilidade global, alívio da dor, fortalecimento, treino de marcha..."></textarea>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Atividades Realizadas</label>
+            <textarea [(ngModel)]="form.atividades_realizadas" rows="3" [readonly]="isReadonly()"
+              class="w-full rounded-md border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+              [ngClass]="isReadonly() ? 'bg-gray-50' : ''"
+              placeholder="Ex: exercícios de mobilidade, treinos aeróbicos, fortalecimento global..."></textarea>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Observações sobre a Evolução</label>
+            <textarea [(ngModel)]="form.observacoes_evolucao" rows="3" [readonly]="isReadonly()"
+              class="w-full rounded-md border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+              [ngClass]="isReadonly() ? 'bg-gray-50' : ''"
+              placeholder="Descreva ganhos, limitações ou aspectos não atingidos durante o tratamento..."></textarea>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Considerações Finais (opcional)</label>
+            <textarea [(ngModel)]="form.consideracoes_finais" rows="2" [readonly]="isReadonly()"
+              class="w-full rounded-md border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+              [ngClass]="isReadonly() ? 'bg-gray-50' : ''"
+              placeholder="Caso vazio, será usado o texto institucional padrão."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Coluna direita: Preview PDF ─── -->
+      <div class="bg-white shadow-sm rounded-lg border border-gray-100 overflow-hidden flex flex-col">
+        <div class="bg-gray-50 border-b border-gray-100 px-5 py-3 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <iconify-icon icon="ph:file-pdf-bold" class="text-red-500 text-lg"></iconify-icon>
+            <h3 class="font-semibold text-gray-700">Pré-visualização do PDF</h3>
+          </div>
+          <button *ngIf="relatorio" (click)="carregarPreviewPdf()"
+            class="text-xs text-gray-500 hover:text-blue-600 flex items-center gap-1 transition-colors">
+            <iconify-icon icon="ph:arrow-clockwise-bold"></iconify-icon>
+            Atualizar
+          </button>
+        </div>
+        <div class="flex-1 min-h-[600px] bg-gray-100 relative">
+          <div *ngIf="!relatorio && !isLoadingPdf" class="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+            <iconify-icon icon="ph:file-magnifying-glass-bold" class="text-6xl mb-3"></iconify-icon>
+            <p class="font-semibold">Salve um rascunho para visualizar o PDF</p>
+          </div>
+          <div *ngIf="isLoadingPdf" class="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+            <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-4xl text-blue-500 mb-2"></iconify-icon>
+            <p>Gerando preview...</p>
+          </div>
+          <iframe *ngIf="pdfUrl && !isLoadingPdf" [src]="pdfUrl" class="w-full h-full border-0" title="Preview do relatório"></iframe>
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
+
+  <!-- ══ MODAL: Assinatura digital ═══════════════════════════ -->
+  <div *ngIf="modalAssinaturaAberto"
+    class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+    (click)="fecharModalAssinatura()">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 space-y-5"
+      (click)="$event.stopPropagation()">
+
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
+          <iconify-icon icon="ph:signature-bold" class="text-2xl"></iconify-icon>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-800">Assinatura Digital</h3>
+          <p class="text-sm text-gray-500">Confirme sua identidade para registrar a assinatura.</p>
+        </div>
+      </div>
+
+      <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-700 flex items-start gap-2">
+        <iconify-icon icon="ph:warning-bold" class="text-base shrink-0 mt-0.5"></iconify-icon>
+        <p>Após sua assinatura, este relatório <strong>não poderá mais ser editado</strong>. Um hash SHA256 do conteúdo será registrado para garantir a integridade do documento.</p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">
+          Sua senha <span class="text-red-500">*</span>
+        </label>
+        <input type="password" [(ngModel)]="senhaAssinatura"
+          (keyup.enter)="confirmarAssinatura()"
+          placeholder="Digite a mesma senha que usa para entrar no sistema"
+          class="w-full rounded-lg border border-gray-300 p-3 text-sm focus:ring-2 focus:ring-purple-400 outline-none">
+      </div>
+
+      <div class="flex gap-3 justify-end pt-2">
+        <button (click)="fecharModalAssinatura()"
+          class="border border-gray-300 text-gray-600 hover:bg-gray-50 px-5 py-2 rounded-lg text-sm font-semibold transition-colors">
+          Cancelar
+        </button>
+        <button (click)="confirmarAssinatura()"
+          [disabled]="isAssinando || !senhaAssinatura.trim()"
+          class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg text-sm font-bold shadow transition-colors disabled:opacity-50 flex items-center gap-2">
+          <iconify-icon *ngIf="isAssinando" icon="ph:spinner-gap-bold" class="animate-spin"></iconify-icon>
+          <iconify-icon *ngIf="!isAssinando" icon="ph:signature-bold"></iconify-icon>
+          {{ isAssinando ? 'Assinando...' : 'Confirmar Assinatura' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
