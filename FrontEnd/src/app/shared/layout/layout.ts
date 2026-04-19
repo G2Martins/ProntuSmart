@@ -42,7 +42,7 @@ export class LayoutComponent {
   get sidebarLogoSrc(): string {
     // Sidebar tem fundo escuro (brand-900), logo com texto em paleta funciona bem
     return this.themeService.isDark()
-      ? 'assets/OriginalIco/LogoCompleta_FundoDarK_CorTextoBranco.png'
+      ? 'assets/LogoCompleta_FundoDarK_CorTextoBranco.png'
       : 'assets/LogoCompleta_FundoPaleta_CorTextoBranco.png';
   }
 
