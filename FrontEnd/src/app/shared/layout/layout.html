@@ -1,57 +1,58 @@
-<div class="flex h-screen bg-gray-100 font-sans">
+<div class="flex h-screen bg-gray-100 dark:bg-slate-950 font-sans transition-colors">
 
-  <aside class="w-64 bg-blue-900 text-white flex flex-col shadow-lg">
-    <div class="p-6 text-center text-2xl font-bold tracking-wider border-b border-blue-800">
-      <iconify-icon icon="ph:heartbeat-bold" class="inline-block align-middle mr-2"></iconify-icon>
-      ProntuSMART
+  <aside class="w-64 bg-brand-900 dark:bg-slate-900 text-white flex flex-col shadow-lg">
+    <div class="px-4 py-5 flex items-center justify-center border-b border-brand-800 dark:border-slate-800">
+      <img [src]="sidebarLogoSrc"
+           alt="ProntuSMART"
+           class="h-20 w-auto max-w-full object-contain" />
     </div>
 
     <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
 
       <a routerLink="/dashboard"
-         routerLinkActive="bg-blue-800"
+         routerLinkActive="bg-brand-800 dark:bg-slate-800"
          [routerLinkActiveOptions]="{ exact: true }"
-         class="flex items-center p-3 rounded hover:bg-blue-800 transition-colors cursor-pointer">
+         class="flex items-center p-3 rounded hover:bg-brand-800 dark:hover:bg-slate-800 transition-colors cursor-pointer">
         <iconify-icon icon="ph:squares-four" class="text-xl mr-3"></iconify-icon> Dashboard
       </a>
 
       <a routerLink="/pacientes"
-         routerLinkActive="bg-blue-800"
-         class="flex items-center p-3 rounded hover:bg-blue-800 transition-colors cursor-pointer">
+         routerLinkActive="bg-brand-800 dark:bg-slate-800"
+         class="flex items-center p-3 rounded hover:bg-brand-800 dark:hover:bg-slate-800 transition-colors cursor-pointer">
         <iconify-icon icon="ph:users-three-bold" class="text-xl mr-3"></iconify-icon> Pacientes e Prontuários
       </a>
 
       <a routerLink="/relatorios"
-         routerLinkActive="bg-blue-800"
-         class="flex items-center p-3 rounded hover:bg-blue-800 transition-colors cursor-pointer">
+         routerLinkActive="bg-brand-800 dark:bg-slate-800"
+         class="flex items-center p-3 rounded hover:bg-brand-800 dark:hover:bg-slate-800 transition-colors cursor-pointer">
         <iconify-icon icon="ph:file-text-bold" class="text-xl mr-3"></iconify-icon> Relatórios
       </a>
 
       <a *ngIf="userProfile === 'Administrador'"
          routerLink="/usuarios"
-         routerLinkActive="bg-blue-800"
-         class="flex items-center p-3 rounded hover:bg-blue-800 transition-colors cursor-pointer">
+         routerLinkActive="bg-brand-800 dark:bg-slate-800"
+         class="flex items-center p-3 rounded hover:bg-brand-800 dark:hover:bg-slate-800 transition-colors cursor-pointer">
         <iconify-icon icon="ph:users-bold" class="text-xl mr-3"></iconify-icon> Usuários
       </a>
 
       <a *ngIf="userProfile === 'Administrador'"
          routerLink="/indicadores"
-         routerLinkActive="bg-blue-800"
-         class="flex items-center p-3 rounded hover:bg-blue-800 transition-colors cursor-pointer">
+         routerLinkActive="bg-brand-800 dark:bg-slate-800"
+         class="flex items-center p-3 rounded hover:bg-brand-800 dark:hover:bg-slate-800 transition-colors cursor-pointer">
         <iconify-icon icon="ph:chart-line-bold" class="text-xl mr-3"></iconify-icon> Indicadores
       </a>
 
       <a *ngIf="userProfile === 'Administrador'"
          routerLink="/areas"
-         routerLinkActive="bg-blue-800"
-         class="flex items-center p-3 rounded hover:bg-blue-800 transition-colors cursor-pointer">
+         routerLinkActive="bg-brand-800 dark:bg-slate-800"
+         class="flex items-center p-3 rounded hover:bg-brand-800 dark:hover:bg-slate-800 transition-colors cursor-pointer">
         <iconify-icon icon="ph:heartbeat-bold" class="text-xl mr-3"></iconify-icon> Áreas
       </a>
-      
+
       <a *ngIf="userProfile === 'Administrador'"
          routerLink="/cids"
-         routerLinkActive="bg-blue-800"
-         class="flex items-center p-3 rounded hover:bg-blue-800 transition-colors cursor-pointer">
+         routerLinkActive="bg-brand-800 dark:bg-slate-800"
+         class="flex items-center p-3 rounded hover:bg-brand-800 dark:hover:bg-slate-800 transition-colors cursor-pointer">
         <iconify-icon icon="ph:book-bookmark-bold" class="text-xl mr-3"></iconify-icon> CIDs
       </a>
 
@@ -60,30 +61,42 @@
 
   <div class="flex-1 flex flex-col overflow-hidden">
 
-    <header class="h-16 bg-white shadow flex items-center justify-between px-6 z-10">
-      <h1 class="text-xl font-semibold text-gray-800">Área Clínica</h1>
+    <header class="h-16 bg-white dark:bg-slate-900 shadow flex items-center justify-between px-6 z-10 transition-colors border-b border-transparent dark:border-slate-800">
+      <h1 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Área Clínica</h1>
       <div class="flex items-center gap-3">
 
         <!-- Saudação -->
-        <span class="text-sm text-gray-500 font-medium hidden sm:inline">
-          Olá, <span class="text-gray-800 font-semibold">{{ primeiroNome }}</span>!
+        <span class="text-sm text-gray-500 dark:text-gray-400 font-medium hidden sm:inline">
+          Olá, <span class="text-gray-800 dark:text-gray-100 font-semibold">{{ primeiroNome }}</span>!
         </span>
+
+        <!-- Toggle tema claro/escuro -->
+        <button type="button"
+          (click)="toggleTheme()"
+          [title]="themeService.isDark() ? 'Modo claro' : 'Modo escuro'"
+          [attr.aria-label]="themeService.isDark() ? 'Ativar modo claro' : 'Ativar modo escuro'"
+          class="w-9 h-9 flex items-center justify-center rounded-full text-gray-600 dark:text-gray-300 hover:bg-brand-50 dark:hover:bg-slate-800 hover:text-brand-700 dark:hover:text-brand-200 transition-colors">
+          <iconify-icon
+            [attr.icon]="themeService.isDark() ? 'ph:sun-bold' : 'ph:moon-bold'"
+            class="text-xl"></iconify-icon>
+        </button>
 
         <!-- Avatar — link para Meu Perfil -->
         <a routerLink="/meu-perfil" title="Meu Perfil"
           class="w-9 h-9 rounded-full bg-gradient-to-br flex items-center justify-center
                  text-white text-sm font-bold shadow-sm cursor-pointer select-none
-                 ring-2 ring-offset-1 ring-blue-200 hover:ring-blue-400 transition-all hover:shadow-md"
+                 ring-2 ring-offset-1 ring-brand-200 dark:ring-brand-400/40 dark:ring-offset-slate-900
+                 hover:ring-brand-400 transition-all hover:shadow-md"
           [ngClass]="avatarGradient">
           {{ getInitials() }}
         </a>
 
         <!-- Divisor -->
-        <div class="w-px h-5 bg-gray-200"></div>
+        <div class="w-px h-5 bg-gray-200 dark:bg-slate-700"></div>
 
         <!-- Sair -->
         <button (click)="logout()"
-          class="text-red-500 hover:text-red-700 flex items-center gap-1 text-sm font-medium transition-colors">
+          class="text-red-500 hover:text-red-700 dark:hover:text-red-400 flex items-center gap-1 text-sm font-medium transition-colors">
           <iconify-icon icon="ph:sign-out-bold" class="text-lg"></iconify-icon>
           <span class="hidden sm:inline">Sair</span>
         </button>
@@ -91,11 +104,11 @@
       </div>
     </header>
 
-    <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
+    <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-slate-950 p-6 transition-colors">
       <router-outlet></router-outlet>
     </main>
 
-    <footer class="bg-white border-t border-gray-200 p-4 text-center text-sm text-gray-500">
+    <footer class="bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800 p-4 text-center text-sm text-gray-500 dark:text-gray-400 transition-colors">
       &copy; 2026 Clínica Escola de Fisioterapia - UCB. Todos os direitos reservados.
     </footer>
 

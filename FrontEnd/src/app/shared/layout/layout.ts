@@ -1,17 +1,20 @@
 import { Component, inject, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
-import { CommonModule } from '@angular/common'; 
+import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
+import { ThemeService } from '../../core/services/theme.service';
 
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive], // <-- ADICIONADO AQUI
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './layout.html'
 })
 export class LayoutComponent {
   private authService = inject(AuthService);
+  protected themeService = inject(ThemeService);
+
   userProfile = this.authService.getUserProfile();
   userName    = this.authService.getUserName();
 
@@ -31,9 +34,20 @@ export class LayoutComponent {
   get avatarGradient(): string {
     switch (this.userProfile) {
       case 'Administrador': return 'from-orange-500 to-red-500';
-      case 'Docente':       return 'from-purple-500 to-indigo-600';
-      default:              return 'from-blue-500 to-cyan-600';
+      case 'Docente':       return 'from-brand-500 to-brand-700';
+      default:              return 'from-brand-400 to-brand-600';
     }
+  }
+
+  get sidebarLogoSrc(): string {
+    // Sidebar tem fundo escuro (brand-900), logo com texto em paleta funciona bem
+    return this.themeService.isDark()
+      ? 'assets/LogoCompleta_FundoDarK_CorTextoBranco.png'
+      : 'assets/LogoCompleta_FundoDarK_CorTextoPaleta.png';
+  }
+
+  toggleTheme(): void {
+    this.themeService.toggle();
   }
 
   logout() {

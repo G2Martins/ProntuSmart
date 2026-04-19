@@ -5,5 +5,44 @@
 
 // Estilos globais básicos
 body {
-  @apply bg-gray-50 text-gray-800 antialiased;
+  @apply bg-gray-50 text-gray-800 antialiased transition-colors;
+}
+
+// ---------------------------------------------------------------------------
+// Dark Mode global (toggle via classe `dark` em <html>)
+// Mapeia utilitários Tailwind neutros (bg-white, bg-gray-*, text-gray-*,
+// border-gray-*) para tons escuros, evitando editar cada página manualmente.
+// As classes `dark:` explícitas continuam funcionando por cima.
+// ---------------------------------------------------------------------------
+html.dark {
+  color-scheme: dark;
+
+  // Backgrounds neutros
+  .bg-white              { background-color: #0f172a !important; } // slate-900
+  .bg-gray-50            { background-color: #020617 !important; } // slate-950
+  .bg-gray-100           { background-color: #1e293b !important; } // slate-800
+  .bg-gray-200           { background-color: #334155 !important; } // slate-700
+
+  // Bordas neutras
+  .border-gray-100       { border-color: #1e293b !important; }
+  .border-gray-200       { border-color: #334155 !important; }
+  .border-gray-300       { border-color: #334155 !important; }
+
+  // Textos neutros
+  .text-gray-900         { color: #f8fafc !important; }
+  .text-gray-800         { color: #f1f5f9 !important; }
+  .text-gray-700         { color: #e2e8f0 !important; }
+  .text-gray-600         { color: #cbd5e1 !important; }
+  .text-gray-500         { color: #94a3b8 !important; }
+  .text-gray-400         { color: #64748b !important; }
+
+  // Divisores / estados hover claros
+  .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: #334155 !important; }
+  .hover\:bg-gray-50:hover   { background-color: #1e293b !important; }
+  .hover\:bg-gray-100:hover  { background-color: #334155 !important; }
+
+  // Inputs com fundo branco ficam mais legíveis
+  input, select, textarea {
+    color-scheme: dark;
+  }
 }
