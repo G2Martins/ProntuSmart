@@ -1,11 +1,13 @@
 <div class="flex h-screen bg-gray-100 dark:bg-slate-950 font-sans transition-colors">
 
   <aside class="w-64 bg-brand-900 dark:bg-slate-900 text-white flex flex-col shadow-lg">
-    <div class="px-4 py-5 flex items-center justify-center border-b border-brand-800 dark:border-slate-800">
+    <a routerLink="/dashboard"
+       title="Ir para o Painel Inicial"
+       class="flex items-center justify-center px-4 py-2 border-b border-brand-800 dark:border-slate-800 hover:opacity-90 transition-opacity cursor-pointer">
       <img [src]="sidebarLogoSrc"
-           alt="ProntuSMART"
-           class="h-20 w-auto max-w-full object-contain" />
-    </div>
+           alt="ProntuSMART - Ir para o Painel Inicial"
+           class="w-full max-w-full object-contain" />
+    </a>
 
     <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
 
