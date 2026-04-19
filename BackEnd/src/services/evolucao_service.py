@@ -103,25 +103,11 @@ async def listar_por_prontuario(prontuario_id: str) -> list:
 
 async def contar_pendentes_por_docente(docente_id: str) -> int:
     db = get_database()
-    prontuarios = await db.fato_prontuario.find({"docente_id": docente_id}).to_list(length=1000)
-    if not prontuarios:
-        return 0
-    ids = [str(p["_id"]) for p in prontuarios]
-    return await db.fato_evolucao.count_documents({
-        "prontuario_id": {"$in": ids},
-        "status": "Pendente de Revisão"
-    })
+    return await db.fato_evolucao.count_documents({"status": "Pendente de Revisão"})
 
 async def listar_pendentes_por_docente(docente_id: str) -> list:
     db = get_database()
-    prontuarios = await db.fato_prontuario.find({"docente_id": docente_id}).to_list(length=1000)
-    if not prontuarios:
-        return []
-    ids = [str(p["_id"]) for p in prontuarios]
-    cursor = db.fato_evolucao.find({
-        "prontuario_id": {"$in": ids},
-        "status": "Pendente de Revisão"
-    }).sort("criado_em", 1)
+    cursor = db.fato_evolucao.find({"status": "Pendente de Revisão"}).sort("criado_em", 1)
     pendentes = await cursor.to_list(length=200)
     for e in pendentes:
         e["_id"] = str(e["_id"])
@@ -134,12 +120,9 @@ async def revisar_evolucao(evolucao_id: str, docente_id: str, acao: str, feedbac
         raise HTTPException(status_code=404, detail="Evolução não encontrada.")
     if evolucao.get("status") != "Pendente de Revisão":
         raise HTTPException(status_code=400, detail="Esta evolução já foi revisada.")
-    prontuario = await db.fato_prontuario.find_one({
-        "_id": ObjectId(evolucao["prontuario_id"]),
-        "docente_id": docente_id
-    })
+    prontuario = await db.fato_prontuario.find_one({"_id": ObjectId(evolucao["prontuario_id"])})
     if not prontuario:
-        raise HTTPException(status_code=403, detail="Você não é responsável por este prontuário.")
+        raise HTTPException(status_code=404, detail="Prontuário não encontrado.")
     if acao == "aprovar":
         novo_status = "Aprovado e Assinado"
     elif acao == "devolver":
