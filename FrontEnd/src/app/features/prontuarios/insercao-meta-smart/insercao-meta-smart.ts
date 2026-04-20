@@ -40,13 +40,15 @@ export class InsercaoMetaSmartComponent implements OnInit {
     valor_inicial:         [null as number | null, Validators.required],
     valor_alvo:            [null as number | null, Validators.required],
     condicao_execucao:     [''],
-    alcancavel:            ['', Validators.required],
+    atingivel_resposta:    ['', Validators.required],
+    alcancavel:            [''],
     relevante:             ['', Validators.required],
     data_limite:           ['', Validators.required],
     data_reavaliacao:      [''],
   });
 
   ngOnInit() {
+    this.configurarCampoAtingivel();
     this.idProntuario = this.route.snapshot.paramMap.get('id') || '';
     if (this.idProntuario) {
       this.prontuarioService.buscarPorId(this.idProntuario).subscribe({
@@ -75,6 +77,31 @@ export class InsercaoMetaSmartComponent implements OnInit {
     return this.indicadores.find(i => i._id === id) || null;
   }
 
+  get mostrarJustificativaAtingivel(): boolean {
+    return this.form.get('atingivel_resposta')?.value === 'sim';
+  }
+
+  private configurarCampoAtingivel() {
+    const respostaCtrl = this.form.get('atingivel_resposta');
+    const justificativaCtrl = this.form.get('alcancavel');
+
+    const atualizarValidacao = (resposta: string | null | undefined) => {
+      if (resposta === 'sim') {
+        justificativaCtrl?.setValidators([Validators.required]);
+      } else {
+        justificativaCtrl?.clearValidators();
+        if (resposta === 'nao') {
+          justificativaCtrl?.setValue('', { emitEvent: false });
+        }
+      }
+
+      justificativaCtrl?.updateValueAndValidity({ emitEvent: false });
+    };
+
+    atualizarValidacao(respostaCtrl?.value);
+    respostaCtrl?.valueChanges.subscribe((resposta) => atualizarValidacao(resposta));
+  }
+
   onSubmit() {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     this.isLoading = true;
@@ -89,7 +116,7 @@ export class InsercaoMetaSmartComponent implements OnInit {
       valor_inicial:        v.valor_inicial,
       valor_alvo:           v.valor_alvo,
       condicao_execucao:    v.condicao_execucao,
-      alcancavel:           v.alcancavel,
+      alcancavel:           v.atingivel_resposta === 'sim' ? v.alcancavel : 'N\u00E3o',
       relevante:            v.relevante,
       data_limite:          new Date(v.data_limite!).toISOString(),
       data_reavaliacao:     v.data_reavaliacao ? new Date(v.data_reavaliacao).toISOString() : null,

@@ -133,7 +133,7 @@
       <div class="bg-orange-50 border-b border-orange-100 px-6 py-4 flex items-center gap-3">
         <div class="w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">A</div>
         <div>
-          <h3 class="font-semibold text-orange-800">Atingível — Como e por quê é realista?</h3>
+          <h3 class="font-semibold text-orange-800">Atingível — É alcançável?</h3>
         </div>
       </div>
       <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -146,8 +146,25 @@
             placeholder="Ex: Com andador e supervisão">
         </div>
         <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            É alcançável? <span class="text-red-500">*</span>
+          </label>
+          <div class="flex gap-3">
+            <label class="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 cursor-pointer">
+              <input type="radio" formControlName="atingivel_resposta" value="sim" class="text-blue-600 focus:ring-blue-500">
+              <span>Sim</span>
+            </label>
+            <label class="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 cursor-pointer">
+              <input type="radio" formControlName="atingivel_resposta" value="nao" class="text-blue-600 focus:ring-blue-500">
+              <span>Não</span>
+            </label>
+          </div>
+          <p *ngIf="form.get('atingivel_resposta')?.touched && form.get('atingivel_resposta')?.invalid"
+            class="text-xs text-red-500 mt-1">Selecione uma opção.</p>
+        </div>
+        <div *ngIf="mostrarJustificativaAtingivel" class="sm:col-span-2">
           <label class="block text-sm font-semibold text-gray-700 mb-1">
-            Justificativa clínica <span class="text-red-500">*</span>
+            Justificativa <span class="text-red-500">*</span>
           </label>
           <textarea formControlName="alcancavel" rows="3"
             class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm resize-none"

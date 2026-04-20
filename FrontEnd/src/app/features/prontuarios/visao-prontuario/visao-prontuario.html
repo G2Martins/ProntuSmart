@@ -446,7 +446,11 @@
                 <p class="text-gray-700">{{ meta.condicao_execucao }}</p>
               </div>
               <div>
-                <p class="text-xs font-semibold text-gray-400 uppercase mb-1"><span class="text-orange-600">A</span> — Justificativa clínica</p>
+                <p class="text-xs font-semibold text-gray-400 uppercase mb-1"><span class="text-orange-600">A</span> — É alcançável?</p>
+                <p class="text-gray-700">{{ getRespostaAtingivel(meta.alcancavel) }}</p>
+              </div>
+              <div *ngIf="temJustificativaAtingivel(meta.alcancavel)">
+                <p class="text-xs font-semibold text-gray-400 uppercase mb-1"><span class="text-orange-600">A</span> — Justificativa</p>
                 <p class="text-gray-700">{{ meta.alcancavel }}</p>
               </div>
               <div>
@@ -1064,7 +1068,20 @@
           class="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-orange-400 outline-none">
       </div>
       <div class="sm:col-span-2">
-        <label class="block text-xs font-semibold text-orange-600 uppercase mb-1">A — Justificativa Clínica</label>
+        <label class="block text-xs font-semibold text-orange-600 uppercase mb-1">A — É alcançável?</label>
+        <div class="flex gap-3">
+          <label class="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 cursor-pointer">
+            <input [(ngModel)]="editAtingivelResposta" (ngModelChange)="onEditAtingivelChange()" type="radio" value="sim" name="editAtingivelResposta" class="text-blue-600 focus:ring-blue-500">
+            <span>Sim</span>
+          </label>
+          <label class="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 cursor-pointer">
+            <input [(ngModel)]="editAtingivelResposta" (ngModelChange)="onEditAtingivelChange()" type="radio" value="nao" name="editAtingivelResposta" class="text-blue-600 focus:ring-blue-500">
+            <span>Não</span>
+          </label>
+        </div>
+      </div>
+      <div *ngIf="editAtingivelResposta === 'sim'" class="sm:col-span-2">
+        <label class="block text-xs font-semibold text-orange-600 uppercase mb-1">A — Justificativa</label>
         <textarea [(ngModel)]="editAlcancavel" rows="2"
           class="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-orange-400 outline-none resize-none">
         </textarea>
@@ -1092,7 +1109,7 @@
         class="border border-gray-300 text-gray-600 hover:bg-gray-50 px-5 py-2 rounded-lg text-sm font-semibold transition-colors">
         Cancelar
       </button>
-      <button (click)="salvarEdicao()" [disabled]="isSalvandoEdicao"
+      <button (click)="salvarEdicao()" [disabled]="isSalvandoEdicao || (editAtingivelResposta === 'sim' && !editAlcancavel.trim())"
         class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-bold shadow transition-colors disabled:opacity-50 flex items-center gap-2">
         <iconify-icon *ngIf="isSalvandoEdicao" icon="ph:spinner-gap-bold" class="animate-spin"></iconify-icon>
         {{ isSalvandoEdicao ? 'Salvando...' : 'Salvar Alterações' }}

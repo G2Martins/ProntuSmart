@@ -54,6 +54,7 @@ export class VisaoProntuario implements OnInit {
   editEspecifico       = '';
   editCriterio         = '';
   editCondicao         = '';
+  editAtingivelResposta = 'sim';
   editAlcancavel       = '';
   editRelevante        = '';
   editValorAlvo        = 0;
@@ -117,7 +118,8 @@ export class VisaoProntuario implements OnInit {
     this.editEspecifico     = meta.especifico     || '';
     this.editCriterio       = meta.criterio_mensuravel || '';
     this.editCondicao       = meta.condicao_execucao   || '';
-    this.editAlcancavel     = meta.alcancavel     || '';
+    this.editAtingivelResposta = this.inferirAtingivel(meta.alcancavel);
+    this.editAlcancavel     = this.editAtingivelResposta === 'sim' ? (meta.alcancavel || '') : '';
     this.editRelevante      = meta.relevante      || '';
     this.editValorAlvo      = meta.valor_alvo     || 0;
     this.editDataLimite     = meta.data_limite
@@ -134,15 +136,22 @@ export class VisaoProntuario implements OnInit {
     this.cdr.detectChanges();
   }
 
+  onEditAtingivelChange() {
+    if (this.editAtingivelResposta === 'nao') {
+      this.editAlcancavel = '';
+    }
+  }
+
   salvarEdicao() {
     if (!this.metaEmEdicao) return;
+    if (this.editAtingivelResposta === 'sim' && !this.editAlcancavel.trim()) return;
     this.isSalvandoEdicao = true;
 
     const payload = {
       especifico:          this.editEspecifico,
       criterio_mensuravel: this.editCriterio,
       condicao_execucao:   this.editCondicao,
-      alcancavel:          this.editAlcancavel,
+      alcancavel:          this.editAtingivelResposta === 'sim' ? this.editAlcancavel : 'N\u00E3o',
       relevante:           this.editRelevante,
       valor_alvo:          this.editValorAlvo,
       data_limite:         this.editDataLimite    ? new Date(this.editDataLimite).toISOString()    : undefined,
@@ -307,6 +316,19 @@ export class VisaoProntuario implements OnInit {
   getMetaStatusClass(s: string) {
     return ({ 'Não iniciada': 'bg-gray-100 text-gray-600 border-gray-200', 'Em andamento': 'bg-blue-100 text-blue-700 border-blue-200', 'Parcialmente atingida': 'bg-yellow-100 text-yellow-700 border-yellow-200', 'Concluída': 'bg-green-100 text-green-700 border-green-200', 'Não atingida': 'bg-red-100 text-red-700 border-red-200', 'Substituída': 'bg-purple-100 text-purple-700 border-purple-200', 'Cancelada': 'bg-gray-200 text-gray-500 border-gray-300' } as any)[s] || 'bg-gray-100 text-gray-600 border-gray-200';
   }
+  inferirAtingivel(valor: string | null | undefined): 'sim' | 'nao' {
+    const normalizado = String(valor || '').trim().toLowerCase();
+    return normalizado === 'n\u00E3o' || normalizado === 'nao' ? 'nao' : 'sim';
+  }
+
+  getRespostaAtingivel(valor: string | null | undefined): string {
+    return this.inferirAtingivel(valor) === 'sim' ? 'Sim' : 'N\u00E3o';
+  }
+
+  temJustificativaAtingivel(valor: string | null | undefined): boolean {
+    return this.inferirAtingivel(valor) === 'sim';
+  }
+
   getProgressoColor(pct: number) {
     if (pct >= 100) return 'bg-green-500';
     if (pct >= 60)  return 'bg-blue-500';
