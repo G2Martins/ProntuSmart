@@ -1,10 +1,12 @@
-import { Component, inject, OnInit, CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
+import { ChangeDetectorRef, Component, CUSTOM_ELEMENTS_SCHEMA, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MetaSmartService } from '../../../core/services/meta-smart.service';
 import { IndicadorService } from '../../../core/services/indicador.service';
 import { ProntuarioService } from '../../../core/services/prontuario.service';
+import { Indicador } from '../../../shared/models/indicador.model';
+import { aplicarValidadoresLimite, descreverLimitesIndicador } from '../../../shared/utils/indicador-limites';
 
 @Component({
   selector: 'app-insercao-meta-smart',
@@ -15,40 +17,40 @@ import { ProntuarioService } from '../../../core/services/prontuario.service';
   styleUrl: './insercao-meta-smart.scss'
 })
 export class InsercaoMetaSmartComponent implements OnInit {
-  private fb               = inject(FormBuilder);
-  protected router         = inject(Router);
-  private route            = inject(ActivatedRoute);
-  private metaService      = inject(MetaSmartService);
+  private fb = inject(FormBuilder);
+  protected router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private metaService = inject(MetaSmartService);
   private indicadorService = inject(IndicadorService);
   private prontuarioService = inject(ProntuarioService);
-  private cdr              = inject(ChangeDetectorRef);
+  private cdr = inject(ChangeDetectorRef);
 
-  idProntuario  = '';
+  idProntuario = '';
   areaProntuario = '';
-  indicadores: any[] = [];
-  isLoading     = false;
-  isFetching    = true;
+  indicadores: Indicador[] = [];
+  isLoading = false;
+  isFetching = true;
 
   hoje = new Date().toISOString().split('T')[0];
 
   form = this.fb.group({
-    indicador_id:          ['', Validators.required],
-    problema_relacionado:  [''],
-    // SMART
-    especifico:            ['', Validators.required],
-    criterio_mensuravel:   [''],
-    valor_inicial:         [null as number | null, Validators.required],
-    valor_alvo:            [null as number | null, Validators.required],
-    condicao_execucao:     [''],
-    atingivel_resposta:    ['', Validators.required],
-    alcancavel:            [''],
-    relevante:             ['', Validators.required],
-    data_limite:           ['', Validators.required],
-    data_reavaliacao:      [''],
+    indicador_id: ['', Validators.required],
+    problema_relacionado: [''],
+    especifico: ['', Validators.required],
+    criterio_mensuravel: [''],
+    valor_inicial: [null as number | null, Validators.required],
+    valor_alvo: [null as number | null, Validators.required],
+    condicao_execucao: [''],
+    atingivel_resposta: ['', Validators.required],
+    alcancavel: [''],
+    relevante: ['', Validators.required],
+    data_limite: ['', Validators.required],
+    data_reavaliacao: [''],
   });
 
   ngOnInit() {
     this.configurarCampoAtingivel();
+    this.configurarValidacaoLimites();
     this.idProntuario = this.route.snapshot.paramMap.get('id') || '';
     if (this.idProntuario) {
       this.prontuarioService.buscarPorId(this.idProntuario).subscribe({
@@ -65,20 +67,63 @@ export class InsercaoMetaSmartComponent implements OnInit {
     this.indicadorService.buscarPorArea(this.areaProntuario).subscribe({
       next: (inds) => {
         this.indicadores = inds;
-        this.isFetching  = false;
+        this.atualizarValidadoresValores();
+        this.isFetching = false;
         this.cdr.detectChanges();
       },
       error: () => { this.isFetching = false; this.cdr.detectChanges(); }
     });
   }
 
-  get indicadorSelecionado() {
+  get indicadorSelecionado(): Indicador | null {
     const id = this.form.get('indicador_id')?.value;
     return this.indicadores.find(i => i._id === id) || null;
   }
 
   get mostrarJustificativaAtingivel(): boolean {
     return this.form.get('atingivel_resposta')?.value === 'sim';
+  }
+
+  get descricaoLimitesIndicadorSelecionado(): string {
+    return descreverLimitesIndicador(this.indicadorSelecionado);
+  }
+
+  onSubmit() {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    this.isLoading = true;
+
+    const v = this.form.value;
+    const payload = {
+      prontuario_id: this.idProntuario,
+      indicador_id: v.indicador_id,
+      problema_relacionado: v.problema_relacionado,
+      especifico: v.especifico,
+      criterio_mensuravel: v.criterio_mensuravel,
+      valor_inicial: v.valor_inicial,
+      valor_alvo: v.valor_alvo,
+      condicao_execucao: v.condicao_execucao,
+      alcancavel: v.atingivel_resposta === 'sim' ? v.alcancavel : 'Não',
+      relevante: v.relevante,
+      data_limite: new Date(v.data_limite!).toISOString(),
+      data_reavaliacao: v.data_reavaliacao ? new Date(v.data_reavaliacao).toISOString() : null,
+    };
+
+    this.metaService.criar(payload).subscribe({
+      next: () => {
+        this.isLoading = false;
+        alert('✅ Meta SMART criada com sucesso!');
+        this.router.navigate(['/prontuarios/visao', this.idProntuario]);
+      },
+      error: (err: any) => {
+        this.isLoading = false;
+        alert(err.error?.detail || 'Erro ao criar meta. Verifique os dados.');
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   private configurarCampoAtingivel() {
@@ -102,37 +147,14 @@ export class InsercaoMetaSmartComponent implements OnInit {
     respostaCtrl?.valueChanges.subscribe((resposta) => atualizarValidacao(resposta));
   }
 
-  onSubmit() {
-    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
-    this.isLoading = true;
-
-    const v = this.form.value;
-    const payload = {
-      prontuario_id:        this.idProntuario,
-      indicador_id:         v.indicador_id,
-      problema_relacionado: v.problema_relacionado,
-      especifico:           v.especifico,
-      criterio_mensuravel:  v.criterio_mensuravel,
-      valor_inicial:        v.valor_inicial,
-      valor_alvo:           v.valor_alvo,
-      condicao_execucao:    v.condicao_execucao,
-      alcancavel:           v.atingivel_resposta === 'sim' ? v.alcancavel : 'N\u00E3o',
-      relevante:            v.relevante,
-      data_limite:          new Date(v.data_limite!).toISOString(),
-      data_reavaliacao:     v.data_reavaliacao ? new Date(v.data_reavaliacao).toISOString() : null,
-    };
-
-    this.metaService.criar(payload).subscribe({
-      next: () => {
-        this.isLoading = false;
-        alert('✅ Meta SMART criada com sucesso!');
-        this.router.navigate(['/prontuarios/visao', this.idProntuario]);
-      },
-      error: (err: any) => {
-        this.isLoading = false;
-        alert(err.error?.detail || 'Erro ao criar meta. Verifique os dados.');
-        this.cdr.detectChanges();
-      }
+  private configurarValidacaoLimites() {
+    this.form.get('indicador_id')?.valueChanges.subscribe(() => {
+      this.atualizarValidadoresValores();
     });
+  }
+
+  private atualizarValidadoresValores() {
+    aplicarValidadoresLimite(this.form.get('valor_inicial'), this.indicadorSelecionado, true);
+    aplicarValidadoresLimite(this.form.get('valor_alvo'), this.indicadorSelecionado, true);
   }
 }

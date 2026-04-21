@@ -1052,7 +1052,13 @@
       <div>
         <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Valor Alvo</label>
         <input [(ngModel)]="editValorAlvo" type="number" step="0.1"
+          [attr.min]="indicadorMetaEmEdicao?.limite_minimo ?? null"
+          [attr.max]="indicadorMetaEmEdicao?.limite_maximo ?? null"
           class="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-blue-400 outline-none">
+        <p class="text-[11px] text-gray-400 mt-1">{{ descricaoLimitesMetaEmEdicao }}</p>
+        <p *ngIf="editValorAlvoForaDoLimite" class="text-xs text-red-500 mt-1">
+          Valor alvo fora do intervalo configurado para este indicador.
+        </p>
       </div>
       <div>
         <label class="block text-xs font-semibold text-orange-600 uppercase mb-1">A — Condição de Execução</label>
@@ -1101,7 +1107,7 @@
         class="border border-gray-300 text-gray-600 hover:bg-gray-50 px-5 py-2 rounded-lg text-sm font-semibold transition-colors">
         Cancelar
       </button>
-      <button (click)="salvarEdicao()" [disabled]="isSalvandoEdicao || (editAtingivelResposta === 'sim' && !editAlcancavel.trim())"
+      <button (click)="salvarEdicao()" [disabled]="isSalvandoEdicao || (editAtingivelResposta === 'sim' && !editAlcancavel.trim()) || editValorAlvoForaDoLimite"
         class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-bold shadow transition-colors disabled:opacity-50 flex items-center gap-2">
         <iconify-icon *ngIf="isSalvandoEdicao" icon="ph:spinner-gap-bold" class="animate-spin"></iconify-icon>
         {{ isSalvandoEdicao ? 'Salvando...' : 'Salvar Alterações' }}

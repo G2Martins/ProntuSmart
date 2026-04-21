@@ -1,6 +1,5 @@
 <div class="max-w-3xl mx-auto space-y-6">
 
-  <!-- Cabeçalho -->
   <div class="flex items-center justify-between">
     <div>
       <button (click)="router.navigate(['/prontuarios/visao', idProntuario])"
@@ -16,7 +15,6 @@
     </div>
   </div>
 
-  <!-- Loading -->
   <div *ngIf="isFetching" class="bg-white rounded-lg shadow p-12 text-center">
     <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-4xl text-blue-500 mb-3"></iconify-icon>
     <p class="text-gray-500">Carregando indicadores da área...</p>
@@ -24,7 +22,6 @@
 
   <form *ngIf="!isFetching" [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-5">
 
-    <!-- Contexto Clínico -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
       <div class="bg-blue-50 border-b border-blue-100 px-6 py-4 flex items-center gap-2">
         <iconify-icon icon="ph:stethoscope-bold" class="text-blue-600 text-xl"></iconify-icon>
@@ -53,18 +50,19 @@
           <p *ngIf="form.get('indicador_id')?.touched && form.get('indicador_id')?.invalid"
             class="text-xs text-red-500 mt-1">Selecione um indicador.</p>
 
-          <!-- Preview do indicador selecionado -->
           <div *ngIf="indicadorSelecionado"
-            class="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700">
-            <iconify-icon [icon]="indicadorSelecionado.direcao_melhora === 'maior_melhor' ? 'ph:trend-up-bold' : 'ph:trend-down-bold'" class="mr-1"></iconify-icon>
-            {{ indicadorSelecionado.direcao_melhora === 'maior_melhor' ? '↑ Maior é melhor' : '↓ Menor é melhor' }}
-            · {{ indicadorSelecionado.descricao }}
+            class="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700 space-y-1">
+            <p>
+              <iconify-icon [icon]="indicadorSelecionado.direcao_melhora === 'maior_melhor' ? 'ph:trend-up-bold' : 'ph:trend-down-bold'" class="mr-1"></iconify-icon>
+              {{ indicadorSelecionado.direcao_melhora === 'maior_melhor' ? '↑ Maior é melhor' : '↓ Menor é melhor' }}
+              · {{ indicadorSelecionado.descricao }}
+            </p>
+            <p class="text-blue-600">{{ descricaoLimitesIndicadorSelecionado }}</p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- S — Específico -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
       <div class="bg-green-50 border-b border-green-100 px-6 py-4 flex items-center gap-3">
         <div class="w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">S</div>
@@ -93,7 +91,6 @@
       </div>
     </div>
 
-    <!-- M — Mensurável -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
       <div class="bg-yellow-50 border-b border-yellow-100 px-6 py-4 flex items-center gap-3">
         <div class="w-8 h-8 rounded-full bg-yellow-500 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">M</div>
@@ -109,10 +106,17 @@
             <span *ngIf="indicadorSelecionado" class="text-gray-400 font-normal"> ({{ indicadorSelecionado.unidade_medida }})</span>
           </label>
           <input type="number" step="any" formControlName="valor_inicial"
+            [attr.min]="indicadorSelecionado?.limite_minimo ?? null"
+            [attr.max]="indicadorSelecionado?.limite_maximo ?? null"
             class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
             placeholder="Ex: 5">
-          <p *ngIf="form.get('valor_inicial')?.touched && form.get('valor_inicial')?.invalid"
+          <p *ngIf="form.get('valor_inicial')?.touched && form.get('valor_inicial')?.hasError('required')"
             class="text-xs text-red-500 mt-1">Valor inicial obrigatório.</p>
+          <p *ngIf="form.get('valor_inicial')?.touched && form.get('valor_inicial')?.hasError('min')"
+            class="text-xs text-red-500 mt-1">Valor abaixo do limite mínimo configurado.</p>
+          <p *ngIf="form.get('valor_inicial')?.touched && form.get('valor_inicial')?.hasError('max')"
+            class="text-xs text-red-500 mt-1">Valor acima do limite máximo configurado.</p>
+          <p *ngIf="indicadorSelecionado" class="text-xs text-gray-400 mt-1">{{ descricaoLimitesIndicadorSelecionado }}</p>
         </div>
         <div>
           <label class="block text-sm font-semibold text-gray-700 mb-1">
@@ -120,15 +124,21 @@
             <span *ngIf="indicadorSelecionado" class="text-gray-400 font-normal"> ({{ indicadorSelecionado.unidade_medida }})</span>
           </label>
           <input type="number" step="any" formControlName="valor_alvo"
+            [attr.min]="indicadorSelecionado?.limite_minimo ?? null"
+            [attr.max]="indicadorSelecionado?.limite_maximo ?? null"
             class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
             placeholder="Ex: 10">
-          <p *ngIf="form.get('valor_alvo')?.touched && form.get('valor_alvo')?.invalid"
+          <p *ngIf="form.get('valor_alvo')?.touched && form.get('valor_alvo')?.hasError('required')"
             class="text-xs text-red-500 mt-1">Valor alvo obrigatório.</p>
+          <p *ngIf="form.get('valor_alvo')?.touched && form.get('valor_alvo')?.hasError('min')"
+            class="text-xs text-red-500 mt-1">Valor abaixo do limite mínimo configurado.</p>
+          <p *ngIf="form.get('valor_alvo')?.touched && form.get('valor_alvo')?.hasError('max')"
+            class="text-xs text-red-500 mt-1">Valor acima do limite máximo configurado.</p>
+          <p *ngIf="indicadorSelecionado" class="text-xs text-gray-400 mt-1">{{ descricaoLimitesIndicadorSelecionado }}</p>
         </div>
       </div>
     </div>
 
-    <!-- A — Atingível -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
       <div class="bg-orange-50 border-b border-orange-100 px-6 py-4 flex items-center gap-3">
         <div class="w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">A</div>
@@ -175,7 +185,6 @@
       </div>
     </div>
 
-    <!-- R — Relevante -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
       <div class="bg-purple-50 border-b border-purple-100 px-6 py-4 flex items-center gap-3">
         <div class="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">R</div>
@@ -192,7 +201,6 @@
       </div>
     </div>
 
-    <!-- T — Temporal -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
       <div class="bg-red-50 border-b border-red-100 px-6 py-4 flex items-center gap-3">
         <div class="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">T</div>
@@ -218,7 +226,6 @@
       </div>
     </div>
 
-    <!-- Submit -->
     <div class="flex justify-between items-center pt-2">
       <button type="button" (click)="router.navigate(['/prontuarios/visao', idProntuario])"
         class="border border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-2.5 rounded-lg font-semibold flex items-center gap-2 transition-colors">

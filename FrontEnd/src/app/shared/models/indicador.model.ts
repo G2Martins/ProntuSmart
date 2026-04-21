@@ -6,6 +6,9 @@ export interface Indicador {
   descricao: string | null;
   unidade_medida: string;
   direcao_melhora: DirecaoMelhora;
+  sem_limitacao_valor: boolean;
+  limite_minimo: number | null;
+  limite_maximo: number | null;
   is_ativo: boolean;
   criado_em: string;
   atualizado_em: string;
@@ -16,6 +19,9 @@ export interface IndicadorCreate {
   descricao?: string;
   unidade_medida: string;
   direcao_melhora: DirecaoMelhora;
+  sem_limitacao_valor: boolean;
+  limite_minimo?: number | null;
+  limite_maximo?: number | null;
 }
 
 export interface IndicadorUpdate {
@@ -23,5 +29,8 @@ export interface IndicadorUpdate {
   descricao?: string;
   unidade_medida?: string;
   direcao_melhora?: DirecaoMelhora;
+  sem_limitacao_valor?: boolean;
+  limite_minimo?: number | null;
+  limite_maximo?: number | null;
   is_ativo?: boolean;
 }

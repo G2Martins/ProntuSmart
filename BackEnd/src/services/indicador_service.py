@@ -4,10 +4,14 @@ from fastapi import HTTPException
 from src.core.database import get_database
 from src.schemas.indicador import IndicadorCreate, IndicadorUpdate
 from src.models.dim_indicador import DimIndicador
+from src.services.indicador_limits import normalizar_configuracao_limites
 
 def _serializar(doc: dict) -> dict:
     if doc and "_id" in doc:
         doc["_id"] = str(doc["_id"])
+        doc.setdefault("sem_limitacao_valor", True)
+        doc.setdefault("limite_minimo", None)
+        doc.setdefault("limite_maximo", None)
     return doc
 
 async def listar_indicadores(apenas_ativos: bool = False) -> list:
@@ -33,7 +37,8 @@ async def criar_indicador(indicador_in: IndicadorCreate) -> dict:
     if existente:
         raise HTTPException(status_code=400, detail="Já existe um indicador com este nome.")
 
-    novo = DimIndicador(**indicador_in.model_dump())
+    dados = normalizar_configuracao_limites(indicador_in.model_dump())
+    novo = DimIndicador(**dados)
     resultado = await db.dim_indicador.insert_one(
         novo.model_dump(by_alias=True, exclude_none=True)
     )
@@ -42,20 +47,21 @@ async def criar_indicador(indicador_in: IndicadorCreate) -> dict:
 
 async def atualizar_indicador(indicador_id: str, indicador_in: IndicadorUpdate) -> dict:
     db = get_database()
+    existente = await db.dim_indicador.find_one({"_id": ObjectId(indicador_id)})
+    if not existente:
+        raise HTTPException(status_code=404, detail="Indicador não encontrado.")
 
     dados = {k: v for k, v in indicador_in.model_dump().items() if v is not None}
     if not dados:
         raise HTTPException(status_code=400, detail="Nenhum dado válido enviado.")
 
+    dados = normalizar_configuracao_limites(dados, existente)
     dados["atualizado_em"] = datetime.now(timezone.utc)
 
     resultado = await db.dim_indicador.update_one(
         {"_id": ObjectId(indicador_id)},
         {"$set": dados}
     )
-    if resultado.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Indicador não encontrado.")
-
     atualizado = await db.dim_indicador.find_one({"_id": ObjectId(indicador_id)})
     return _serializar(atualizado)
 

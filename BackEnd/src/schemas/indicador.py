@@ -8,6 +8,9 @@ class IndicadorBase(BaseModel):
     unidade_medida: str = Field(..., min_length=1, max_length=50)
     direcao_melhora: DirecaoMelhora
     descricao: Optional[str] = None # Garantindo que a descrição trafegue
+    sem_limitacao_valor: bool = True
+    limite_minimo: Optional[float] = None
+    limite_maximo: Optional[float] = None
 
 class IndicadorCreate(IndicadorBase):
     pass
@@ -17,6 +20,9 @@ class IndicadorUpdate(BaseModel):
     unidade_medida: Optional[str] = Field(None, min_length=1, max_length=50)
     direcao_melhora: Optional[DirecaoMelhora] = None
     descricao: Optional[str] = None
+    sem_limitacao_valor: Optional[bool] = None
+    limite_minimo: Optional[float] = None
+    limite_maximo: Optional[float] = None
     is_ativo: Optional[bool] = None 
 
 class IndicadorResponse(IndicadorBase):

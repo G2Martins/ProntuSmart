@@ -6,6 +6,7 @@ from src.schemas.evolucao import EvolucaoCreate
 from src.models.fato_evolucao import FatoEvolucao, MedicaoItem
 from src.utils.helpers import calcular_progresso
 from src.models.dim_status import StatusMeta, ProgressoMeta, CondicaoMeta  # ← adicionar os dois enums
+from src.services.indicador_limits import converter_valor_numerico, validar_valor_indicador
 
 async def registrar_evolucao(evolucao_in: EvolucaoCreate, autor_id: str) -> dict:
     db = get_database()
@@ -14,14 +15,48 @@ async def registrar_evolucao(evolucao_in: EvolucaoCreate, autor_id: str) -> dict
     if not prontuario:
         raise HTTPException(status_code=404, detail="Prontuário não encontrado.")
 
-    medicoes_modelo = [
-        MedicaoItem(
-            indicador_id=m.indicador_id,
-            nome_indicador=m.nome_indicador,
-            valor_registrado=m.valor_registrado,
-            unidade=m.unidade
-        ) for m in evolucao_in.medicoes
-    ]
+    indicadores_ids = []
+    for medicao in evolucao_in.medicoes:
+        if not ObjectId.is_valid(medicao.indicador_id):
+            raise HTTPException(status_code=400, detail=f'Indicador inválido para a medição "{medicao.nome_indicador}".')
+        indicadores_ids.append(ObjectId(medicao.indicador_id))
+
+    indicadores_map = {}
+    if indicadores_ids:
+        indicadores = await db.dim_indicador.find({"_id": {"$in": indicadores_ids}}).to_list(length=len(indicadores_ids))
+        indicadores_map = {str(indicador["_id"]): indicador for indicador in indicadores}
+
+    medicoes_modelo = []
+    for medicao in evolucao_in.medicoes:
+        indicador = indicadores_map.get(medicao.indicador_id)
+        if not indicador:
+            raise HTTPException(status_code=404, detail=f'Indicador da medição "{medicao.nome_indicador}" não encontrado.')
+
+        valor_numerico_medicao = converter_valor_numerico(
+            medicao.valor_registrado,
+            f'Valor informado para "{medicao.nome_indicador}"',
+        )
+        validar_valor_indicador(indicador, valor_numerico_medicao, "Valor informado")
+
+        medicoes_modelo.append(MedicaoItem(
+            indicador_id=medicao.indicador_id,
+            nome_indicador=medicao.nome_indicador,
+            valor_registrado=medicao.valor_registrado,
+            unidade=medicao.unidade
+        ))
+
+    meta = None
+    if evolucao_in.meta_id_reavaliada:
+        meta = await db.fato_meta_smart.find_one({"_id": ObjectId(evolucao_in.meta_id_reavaliada)})
+        if not meta:
+            raise HTTPException(status_code=404, detail="Meta reavaliada não encontrada.")
+
+    if evolucao_in.valor_atual is not None and meta:
+        indicador_meta = await db.dim_indicador.find_one({"_id": ObjectId(meta["indicador_id"])})
+        if not indicador_meta:
+            raise HTTPException(status_code=404, detail="Indicador da meta reavaliada não encontrado.")
+        valor_numerico_meta = converter_valor_numerico(evolucao_in.valor_atual, "Valor atual medido")
+        validar_valor_indicador(indicador_meta, valor_numerico_meta, "Valor atual medido")
 
     # ── Converte str → Enum com segurança ──────────────────
     houve_progresso_enum: ProgressoMeta | None = None
@@ -66,7 +101,6 @@ async def registrar_evolucao(evolucao_in: EvolucaoCreate, autor_id: str) -> dict
     if evolucao_in.meta_id_reavaliada and evolucao_in.valor_atual:
         try:
             valor_numerico = float(evolucao_in.valor_atual)
-            meta = await db.fato_meta_smart.find_one({"_id": ObjectId(evolucao_in.meta_id_reavaliada)})
             if meta:
                 indicador = await db.dim_indicador.find_one({"_id": ObjectId(meta["indicador_id"])})
                 if indicador:

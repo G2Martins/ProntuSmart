@@ -9,6 +9,7 @@ import { MetaSmartService } from '../../../core/services/meta-smart.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { IndicadorService } from '../../../core/services/indicador.service';
 import { Indicador } from '../../../shared/models/indicador.model';
+import { descreverLimitesIndicador, valorForaDoLimite } from '../../../shared/utils/indicador-limites';
 
 @Component({
   selector: 'app-visao-prontuario',
@@ -142,9 +143,23 @@ export class VisaoProntuario implements OnInit {
     }
   }
 
+  get indicadorMetaEmEdicao(): Indicador | null {
+    if (!this.metaEmEdicao?.indicador_id) return null;
+    return this.indicadores.find(ind => ind._id === this.metaEmEdicao.indicador_id) || null;
+  }
+
+  get descricaoLimitesMetaEmEdicao(): string {
+    return descreverLimitesIndicador(this.indicadorMetaEmEdicao);
+  }
+
+  get editValorAlvoForaDoLimite(): boolean {
+    return valorForaDoLimite(this.indicadorMetaEmEdicao, this.editValorAlvo);
+  }
+
   salvarEdicao() {
     if (!this.metaEmEdicao) return;
     if (this.editAtingivelResposta === 'sim' && !this.editAlcancavel.trim()) return;
+    if (this.editValorAlvoForaDoLimite) return;
     this.isSalvandoEdicao = true;
 
     const payload = {

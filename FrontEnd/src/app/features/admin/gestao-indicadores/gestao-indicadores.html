@@ -1,4 +1,4 @@
-<div class="max-w-4xl mx-auto space-y-6">
+<div class="max-w-5xl mx-auto space-y-6">
 
   <div class="flex items-center justify-between">
     <div>
@@ -36,7 +36,7 @@
           <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Indicador</label>
           <input type="text" formControlName="nome"
             class="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            placeholder="Ex: Escala Visual Analógica de Dor (EVA)">
+            placeholder="Ex: Escala de Berg">
           <span *ngIf="f['nome'].touched && f['nome'].invalid" class="text-xs text-red-500 mt-1">Nome é obrigatório.</span>
         </div>
 
@@ -49,18 +49,34 @@
 
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Unidade de Medida</label>
-          <input type="text" formControlName="unidade_medida"
+          <select formControlName="unidade_medida_opcao"
+            class="w-full rounded-md border border-gray-300 p-2 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <option value="">Selecione a unidade...</option>
+            <option *ngFor="let opcao of unidadeMedidaOptions" [value]="opcao.value">
+              {{ opcao.label }}
+            </option>
+          </select>
+          <span *ngIf="f['unidade_medida_opcao'].touched && f['unidade_medida_opcao'].invalid" class="text-xs text-red-500 mt-1">
+            Unidade é obrigatória.
+          </span>
+        </div>
+
+        <div *ngIf="usaUnidadeCustom">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Outra Unidade</label>
+          <input type="text" formControlName="unidade_medida_custom"
             class="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            placeholder="Ex: pontos (0-10), graus, segundos">
-          <span *ngIf="f['unidade_medida'].touched && f['unidade_medida'].invalid" class="text-xs text-red-500 mt-1">Unidade é obrigatória.</span>
+            placeholder="Ex: repetições, minutos, cm">
+          <span *ngIf="f['unidade_medida_custom'].touched && f['unidade_medida_custom'].invalid" class="text-xs text-red-500 mt-1">
+            Informe a unidade personalizada.
+          </span>
         </div>
 
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Direção de Melhora</label>
           <select formControlName="direcao_melhora"
             class="w-full rounded-md border border-gray-300 p-2 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
-            <option value="maior_melhor">↑ Maior é melhor (ex: Força Muscular)</option>
-            <option value="menor_melhor">↓ Menor é melhor (ex: Escala de Dor)</option>
+            <option value="maior_melhor">↑ Maior é melhor (ex: Escala de Berg)</option>
+            <option value="menor_melhor">↓ Menor é melhor (ex: TUG)</option>
           </select>
         </div>
 
@@ -68,9 +84,42 @@
           <label class="block text-sm font-medium text-gray-700 mb-1">Status do Indicador</label>
           <select formControlName="is_ativo"
             class="w-full rounded-md border border-gray-300 p-2 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
-            <option [ngValue]="true">🟢 Ativo</option>
-            <option [ngValue]="false">🔴 Inativo</option>
+            <option [ngValue]="true">Ativo</option>
+            <option [ngValue]="false">Inativo</option>
           </select>
+        </div>
+
+        <div class="md:col-span-2 rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-4">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <p class="text-sm font-medium text-gray-800">Limitação de valor</p>
+              <p class="text-xs text-gray-500">Defina o intervalo permitido para o preenchimento clínico.</p>
+            </div>
+            <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+              <input type="checkbox" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                [checked]="!usaLimites"
+                (change)="indicadorForm.get('sem_limitacao_valor')?.setValue($any($event.target).checked)">
+              <span>Sem limitação de valor</span>
+            </label>
+          </div>
+
+          <div *ngIf="usaLimites" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Limite Mínimo</label>
+              <input type="number" step="any" formControlName="limite_minimo"
+                class="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                placeholder="Ex: 0">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Limite Máximo</label>
+              <input type="number" step="any" formControlName="limite_maximo"
+                class="w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                placeholder="Ex: 56">
+            </div>
+            <p class="md:col-span-2 text-xs text-gray-500">
+              Você pode informar mínimo, máximo ou ambos. Se preencher os dois, o sistema aceitará apenas valores dentro do intervalo.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -93,7 +142,7 @@
     <div class="bg-gray-50 border-b border-gray-200 px-6 py-4 flex items-center">
       <iconify-icon icon="ph:list-bullets-bold" class="text-gray-600 text-xl mr-2"></iconify-icon>
       <h3 class="text-lg font-semibold text-gray-800">Indicadores Cadastrados</h3>
-      
+
       <span *ngIf="!isLoadingLista" class="ml-3 bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-0.5 rounded-full shadow-sm">
         {{ indicadores.length }}
       </span>
@@ -115,6 +164,7 @@
           <tr>
             <th class="px-6 py-3">Nome</th>
             <th class="px-6 py-3">Unidade</th>
+            <th class="px-6 py-3">Limites</th>
             <th class="px-6 py-3">Direção</th>
             <th class="px-6 py-3">Status</th>
             <th class="px-6 py-3 text-right">Ações</th>
@@ -127,6 +177,11 @@
               <p *ngIf="ind.descricao" class="text-xs text-gray-400 font-normal mt-0.5">{{ ind.descricao }}</p>
             </td>
             <td class="px-6 py-4 text-gray-600">{{ ind.unidade_medida }}</td>
+            <td class="px-6 py-4 text-gray-600">
+              <span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+                {{ descreverConfiguracaoLimite(ind) }}
+              </span>
+            </td>
             <td class="px-6 py-4">
               <span [class]="ind.direcao_melhora === 'maior_melhor'
                 ? 'bg-green-100 text-green-700 text-xs font-medium px-2 py-1 rounded-full'

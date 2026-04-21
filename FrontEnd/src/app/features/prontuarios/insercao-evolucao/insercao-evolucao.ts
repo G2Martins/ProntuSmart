@@ -1,12 +1,18 @@
-import { Component, inject, OnInit, CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
+import { ChangeDetectorRef, Component, CUSTOM_ELEMENTS_SCHEMA, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormArray, ReactiveFormsModule } from '@angular/forms';
+import { FormArray, FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProntuarioService } from '../../../core/services/prontuario.service';
 import { IndicadorService } from '../../../core/services/indicador.service';
 import { EvolucaoService } from '../../../core/services/evolucao.service';
 import { MetaSmartService } from '../../../core/services/meta-smart.service';
+import { Indicador } from '../../../shared/models/indicador.model';
+import {
+  aplicarValidadoresLimite,
+  descreverLimitesIndicador,
+  valorForaDoLimite,
+} from '../../../shared/utils/indicador-limites';
 
 @Component({
   selector: 'app-insercao-evolucao',
@@ -16,35 +22,53 @@ import { MetaSmartService } from '../../../core/services/meta-smart.service';
   templateUrl: './insercao-evolucao.html'
 })
 export class InsercaoEvolucaoComponent implements OnInit {
-  private fb                = inject(FormBuilder);
-  protected route           = inject(ActivatedRoute);
-  protected router          = inject(Router);
+  private fb = inject(FormBuilder);
+  protected route = inject(ActivatedRoute);
+  protected router = inject(Router);
   private prontuarioService = inject(ProntuarioService);
-  private indicadorService  = inject(IndicadorService);
-  private evolucaoService   = inject(EvolucaoService);
-  private metaService       = inject(MetaSmartService);
-  private cdr               = inject(ChangeDetectorRef);
+  private indicadorService = inject(IndicadorService);
+  private evolucaoService = inject(EvolucaoService);
+  private metaService = inject(MetaSmartService);
+  private cdr = inject(ChangeDetectorRef);
 
-  idProntuario         = '';
-  areaProntuario       = '';
-  isLoading            = false;
+  idProntuario = '';
+  areaProntuario = '';
+  isLoading = false;
   isLoadingIndicadores = true;
   temEvolucaoDevolvida = false;
 
+  indicadores: Indicador[] = [];
   metasAtivas: any[] = [];
 
   metaSelecionadaId = '';
-  valorAtualMeta    = '';
-  houveProgresso    = '';
-  condicaoMeta      = '';
-  motivoAjuste      = '';
-  proximaRevisao    = '';
+  valorAtualMeta: number | null = null;
+  houveProgresso = '';
+  condicaoMeta = '';
+  motivoAjuste = '';
+  proximaRevisao = '';
 
   evolucaoForm = this.fb.group({
-    medicoes:      this.fb.array([])
+    medicoes: this.fb.array([])
   });
 
   get medicoesArray() { return this.evolucaoForm.get('medicoes') as FormArray; }
+
+  get metaSelecionada(): any | null {
+    return this.metasAtivas.find(m => m._id === this.metaSelecionadaId) || null;
+  }
+
+  get indicadorMetaSelecionada(): Indicador | null {
+    const indicadorId = this.metaSelecionada?.indicador_id;
+    return this.indicadores.find(ind => ind._id === indicadorId) || null;
+  }
+
+  get descricaoLimitesMetaSelecionada(): string {
+    return descreverLimitesIndicador(this.indicadorMetaSelecionada);
+  }
+
+  get valorAtualMetaForaDoLimite(): boolean {
+    return valorForaDoLimite(this.indicadorMetaSelecionada, this.valorAtualMeta);
+  }
 
   ngOnInit() {
     this.idProntuario = this.route.snapshot.paramMap.get('id') || '';
@@ -64,14 +88,14 @@ export class InsercaoEvolucaoComponent implements OnInit {
           this.carregarMetasAtivas();
           this.verificarEvolucaoDevolvida();
         } else {
-          this.areaProntuario       = 'Área Indefinida';
+          this.areaProntuario = 'Área Indefinida';
           this.isLoadingIndicadores = false;
           this.cdr.detectChanges();
         }
       },
       error: () => {
         this.isLoadingIndicadores = false;
-        this.areaProntuario       = 'Erro ao carregar área';
+        this.areaProntuario = 'Erro ao carregar área';
         this.cdr.detectChanges();
       }
     });
@@ -80,21 +104,26 @@ export class InsercaoEvolucaoComponent implements OnInit {
   carregarIndicadoresReais() {
     this.isLoadingIndicadores = true;
     this.indicadorService.buscarPorArea(this.areaProntuario).subscribe({
-      next: (indicadores: any[]) => {
+      next: (indicadores: Indicador[]) => {
+        this.indicadores = indicadores;
+
         while (this.medicoesArray.length) {
           this.medicoesArray.removeAt(0);
         }
 
-        indicadores.forEach((ind: any) => {
-          this.medicoesArray.push(this.fb.group({
-            indicador_id:     [ind._id],
-            nome_indicador:   [ind.nome],
-            unidade:          [ind.unidade_medida],
-            // ✅ SEM Validators.required — indicadores são OPCIONAIS por sessão.
-            // O estagiário preenche apenas os que mensurou. Os vazios são
-            // filtrados no onSubmit() antes de enviar ao backend.
+        indicadores.forEach((ind) => {
+          const grupo = this.fb.group({
+            indicador_id: [ind._id],
+            nome_indicador: [ind.nome],
+            unidade: [ind.unidade_medida],
+            sem_limitacao_valor: [ind.sem_limitacao_valor],
+            limite_minimo: [ind.limite_minimo],
+            limite_maximo: [ind.limite_maximo],
             valor_registrado: ['']
-          }));
+          });
+
+          aplicarValidadoresLimite(grupo.get('valor_registrado'), ind);
+          this.medicoesArray.push(grupo);
         });
 
         this.isLoadingIndicadores = false;
@@ -130,8 +159,12 @@ export class InsercaoEvolucaoComponent implements OnInit {
     });
   }
 
+  getDescricaoLimitesMedicao(index: number): string {
+    return descreverLimitesIndicador(this.medicoesArray.at(index)?.value);
+  }
+
   onSubmit() {
-    if (this.evolucaoForm.invalid) {
+    if (this.evolucaoForm.invalid || this.valorAtualMetaForaDoLimite) {
       this.evolucaoForm.markAllAsTouched();
       return;
     }
@@ -139,34 +172,34 @@ export class InsercaoEvolucaoComponent implements OnInit {
     this.isLoading = true;
     this.cdr.detectChanges();
 
-    const metaSelecionada = this.metasAtivas.find(m => m._id === this.metaSelecionadaId);
-
-    // ✅ Filtra somente as medições efetivamente preenchidas e converte valor para string.
-    // Input type="number" faz Angular armazenar o valor como número JS; Pydantic str rejeita número JSON → 422.
+    const metaSelecionada = this.metaSelecionada;
     const medicoesPreenchidas = (this.evolucaoForm.value.medicoes as any[])
       .filter(m =>
         m.valor_registrado !== null &&
         m.valor_registrado !== undefined &&
         String(m.valor_registrado).trim() !== ''
       )
-      .map(m => ({ ...m, valor_registrado: String(m.valor_registrado) }));
+      .map(m => ({
+        indicador_id: m.indicador_id,
+        nome_indicador: m.nome_indicador,
+        unidade: m.unidade,
+        valor_registrado: String(m.valor_registrado),
+      }));
 
-    // ✅ valorAtualMeta também vem de type="number" — converter para string.
-    const valorAtualStr = (this.valorAtualMeta !== null &&
-                           this.valorAtualMeta !== undefined &&
-                           this.valorAtualMeta !== '')
-      ? String(this.valorAtualMeta) : undefined;
+    const valorAtualStr = (this.valorAtualMeta !== null && this.valorAtualMeta !== undefined)
+      ? String(this.valorAtualMeta)
+      : undefined;
 
     const dadosParaSalvar: any = {
-      prontuario_id:        this.idProntuario,
-      medicoes:             medicoesPreenchidas,
-      meta_id_reavaliada:   this.metaSelecionadaId     || undefined,
+      prontuario_id: this.idProntuario,
+      medicoes: medicoesPreenchidas,
+      meta_id_reavaliada: this.metaSelecionadaId || undefined,
       indicador_reavaliado: metaSelecionada?.especifico || undefined,
-      valor_atual:          valorAtualStr,
-      houve_progresso:      this.houveProgresso         || undefined,
-      condicao_meta:        this.condicaoMeta           || undefined,
-      motivo_ajuste:        this.motivoAjuste           || undefined,
-      proxima_revisao:      this.proximaRevisao
+      valor_atual: valorAtualStr,
+      houve_progresso: this.houveProgresso || undefined,
+      condicao_meta: this.condicaoMeta || undefined,
+      motivo_ajuste: this.motivoAjuste || undefined,
+      proxima_revisao: this.proximaRevisao
         ? new Date(this.proximaRevisao).toISOString() : undefined,
     };
 

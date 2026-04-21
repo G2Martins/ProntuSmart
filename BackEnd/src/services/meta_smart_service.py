@@ -5,6 +5,7 @@ from src.core.database import get_database
 from src.schemas.meta_smart import MetaSmartCreate
 from src.models.fato_meta_smart import FatoMetaSmart
 from src.models.dim_status import StatusMeta
+from src.services.indicador_limits import validar_valor_indicador
 
 # Campos que NÃO podem ser editados (imutabilidade clínica)
 CAMPOS_IMUTAVEIS = {"valor_inicial", "indicador_id", "prontuario_id", "estagiario_id",
@@ -17,6 +18,13 @@ def _serializar(doc: dict) -> dict:
 
 async def criar_meta_smart(meta_in: MetaSmartCreate, estagiario_id: str) -> dict:
     db = get_database()
+    indicador = await db.dim_indicador.find_one({"_id": ObjectId(meta_in.indicador_id)})
+    if not indicador:
+        raise HTTPException(status_code=404, detail="Indicador não encontrado.")
+
+    validar_valor_indicador(indicador, meta_in.valor_inicial, "Valor inicial")
+    validar_valor_indicador(indicador, meta_in.valor_alvo, "Valor alvo")
+
     nova_meta = FatoMetaSmart(**meta_in.model_dump(), estagiario_id=estagiario_id)
     resultado = await db.fato_meta_smart.insert_one(
         nova_meta.model_dump(by_alias=True, exclude_none=True)
@@ -45,6 +53,12 @@ async def editar_meta(meta_id: str, dados: dict, usuario_id: str) -> dict:
     campos_editaveis = {k: v for k, v in dados.items() if k not in CAMPOS_IMUTAVEIS}
     if not campos_editaveis:
         raise HTTPException(status_code=400, detail="Nenhum campo editável informado.")
+
+    if "valor_alvo" in campos_editaveis:
+        indicador = await db.dim_indicador.find_one({"_id": ObjectId(meta["indicador_id"])})
+        if not indicador:
+            raise HTTPException(status_code=404, detail="Indicador da meta não encontrado.")
+        validar_valor_indicador(indicador, campos_editaveis["valor_alvo"], "Valor alvo")
 
     # Registra no histórico o que foi alterado
     entrada_historico = {
