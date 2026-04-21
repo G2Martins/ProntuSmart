@@ -37,9 +37,9 @@ export class AvaliacaoFuncionalComponent implements OnInit {
     sedestacao:         [''],
     ortostatismo:       [''],
     transferencias:     [''],
-    realiza_marcha:     [null],
+    realiza_marcha:     [''],
     marcha_dispositivo: [null],
-    distancia_tolerada: [''],
+    marcha_dispositivo_descricao: [''],
     // Função
     funcao_mmss: [''],
     funcao_mmii: [''],
@@ -72,6 +72,12 @@ export class AvaliacaoFuncionalComponent implements OnInit {
   });
 
   ngOnInit() {
+    this.form.get('marcha_dispositivo')?.valueChanges.subscribe((value) => {
+      if (!this.usaDispositivoAuxiliar(value)) {
+        this.form.patchValue({ marcha_dispositivo_descricao: '' }, { emitEvent: false });
+      }
+    });
+
     this.idProntuario = this.route.snapshot.paramMap.get('id') || '';
     if (this.idProntuario) {
       this.prontuarioService.buscarPorId(this.idProntuario).subscribe({
@@ -93,9 +99,19 @@ export class AvaliacaoFuncionalComponent implements OnInit {
     if (this.secaoAtiva > 1) { this.secaoAtiva--; window.scrollTo({ top: 0, behavior: 'smooth' }); }
   }
 
+  usaDispositivoAuxiliar(value: unknown = this.form.get('marcha_dispositivo')?.value): boolean {
+    return value === true || value === 'true';
+  }
+
   onSubmit() {
     this.isLoading = true;
-    const payload = this.form.value;
+    const payload = {
+      ...this.form.value,
+      distancia_tolerada: null,
+      marcha_dispositivo_descricao: this.usaDispositivoAuxiliar()
+        ? this.form.get('marcha_dispositivo_descricao')?.value || ''
+        : null
+    };
 
     this.prontuarioService.atualizarAvaliacao(this.idProntuario, payload).subscribe({
       next: () => {

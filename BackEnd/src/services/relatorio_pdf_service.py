@@ -350,13 +350,17 @@ def gerar_pdf_completo(
     # ── Avaliação Funcional (Tela 2) ────────────────────────
     story.append(Paragraph("Avaliação Funcional", styles["secao"]))
     def _bool(v): return "Sim" if v is True else ("Não" if v is False else "—")
+    def _deambulacao(v):
+        if isinstance(v, str):
+            return v or "—"
+        return _bool(v)
     story.append(_kv_table([
         ("Sedestação",     prontuario.get("sedestacao")),
         ("Ortostatismo",   prontuario.get("ortostatismo")),
         ("Transferências", prontuario.get("transferencias")),
-        ("Realiza marcha", _bool(prontuario.get("realiza_marcha"))),
-        ("Usa dispositivo (marcha)", _bool(prontuario.get("marcha_dispositivo"))),
-        ("Distância tolerada",       prontuario.get("distancia_tolerada")),
+        ("Deambulação", _deambulacao(prontuario.get("realiza_marcha"))),
+        ("Utiliza algum dispositivo auxiliar?", _bool(prontuario.get("marcha_dispositivo"))),
+        ("Se sim, qual?", prontuario.get("marcha_dispositivo_descricao")),
         ("Função MMSS",  prontuario.get("funcao_mmss")),
         ("Função MMII",  prontuario.get("funcao_mmii")),
         ("Equilíbrio",   prontuario.get("equilibrio")),

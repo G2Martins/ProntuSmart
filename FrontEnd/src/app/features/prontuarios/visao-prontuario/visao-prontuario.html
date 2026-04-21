@@ -770,24 +770,24 @@
               </div>
             </div>
 
-            <!-- Marcha -->
+            <!-- Deambulacao -->
             <div>
               <h5 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                 <iconify-icon icon="ph:footprints-bold" class="text-blue-500"></iconify-icon>
-                Marcha
+                Deambulação
               </h5>
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div class="border border-gray-100 rounded-lg p-3">
-                  <p class="text-xs text-gray-400 mb-1">Realiza marcha</p>
-                  <span class="text-xs font-semibold px-2 py-1 rounded-full border" [ngClass]="getBoolClass(prontuario.realiza_marcha)">{{ fmtBool(prontuario.realiza_marcha) }}</span>
+                  <p class="text-xs text-gray-400 mb-1">Deambulação</p>
+                  <span class="text-xs font-semibold px-2 py-1 rounded-full border" [ngClass]="getDeambulacaoClass(prontuario.realiza_marcha)">{{ fmtDeambulacao(prontuario.realiza_marcha) }}</span>
                 </div>
                 <div class="border border-gray-100 rounded-lg p-3">
-                  <p class="text-xs text-gray-400 mb-1">Usa dispositivo</p>
+                  <p class="text-xs text-gray-400 mb-1">Utiliza algum dispositivo auxiliar?</p>
                   <span class="text-xs font-semibold px-2 py-1 rounded-full border" [ngClass]="getBoolClass(prontuario.marcha_dispositivo)">{{ fmtBool(prontuario.marcha_dispositivo) }}</span>
                 </div>
                 <div class="border border-gray-100 rounded-lg p-3">
-                  <p class="text-xs text-gray-400 mb-1">Distância tolerada</p>
-                  <p class="text-sm text-gray-700 font-medium">{{ fmt(prontuario.distancia_tolerada) }}</p>
+                  <p class="text-xs text-gray-400 mb-1">Se sim, qual?</p>
+                  <p class="text-sm text-gray-700 font-medium">{{ fmt(prontuario.marcha_dispositivo_descricao) }}</p>
                 </div>
               </div>
             </div>

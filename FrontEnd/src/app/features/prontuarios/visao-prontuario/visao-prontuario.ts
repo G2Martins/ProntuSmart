@@ -232,10 +232,20 @@ export class VisaoProntuario implements OnInit {
     return '—';
   }
 
+  fmtDeambulacao(val: string | boolean | null | undefined): string {
+    if (typeof val === 'string') return this.fmt(val);
+    return this.fmtBool(val);
+  }
+
   getBoolClass(val: boolean | null | undefined): string {
     if (val === true)  return 'bg-green-50 text-green-700 border-green-200';
     if (val === false) return 'bg-red-50 text-red-700 border-red-200';
     return 'bg-gray-50 text-gray-500 border-gray-200';
+  }
+
+  getDeambulacaoClass(val: string | boolean | null | undefined): string {
+    if (typeof val === 'string') return this.getNivelClass(val);
+    return this.getBoolClass(val);
   }
 
   getAvdLabel(val: string | null | undefined): string {
@@ -278,6 +288,7 @@ export class VisaoProntuario implements OnInit {
   secaoAvaliacaoPreenchida(): boolean {
     if (!this.prontuario) return false;
     return !!(this.prontuario.sedestacao || this.prontuario.ortostatismo || this.prontuario.transferencias ||
+              this.prontuario.realiza_marcha || this.prontuario.marcha_dispositivo || this.prontuario.marcha_dispositivo_descricao ||
               this.prontuario.funcao_mmss || this.prontuario.funcao_mmii || this.prontuario.equilibrio ||
               this.prontuario.avd_banho   || this.prontuario.avd_vestir);
   }
@@ -293,7 +304,7 @@ export class VisaoProntuario implements OnInit {
     const campos = [
       'diagnostico_medico','diagnostico_fisioterapeutico','queixa_principal','objetivo_paciente',
       'tempo_evolucao','comorbidades','medicamentos','dispositivo_auxiliar','barreiras_ambientais',
-      'sedestacao','ortostatismo','transferencias','realiza_marcha','distancia_tolerada',
+      'sedestacao','ortostatismo','transferencias','realiza_marcha','marcha_dispositivo','marcha_dispositivo_descricao',
       'funcao_mmss','funcao_mmii','equilibrio','risco_queda','dor','fadiga_funcional',
       'compreende_comandos','comunicacao_preservada',
       'avd_banho','avd_vestir','avd_higiene','avd_locomocao','avd_alimentacao','avd_banheiro',

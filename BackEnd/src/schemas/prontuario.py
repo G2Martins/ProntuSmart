@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional
+from typing import Optional, Union
 from datetime import datetime
 from src.models.dim_status import StatusProntuario
 
@@ -26,8 +26,9 @@ class ProntuarioAvaliacaoUpdate(BaseModel):
     ortostatismo:   Optional[str] = None
     transferencias: Optional[str] = None
     # Marcha
-    realiza_marcha:     Optional[bool] = None
+    realiza_marcha:     Optional[Union[str, bool]] = None
     marcha_dispositivo: Optional[bool] = None
+    marcha_dispositivo_descricao: Optional[str] = None
     distancia_tolerada: Optional[str]  = None
     # Função
     funcao_mmss: Optional[str] = None
@@ -89,8 +90,9 @@ class ProntuarioResponse(BaseModel):
     sedestacao: Optional[str] = None
     ortostatismo: Optional[str] = None
     transferencias: Optional[str] = None
-    realiza_marcha: Optional[bool] = None
+    realiza_marcha: Optional[Union[str, bool]] = None
     marcha_dispositivo: Optional[bool] = None
+    marcha_dispositivo_descricao: Optional[str] = None
     distancia_tolerada: Optional[str] = None
     funcao_mmss: Optional[str] = None
     funcao_mmii: Optional[str] = None

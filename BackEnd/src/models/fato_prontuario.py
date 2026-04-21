@@ -1,6 +1,6 @@
 from pydantic import Field, ConfigDict
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Union
 from src.models.base import MongoBaseModel
 from src.models.dim_status import StatusProntuario
 
@@ -38,8 +38,9 @@ class FatoProntuario(MongoBaseModel):
     transferencias: Optional[str] = None # "Independente","Supervisão","Ajuda parcial","Dependente"
 
     # Marcha
-    realiza_marcha:      Optional[bool] = None
+    realiza_marcha:      Optional[Union[str, bool]] = None
     marcha_dispositivo:  Optional[bool] = None
+    marcha_dispositivo_descricao: Optional[str] = None
     distancia_tolerada:  Optional[str]  = None
 
     # Função
