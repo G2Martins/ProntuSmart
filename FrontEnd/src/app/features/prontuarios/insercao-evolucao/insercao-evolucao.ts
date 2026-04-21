@@ -43,8 +43,6 @@ export class InsercaoEvolucaoComponent implements OnInit {
   metaSelecionadaId = '';
   valorAtualMeta: number | null = null;
   houveProgresso = '';
-  condicaoMeta = '';
-  motivoAjuste = '';
   proximaRevisao = '';
 
   evolucaoForm = this.fb.group({
@@ -197,8 +195,6 @@ export class InsercaoEvolucaoComponent implements OnInit {
       indicador_reavaliado: metaSelecionada?.especifico || undefined,
       valor_atual: valorAtualStr,
       houve_progresso: this.houveProgresso || undefined,
-      condicao_meta: this.condicaoMeta || undefined,
-      motivo_ajuste: this.motivoAjuste || undefined,
       proxima_revisao: this.proximaRevisao
         ? new Date(this.proximaRevisao).toISOString() : undefined,
     };

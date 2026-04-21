@@ -299,7 +299,7 @@
                 </div>
 
                 <!-- Reavaliação -->
-                <div *ngIf="ev.houve_progresso || ev.condicao_meta"
+                <div *ngIf="ev.houve_progresso || ev.proxima_revisao"
                   class="bg-white rounded-lg border border-gray-100 p-4 mb-3">
                   <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
                     Reavaliação da Meta
@@ -307,9 +307,6 @@
                   <div class="flex flex-wrap gap-4 text-sm">
                     <span *ngIf="ev.houve_progresso" class="text-gray-600">
                       <span class="font-semibold">Progresso:</span> {{ ev.houve_progresso }}
-                    </span>
-                    <span *ngIf="ev.condicao_meta" class="text-gray-600">
-                      <span class="font-semibold">Condição da meta:</span> {{ ev.condicao_meta }}
                     </span>
                     <span *ngIf="ev.proxima_revisao" class="text-gray-600">
                       <span class="font-semibold">Próxima revisão:</span>
