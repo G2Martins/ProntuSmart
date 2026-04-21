@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormArray, ReactiveFormsModule } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProntuarioService } from '../../../core/services/prontuario.service';
@@ -41,7 +41,6 @@ export class InsercaoEvolucaoComponent implements OnInit {
   proximaRevisao    = '';
 
   evolucaoForm = this.fb.group({
-    texto_clinico: ['', [Validators.required, Validators.minLength(10)]],
     medicoes:      this.fb.array([])
   });
 
@@ -160,7 +159,6 @@ export class InsercaoEvolucaoComponent implements OnInit {
 
     const dadosParaSalvar: any = {
       prontuario_id:        this.idProntuario,
-      texto_clinico:        this.evolucaoForm.value.texto_clinico,
       medicoes:             medicoesPreenchidas,
       meta_id_reavaliada:   this.metaSelecionadaId     || undefined,
       indicador_reavaliado: metaSelecionada?.especifico || undefined,

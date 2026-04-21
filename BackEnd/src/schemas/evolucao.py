@@ -10,7 +10,6 @@ class MedicaoItemSchema(BaseModel):
 
 class EvolucaoCreate(BaseModel):
     prontuario_id:       str
-    texto_clinico:       str = Field(..., min_length=10)
     medicoes:            List[MedicaoItemSchema] = []
     # Campos de reavaliação de meta (opcionais)
     meta_id_reavaliada:  Optional[str]      = None  # ← ID da meta que está sendo reavaliada
@@ -25,7 +24,6 @@ class EvolucaoResponse(BaseModel):
     id:                  str = Field(alias="_id")
     prontuario_id:       str
     autor_id:            str
-    texto_clinico:       str
     medicoes:            List[MedicaoItemSchema] = []
     status:              str
     indicador_reavaliado: Optional[str]     = None

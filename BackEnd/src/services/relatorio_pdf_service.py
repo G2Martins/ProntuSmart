@@ -422,7 +422,6 @@ def gerar_pdf_completo(
             story.append(_kv_table([
                 (f"Sessão #{i}",  data_txt),
                 ("Status",        ev.get("status", "—")),
-                ("Relatório SOAP", ev.get("texto_clinico", "—")),
                 ("Medições",       med_txt),
                 ("Feedback docente", ev.get("feedback_docente") or "—"),
             ]))

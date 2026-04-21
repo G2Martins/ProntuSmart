@@ -41,7 +41,6 @@ async def registrar_evolucao(evolucao_in: EvolucaoCreate, autor_id: str) -> dict
     nova_evolucao = FatoEvolucao(
         prontuario_id=evolucao_in.prontuario_id,
         autor_id=autor_id,
-        texto_clinico=evolucao_in.texto_clinico,
         medicoes=medicoes_modelo,
         houve_progresso=houve_progresso_enum,      # ← enum ou None
         condicao_meta=condicao_meta_enum,          # ← enum ou None

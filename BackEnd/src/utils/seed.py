@@ -476,13 +476,6 @@ async def rodar_seed():
         # ── Pront1 Carlos Alberto (Neuro) — revisora: Ana ──────────────────
         {
             "prontuario_id": str(pront1_id), "autor_id": str(est01_id),
-            "texto_clinico": (
-                "S - Paciente refere leve melhora na disposição. Relata ter conseguido ir ao banheiro "
-                "sozinho na noite anterior com auxílio do andador.\n"
-                "O - Marcha realizada com andador, percorrendo 7m sem pausas. Equilíbrio estático melhorado.\n"
-                "A - Evolução positiva. Paciente demonstra motivação e engajamento.\n"
-                "P - Progredir distância de marcha para 8m e iniciar treino de equilíbrio dinâmico."
-            ),
             "medicoes": [
                 {"indicador_id": str(ind_distancia), "nome_indicador": "Distância de Marcha", "valor_registrado": "7", "unidade": "metros"},
                 {"indicador_id": str(ind_berg),      "nome_indicador": "Escala de Berg",      "valor_registrado": "34", "unidade": "pontos (0-56)"},
@@ -494,13 +487,6 @@ async def rodar_seed():
         },
         {
             "prontuario_id": str(pront1_id), "autor_id": str(est01_id),
-            "texto_clinico": (
-                "S - Paciente relata melhora significativa na confiança ao caminhar. Realizou a higiene "
-                "pessoal sem ajuda pela primeira vez desde o AVC.\n"
-                "O - Marcha com andador percorrendo 8,5m. Berg = 38 pontos. Transferências com supervisão mínima.\n"
-                "A - Evolução expressiva. Meta de distância praticamente atingida.\n"
-                "P - Tentar alcançar 10m na próxima sessão. Iniciar treino sem andador com apoio de parede."
-            ),
             "medicoes": [
                 {"indicador_id": str(ind_distancia), "nome_indicador": "Distância de Marcha", "valor_registrado": "8.5", "unidade": "metros"},
                 {"indicador_id": str(ind_berg),      "nome_indicador": "Escala de Berg",      "valor_registrado": "38",  "unidade": "pontos (0-56)"},
@@ -512,12 +498,6 @@ async def rodar_seed():
         },
         {
             "prontuario_id": str(pront1_id), "autor_id": str(est01_id),
-            "texto_clinico": (
-                "S - Paciente muito motivado. Relata que caminhou até o quintal ontem.\n"
-                "O - Marcha com andador 10m concluída. Berg = 42 pontos. Risco de queda reduzido.\n"
-                "A - Meta de marcha praticamente atingida. Equilíbrio ainda abaixo do alvo (45 pts).\n"
-                "P - Consolidar ganhos de marcha. Focar no treino de equilíbrio para atingir 45 pts Berg."
-            ),
             "medicoes": [
                 {"indicador_id": str(ind_distancia), "nome_indicador": "Distância de Marcha", "valor_registrado": "10", "unidade": "metros"},
                 {"indicador_id": str(ind_berg),      "nome_indicador": "Escala de Berg",      "valor_registrado": "42", "unidade": "pontos (0-56)"},
@@ -531,13 +511,6 @@ async def rodar_seed():
         # ── Pront3 Roberto Lima (Traumato) — revisora: Ana ─────────────────
         {
             "prontuario_id": str(pront3_id), "autor_id": str(est01_id),
-            "texto_clinico": (
-                "S - Paciente relata dor EVA 5/10 na região inguinal ao movimento. Refere progresso na "
-                "independência para sentar-se.\n"
-                "O - ADM de flexão de quadril esquerdo: 60°. Força abdutor: grau 3+. Marcha com muletas estável.\n"
-                "A - Boa evolução considerando o pós-operatório recente. Sem sinais de complicações.\n"
-                "P - Progredir ADM para 75°. Iniciar exercícios em cadeia cinética fechada."
-            ),
             "medicoes": [
                 {"indicador_id": str(ind_adm),   "nome_indicador": "Amplitude de Movimento (ADM)", "valor_registrado": "60", "unidade": "graus"},
                 {"indicador_id": str(ind_forca), "nome_indicador": "Força Muscular (Grau 0-5)",    "valor_registrado": "3",  "unidade": "grau"},
@@ -549,12 +522,6 @@ async def rodar_seed():
         },
         {
             "prontuario_id": str(pront3_id), "autor_id": str(est01_id),
-            "texto_clinico": (
-                "S - Paciente relata dor 3/10, com melhora significativa. Está conseguindo sentar sem dor.\n"
-                "O - ADM flexão de quadril: 75°. Força: grau 4. Marcha com 1 muleta por curtos períodos.\n"
-                "A - Evolução muito positiva. Ritmo de recuperação acima do esperado.\n"
-                "P - Progredir para 90° de flexão. Treino de subida/descida de degrau baixo."
-            ),
             "medicoes": [
                 {"indicador_id": str(ind_adm),   "nome_indicador": "Amplitude de Movimento (ADM)", "valor_registrado": "75", "unidade": "graus"},
                 {"indicador_id": str(ind_forca), "nome_indicador": "Força Muscular (Grau 0-5)",    "valor_registrado": "4",  "unidade": "grau"},
@@ -568,13 +535,6 @@ async def rodar_seed():
         # ── Pront2 Maria das Graças (Geriatria) — revisor: Carlos ──────────
         {
             "prontuario_id": str(pront2_id), "autor_id": str(est02_id),
-            "texto_clinico": (
-                "S - Paciente relata dor persistente 7/10 em repouso e 9/10 ao caminhar. Sem melhora "
-                "perceptível desde o início do tratamento.\n"
-                "O - TUG: 20 segundos. Marcha antálgica com bengala. ADM lombar limitado por dor.\n"
-                "A - Evolução aquém do esperado. Dor persiste intensa limitando a progressão.\n"
-                "P - Rever conduta analgésica. Priorizar técnicas de controle de dor antes de progredir marcha."
-            ),
             "medicoes": [
                 {"indicador_id": str(ind_tug), "nome_indicador": "Time Up and Go (TUG)", "valor_registrado": "20", "unidade": "segundos"},
             ],
@@ -589,13 +549,6 @@ async def rodar_seed():
         },
         {
             "prontuario_id": str(pront2_id), "autor_id": str(est02_id),
-            "texto_clinico": (
-                "S - Paciente relata melhora discreta na dor após TENS. EVA pré-sessão 7/10, pós-sessão 5/10.\n"
-                "O - TUG: 19,5 segundos. Aplicação de TENS lombar por 20 min + alongamentos. "
-                "Paciente verbalizou alívio durante a sessão.\n"
-                "A - Técnica analgésica demonstrou efeito imediato. Progressão lenta mas positiva.\n"
-                "P - Manter TENS + iniciar estabilização lombar em decúbito dorsal."
-            ),
             "medicoes": [
                 {"indicador_id": str(ind_tug), "nome_indicador": "Time Up and Go (TUG)", "valor_registrado": "19.5", "unidade": "segundos"},
             ],
@@ -606,13 +559,6 @@ async def rodar_seed():
         },
         {
             "prontuario_id": str(pront2_id), "autor_id": str(est02_id),
-            "texto_clinico": (
-                "S - Paciente relata dor 6/10. Referiu ter conseguido ir à farmácia sozinha durante a semana.\n"
-                "O - TUG: 18 segundos. Marcha com bengala mais fluida. Exercícios de estabilização realizados "
-                "com boa adesão.\n"
-                "A - Progressão lenta porém consistente. Meta de 14s ainda distante, mas tendência positiva.\n"
-                "P - Progredir estabilização para sedestação instável. Aumentar tempo de caminhada contínua."
-            ),
             "medicoes": [
                 {"indicador_id": str(ind_tug), "nome_indicador": "Time Up and Go (TUG)", "valor_registrado": "18", "unidade": "segundos"},
             ],
@@ -625,13 +571,6 @@ async def rodar_seed():
         # ── Pront4 Sandra Costa (Cardio) — revisor: Carlos ─────────────────
         {
             "prontuario_id": str(pront4_id), "autor_id": str(est02_id),
-            "texto_clinico": (
-                "S - Paciente relata dispneia aos médios esforços. Não consegue varrer dois cômodos sem parar.\n"
-                "O - SpO2 repouso: 91%. Frequência respiratória: 22 irpm. Padrão respiratório paradoxal observado. "
-                "Aplicação de técnicas de drenagem postural e reeducação diafragmática.\n"
-                "A - Baseline estabelecido. Capacidade ventilatória comprometida conforme esperado.\n"
-                "P - Iniciar treino de músculos respiratórios com threshold. Ensinar posição de alívio da dispneia."
-            ),
             "medicoes": [
                 {"indicador_id": str(ind_spo2), "nome_indicador": "SpO2 em Repouso", "valor_registrado": "91", "unidade": "%"},
             ],
@@ -642,13 +581,6 @@ async def rodar_seed():
         },
         {
             "prontuario_id": str(pront4_id), "autor_id": str(est02_id),
-            "texto_clinico": (
-                "S - Paciente relata leve melhora. Conseguiu varrer um cômodo completo sem parar.\n"
-                "O - SpO2 repouso: 92%. FR: 20 irpm. Treino com threshold a 30% da PImáx. "
-                "Boa adesão e tolerância ao exercício.\n"
-                "A - Evolução inicial positiva. Ganho de 1% na SpO2 em repouso.\n"
-                "P - Progredir carga do threshold. Incluir treino em posição ortostática."
-            ),
             "medicoes": [
                 {"indicador_id": str(ind_spo2), "nome_indicador": "SpO2 em Repouso", "valor_registrado": "92", "unidade": "%"},
             ],

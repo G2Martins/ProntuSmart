@@ -63,14 +63,6 @@
       <!-- Corpo -->
       <div class="p-6 space-y-4">
 
-        <!-- Texto SOAP -->
-        <div class="bg-gray-50 rounded-lg border border-gray-100 p-4">
-          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-            Relatório Clínico (SOAP)
-          </p>
-          <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{{ ev.texto_clinico }}</p>
-        </div>
-
         <!-- Indicadores -->
         <div *ngIf="ev.medicoes && ev.medicoes.length > 0"
           class="bg-gray-50 rounded-lg border border-gray-100 p-4">

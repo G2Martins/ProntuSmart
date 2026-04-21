@@ -32,20 +32,7 @@
   <form [formGroup]="evolucaoForm" (ngSubmit)="onSubmit()"
     class="bg-white shadow rounded-lg border border-gray-100 overflow-hidden">
 
-    <!-- ── 1. SOAP ────────────────────────────────────────── -->
-    <div class="p-8 border-b border-gray-100">
-      <label class="block text-sm font-bold text-gray-700 uppercase tracking-wider mb-3">
-        Relatório Descritivo (SOAP)
-      </label>
-      <textarea formControlName="texto_clinico" rows="7"
-        class="w-full rounded-md border border-gray-300 p-4 focus:ring-2 focus:ring-blue-500 outline-none resize-y text-sm"
-        placeholder="S - Subjetivo: O que o paciente relata...&#10;O - Objetivo: Dados observados e mensuráveis...&#10;A - Avaliação: Análise clínica...&#10;P - Plano: Conduta para próxima sessão...">
-      </textarea>
-      <p *ngIf="evolucaoForm.get('texto_clinico')?.touched && evolucaoForm.get('texto_clinico')?.invalid"
-        class="text-xs text-red-500 mt-1">Mínimo de 10 caracteres obrigatórios.</p>
-    </div>
-
-    <!-- ── 2. Indicadores Funcionais ─────────────────────── -->
+    <!-- ── 1. Indicadores Funcionais ─────────────────────── -->
     <div class="p-8 bg-blue-50/30 border-b border-gray-100">
       <div class="flex items-center mb-6">
         <iconify-icon icon="ph:chart-line-up-bold" class="text-2xl text-blue-600 mr-2"></iconify-icon>
@@ -87,7 +74,7 @@
       </div>
     </div>
 
-    <!-- ── 3. Reavaliação de Meta SMART ──────────────────── -->
+    <!-- ── 2. Reavaliação de Meta SMART ──────────────────── -->
     <div *ngIf="metasAtivas.length > 0" class="p-8 bg-purple-50/30 border-b border-gray-100">
       <div class="flex items-center mb-5">
         <iconify-icon icon="ph:target-bold" class="text-2xl text-purple-600 mr-2"></iconify-icon>
@@ -164,7 +151,7 @@
       </div>
     </div>
 
-    <!-- ── 4. Footer / Submit ────────────────────────────── -->
+    <!-- ── 3. Footer / Submit ────────────────────────────── -->
     <div class="p-6 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-4">
       <p class="text-xs text-gray-400 flex items-center gap-1">
         <iconify-icon icon="ph:info-bold" class="text-blue-400"></iconify-icon>

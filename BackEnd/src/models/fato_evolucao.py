@@ -18,7 +18,6 @@ class MedicaoItem(BaseModel):
 class FatoEvolucao(BaseModel):
     prontuario_id: str
     autor_id:      str
-    texto_clinico: str = Field(..., min_length=10)
     medicoes:      List[MedicaoItem] = []
 
     # ── TELA 5: Campos de Reavaliação (novo — do documento) ──
