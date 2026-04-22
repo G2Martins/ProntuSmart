@@ -31,6 +31,13 @@ export class AvaliacaoFuncionalComponent implements OnInit {
   opEquilibrio    = ['Preservado', 'Alterado'];
   opRiscoQueda    = ['Baixo', 'Moderado', 'Alto'];
   opAVD           = ['I', 'S', 'AP', 'D'];
+  opCoordenacao   = [
+    { ctrl: 'coordenacao_decomposicao_movimentos', label: 'Decomposição de Movimentos' },
+    { ctrl: 'coordenacao_ataxia_cerebelar', label: 'Ataxia Cerebelar' },
+    { ctrl: 'coordenacao_dismetria', label: 'Dismetria' },
+    { ctrl: 'coordenacao_nistagmo', label: 'Nistagmo' },
+    { ctrl: 'coordenacao_rechaco_stewart_holmes', label: 'Rechaço de Stewart-Holmes' },
+  ];
 
   form: FormGroup = this.fb.group({
     // Tela 2 — Mobilidade
@@ -52,6 +59,12 @@ export class AvaliacaoFuncionalComponent implements OnInit {
     // Cognição
     compreende_comandos:    [null],
     comunicacao_preservada: [null],
+    // Coordenação
+    coordenacao_decomposicao_movimentos: [null],
+    coordenacao_ataxia_cerebelar: [null],
+    coordenacao_dismetria: [null],
+    coordenacao_nistagmo: [null],
+    coordenacao_rechaco_stewart_holmes: [null],
     // AVDs
     avd_banho:       [''],
     avd_vestir:      [''],

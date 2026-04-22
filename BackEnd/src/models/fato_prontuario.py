@@ -57,6 +57,12 @@ class FatoProntuario(MongoBaseModel):
     # Cognição / Comunicação
     compreende_comandos:      Optional[bool] = None
     comunicacao_preservada:   Optional[bool] = None
+    # Coordenação
+    coordenacao_decomposicao_movimentos: Optional[bool] = None
+    coordenacao_ataxia_cerebelar: Optional[bool] = None
+    coordenacao_dismetria: Optional[bool] = None
+    coordenacao_nistagmo: Optional[bool] = None
+    coordenacao_rechaco_stewart_holmes: Optional[bool] = None
 
     # AVDs: I=Independente, S=Supervisão, AP=Ajuda parcial, D=Dependente
     avd_banho:        Optional[str] = None

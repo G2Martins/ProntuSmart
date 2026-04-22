@@ -42,6 +42,12 @@ class ProntuarioAvaliacaoUpdate(BaseModel):
     # Cognição
     compreende_comandos:    Optional[bool] = None
     comunicacao_preservada: Optional[bool] = None
+    # Coordenação
+    coordenacao_decomposicao_movimentos: Optional[bool] = None
+    coordenacao_ataxia_cerebelar: Optional[bool] = None
+    coordenacao_dismetria: Optional[bool] = None
+    coordenacao_nistagmo: Optional[bool] = None
+    coordenacao_rechaco_stewart_holmes: Optional[bool] = None
     # AVDs
     avd_banho:       Optional[str] = None
     avd_vestir:      Optional[str] = None
@@ -103,6 +109,11 @@ class ProntuarioResponse(BaseModel):
     fadiga_funcional: Optional[bool] = None
     compreende_comandos: Optional[bool] = None
     comunicacao_preservada: Optional[bool] = None
+    coordenacao_decomposicao_movimentos: Optional[bool] = None
+    coordenacao_ataxia_cerebelar: Optional[bool] = None
+    coordenacao_dismetria: Optional[bool] = None
+    coordenacao_nistagmo: Optional[bool] = None
+    coordenacao_rechaco_stewart_holmes: Optional[bool] = None
     avd_banho: Optional[str] = None
     avd_vestir: Optional[str] = None
     avd_higiene: Optional[str] = None

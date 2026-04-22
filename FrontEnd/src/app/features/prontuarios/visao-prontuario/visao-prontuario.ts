@@ -43,6 +43,13 @@ export class VisaoProntuario implements OnInit {
 
   perfil: string | null = '';
   abaAtiva: 'evolucoes' | 'metas' | 'graficos' | 'detalhado' = 'evolucoes';
+  coordenacaoItens = [
+    { ctrl: 'coordenacao_decomposicao_movimentos', label: 'Decomposição de Movimentos' },
+    { ctrl: 'coordenacao_ataxia_cerebelar', label: 'Ataxia Cerebelar' },
+    { ctrl: 'coordenacao_dismetria', label: 'Dismetria' },
+    { ctrl: 'coordenacao_nistagmo', label: 'Nistagmo' },
+    { ctrl: 'coordenacao_rechaco_stewart_holmes', label: 'Rechaço de Stewart-Holmes' },
+  ];
 
   // ── SVG Chart constants ────────────────────────────────────
   readonly svgW   = 560;
@@ -232,6 +239,10 @@ export class VisaoProntuario implements OnInit {
     return '—';
   }
 
+  fmtMarcacao(val: boolean | null | undefined): string {
+    return val === true ? 'Marcado' : '—';
+  }
+
   fmtDeambulacao(val: string | boolean | null | undefined): string {
     if (typeof val === 'string') return this.fmt(val);
     return this.fmtBool(val);
@@ -240,6 +251,11 @@ export class VisaoProntuario implements OnInit {
   getBoolClass(val: boolean | null | undefined): string {
     if (val === true)  return 'bg-green-50 text-green-700 border-green-200';
     if (val === false) return 'bg-red-50 text-red-700 border-red-200';
+    return 'bg-gray-50 text-gray-500 border-gray-200';
+  }
+
+  getMarcacaoClass(val: boolean | null | undefined): string {
+    if (val === true) return 'bg-green-50 text-green-700 border-green-200';
     return 'bg-gray-50 text-gray-500 border-gray-200';
   }
 
@@ -290,6 +306,9 @@ export class VisaoProntuario implements OnInit {
     return !!(this.prontuario.sedestacao || this.prontuario.ortostatismo || this.prontuario.transferencias ||
               this.prontuario.realiza_marcha || this.prontuario.marcha_dispositivo || this.prontuario.marcha_dispositivo_descricao ||
               this.prontuario.funcao_mmss || this.prontuario.funcao_mmii || this.prontuario.equilibrio ||
+              this.prontuario.coordenacao_decomposicao_movimentos || this.prontuario.coordenacao_ataxia_cerebelar ||
+              this.prontuario.coordenacao_dismetria || this.prontuario.coordenacao_nistagmo ||
+              this.prontuario.coordenacao_rechaco_stewart_holmes ||
               this.prontuario.avd_banho   || this.prontuario.avd_vestir);
   }
 
@@ -307,6 +326,8 @@ export class VisaoProntuario implements OnInit {
       'sedestacao','ortostatismo','transferencias','realiza_marcha','marcha_dispositivo','marcha_dispositivo_descricao',
       'funcao_mmss','funcao_mmii','equilibrio','risco_queda','dor','fadiga_funcional',
       'compreende_comandos','comunicacao_preservada',
+      'coordenacao_decomposicao_movimentos','coordenacao_ataxia_cerebelar','coordenacao_dismetria',
+      'coordenacao_nistagmo','coordenacao_rechaco_stewart_holmes',
       'avd_banho','avd_vestir','avd_higiene','avd_locomocao','avd_alimentacao','avd_banheiro',
       'atividade_mais_impactada','principal_limitacao','teste_escala_principal','valor_teste_inicial',
       'problema_funcional_prioritario','atividade_comprometida','impacto_independencia','prioridade_terapeutica'

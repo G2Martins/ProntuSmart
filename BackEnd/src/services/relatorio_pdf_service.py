@@ -350,6 +350,7 @@ def gerar_pdf_completo(
     # ── Avaliação Funcional (Tela 2) ────────────────────────
     story.append(Paragraph("Avaliação Funcional", styles["secao"]))
     def _bool(v): return "Sim" if v is True else ("Não" if v is False else "—")
+    def _mark(v): return "Marcado" if v is True else "—"
     def _deambulacao(v):
         if isinstance(v, str):
             return v or "—"
@@ -370,6 +371,11 @@ def gerar_pdf_completo(
         ("Fadiga funcional", _bool(prontuario.get("fadiga_funcional"))),
         ("Compreende comandos", _bool(prontuario.get("compreende_comandos"))),
         ("Comunicação preservada", _bool(prontuario.get("comunicacao_preservada"))),
+        ("Coordenação — Decomposição de Movimentos", _mark(prontuario.get("coordenacao_decomposicao_movimentos"))),
+        ("Coordenação — Ataxia Cerebelar", _mark(prontuario.get("coordenacao_ataxia_cerebelar"))),
+        ("Coordenação — Dismetria", _mark(prontuario.get("coordenacao_dismetria"))),
+        ("Coordenação — Nistagmo", _mark(prontuario.get("coordenacao_nistagmo"))),
+        ("Coordenação — Rechaço de Stewart-Holmes", _mark(prontuario.get("coordenacao_rechaco_stewart_holmes"))),
         ("AVD — Banho",       prontuario.get("avd_banho")),
         ("AVD — Vestir",      prontuario.get("avd_vestir")),
         ("AVD — Higiene",     prontuario.get("avd_higiene")),

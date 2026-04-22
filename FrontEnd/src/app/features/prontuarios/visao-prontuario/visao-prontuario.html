@@ -858,6 +858,20 @@
               </div>
             </div>
 
+            <!-- Coordenação -->
+            <div>
+              <h5 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
+                Coordenação
+              </h5>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div *ngFor="let item of coordenacaoItens" class="border border-gray-100 rounded-lg p-3">
+                  <p class="text-xs text-gray-400 mb-1">{{ item.label }}</p>
+                  <span class="text-xs font-semibold px-2 py-1 rounded-full border"
+                    [ngClass]="getMarcacaoClass(prontuario[item.ctrl])">{{ fmtMarcacao(prontuario[item.ctrl]) }}</span>
+                </div>
+              </div>
+            </div>
+
             <!-- AVDs -->
             <div>
               <h5 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">

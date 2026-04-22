@@ -236,6 +236,21 @@
         </div>
       </div>
 
+      <!-- Coordenação -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-blue-50 border-b border-blue-100 px-6 py-4">
+          <h3 class="font-semibold text-blue-800">Coordenação</h3>
+        </div>
+        <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <label *ngFor="let item of opCoordenacao"
+            class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 px-4 py-3 cursor-pointer hover:border-blue-300 transition-colors">
+            <span class="text-sm font-medium text-gray-700">{{ item.label }}</span>
+            <input type="checkbox" [formControlName]="item.ctrl"
+              class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+          </label>
+        </div>
+      </div>
+
       <div class="flex justify-end">
         <button type="button" (click)="avancar()"
           class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold flex items-center gap-2 shadow transition-colors">
