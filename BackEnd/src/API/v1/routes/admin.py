@@ -1,11 +1,14 @@
+import platform
 import secrets
 import string
+import sys
 from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from bson import ObjectId
 
 from src.core.database import get_database
+from src.core.monitor import monitor
 from src.core.security import get_current_user, get_password_hash
 from src.models.dim_solicitacao import StatusSolicitacao
 from src.models.dim_usuario import TipoPerfil, DimUsuario
@@ -76,6 +79,160 @@ async def obter_estatisticas_admin(db = Depends(get_database)):
         }
     except Exception as e:
         return {"statusServidor": "Erro", "detalhe": str(e)}
+
+# ==========================================
+# 1.2. MONITORAMENTO PROFUNDO DO SISTEMA
+# ==========================================
+@router.get("/monitoramento", dependencies=[Depends(verificar_admin)])
+async def monitoramento_completo(db = Depends(get_database)):
+    """Snapshot detalhado do sistema — métricas reais (DB + runtime + ambiente)."""
+    resultado: dict = {
+        "gerado_em": datetime.now(timezone.utc).isoformat(),
+    }
+
+    # ── Runtime ──────────────────────────────────────────────
+    uptime_seg = monitor.uptime_segundos()
+    resultado["runtime"] = {
+        "iniciado_em":      monitor.iniciado_iso,
+        "uptime_segundos":  uptime_seg,
+        "uptime_humano":    _formatar_uptime(uptime_seg),
+        "python_versao":    sys.version.split()[0],
+        "implementacao":    platform.python_implementation(),
+        "plataforma":       f"{platform.system()} {platform.release()}",
+        "arquitetura":      platform.machine(),
+    }
+
+    # ── Tráfego HTTP ─────────────────────────────────────────
+    resultado["trafego"] = {
+        "total_requisicoes":  monitor.total_requests,
+        "por_status":         monitor.por_status,
+        "por_metodo":         monitor.por_metodo,
+        "media_ms":           round(monitor.media_ms(), 2),
+        "p95_ms":             round(monitor.percentil(0.95), 2),
+        "p99_ms":             round(monitor.percentil(0.99), 2),
+        "rps":                round(monitor.total_requests / uptime_seg, 3) if uptime_seg > 0 else 0,
+        "top_endpoints":      monitor.top_endpoints(8),
+        "endpoints_lentos":   monitor.slow_endpoints(5),
+        "ultimas_requisicoes": list(monitor.recent_requests)[-15:],
+        "ultimos_erros":       list(monitor.recent_errors)[-10:],
+    }
+
+    # ── Autenticação ────────────────────────────────────────
+    total_logins = monitor.logins_sucesso + monitor.logins_falha
+    taxa_sucesso = (monitor.logins_sucesso / total_logins * 100) if total_logins else 100.0
+    resultado["autenticacao"] = {
+        "logins_sucesso":  monitor.logins_sucesso,
+        "logins_falha":    monitor.logins_falha,
+        "taxa_sucesso_%":  round(taxa_sucesso, 1),
+    }
+
+    # ── Banco de Dados ───────────────────────────────────────
+    if db is None:
+        resultado["banco"] = {"status": "Offline"}
+        return resultado
+
+    try:
+        db_stats = await db.command("dbstats")
+        server   = await db.command("serverStatus")
+
+        # Métricas por coleção
+        nomes = await db.list_collection_names()
+        colecoes = []
+        for nome in sorted(nomes):
+            try:
+                stats = await db.command("collStats", nome)
+                colecoes.append({
+                    "nome":       nome,
+                    "documentos": stats.get("count", 0),
+                    "tamanho_kb": round(stats.get("size", 0) / 1024, 1),
+                    "indices":    stats.get("nindexes", 0),
+                    "indice_kb":  round(stats.get("totalIndexSize", 0) / 1024, 1),
+                })
+            except Exception:
+                continue
+
+        connections = server.get("connections", {}) or {}
+        opcounters  = server.get("opcounters",  {}) or {}
+        mem         = server.get("mem",         {}) or {}
+        network     = server.get("network",     {}) or {}
+
+        resultado["banco"] = {
+            "status":           "Online",
+            "motor":            "MongoDB",
+            "versao":           server.get("version", "—"),
+            "host":             server.get("host", "—"),
+            "uptime_segundos":  int(server.get("uptime", 0)),
+            "uptime_humano":    _formatar_uptime(int(server.get("uptime", 0))),
+            "data_size_mb":     round(db_stats.get("dataSize", 0) / (1024 * 1024), 2),
+            "storage_size_mb":  round(db_stats.get("storageSize", 0) / (1024 * 1024), 2),
+            "index_size_mb":    round(db_stats.get("indexSize", 0) / (1024 * 1024), 2),
+            "total_colecoes":   db_stats.get("collections", 0),
+            "total_documentos": db_stats.get("objects", 0),
+            "total_indices":    db_stats.get("indexes", 0),
+            "conexoes": {
+                "ativas":      connections.get("current", 0),
+                "disponiveis": connections.get("available", 0),
+                "total_criadas": connections.get("totalCreated", 0),
+            },
+            "operacoes": {
+                "insert":  opcounters.get("insert", 0),
+                "query":   opcounters.get("query",  0),
+                "update":  opcounters.get("update", 0),
+                "delete":  opcounters.get("delete", 0),
+                "command": opcounters.get("command", 0),
+            },
+            "memoria_mongo_mb": {
+                "residente": mem.get("resident", 0),
+                "virtual":   mem.get("virtual", 0),
+            },
+            "rede": {
+                "bytes_in":     network.get("bytesIn", 0),
+                "bytes_out":    network.get("bytesOut", 0),
+                "num_requests": network.get("numRequests", 0),
+            },
+            "colecoes": colecoes,
+        }
+    except Exception as e:
+        resultado["banco"] = {"status": "Erro", "detalhe": str(e)}
+
+    # ── Métricas de negócio ──────────────────────────────────
+    try:
+        from src.models.dim_solicitacao import StatusSolicitacao as SS
+        sol_pendentes  = await db.dim_solicitacao_cadastro.count_documents({"status": SS.PENDENTE})
+        evol_pendentes = await db.fato_evolucao.count_documents({"status": "Pendente de Revisão"})
+        rels_aguardando = await db.fato_relatorio.count_documents({"status": "Aguardando Assinatura do Docente"})
+        rels_finalizados = await db.fato_relatorio.count_documents({"status": "Finalizado"})
+
+        usuarios_por_perfil: dict = {}
+        async for u in db.dim_usuario.find({}, {"perfil": 1, "is_ativo": 1}):
+            chave = u.get("perfil", "Desconhecido")
+            usuarios_por_perfil[chave] = usuarios_por_perfil.get(chave, 0) + 1
+
+        resultado["negocio"] = {
+            "solicitacoes_pendentes":  sol_pendentes,
+            "evolucoes_pendentes":     evol_pendentes,
+            "relatorios_aguardando":   rels_aguardando,
+            "relatorios_finalizados":  rels_finalizados,
+            "usuarios_por_perfil":     usuarios_por_perfil,
+        }
+    except Exception:
+        resultado["negocio"] = {}
+
+    return resultado
+
+
+def _formatar_uptime(segundos: int) -> str:
+    if segundos < 60:
+        return f"{segundos}s"
+    minutos, s = divmod(segundos, 60)
+    horas, m   = divmod(minutos, 60)
+    dias, h    = divmod(horas, 24)
+    if dias:
+        return f"{dias}d {h}h {m}m"
+    if h:
+        return f"{h}h {m}m"
+    return f"{m}m {s}s"
+
 
 # ==========================================
 # 2. GESTÃO DE USUÁRIOS (CRUD COMPLETO)

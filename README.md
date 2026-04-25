@@ -62,9 +62,9 @@ ProntuSmart/
 
 | Perfil | Descrição |
 |:---|:---|
-| **Administrador** | Gestão de usuários, áreas clínicas, CIDs, indicadores e visão epidemiológica |
-| **Docente** | Supervisão de estagiários, triagem de pacientes, revisão e assinatura de evoluções |
-| **Estagiário** | Registro de evoluções, avaliações funcionais, metas SMART e acompanhamento de pacientes vinculados |
+| **Administrador** | Gestão de usuários, áreas clínicas, CIDs, indicadores; aprovação de solicitações de cadastro; painel de monitoramento profundo do sistema |
+| **Preceptor** *(enum interno: Docente)* | Supervisão de estagiários, revisão e coassinatura de evoluções, assinatura de relatórios fisioterapêuticos |
+| **Estagiário** | Triagem de pacientes, registro de evoluções, avaliações funcionais, metas SMART, aplicação de testes (Avaliação Funcional / Sunny / Mini-BESTest) e emissão de relatórios |
 
 ---
 
@@ -94,10 +94,12 @@ python -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 # Configure .env com base no .env.example
-python -m src.utils.seed         # Popula banco de dados inicial
+python -m src.utils.seed         # Popula áreas + indicadores + 3 contas-base (sem pacientes)
 uvicorn src.main:app --reload
 ```
 API disponível em `http://localhost:8000` | Swagger em `http://localhost:8000/docs`
+
+> A seed cria as contas: `admin01` (Administrador), `prec01` / **Velluma** (Preceptor — Neurologia Adulto) e `est01` / **Emellyn Lima** (Estagiária — Neurologia Adulto). Todas com senha `ucb@1234`.
 
 ### 2. Iniciar o Frontend
 ```bash
@@ -131,16 +133,23 @@ Aplicação disponível em `http://localhost:4200`
 | Status | Funcionalidade |
 |:---:|:---|
 | ✅ | Autenticação JWT com controle de perfil (RBAC) |
+| ✅ | Cadastro público com aprovação manual do Administrador |
 | ✅ | Gestão completa de pacientes (CRUD) |
+| ✅ | Triagem exclusiva pelo Estagiário (abertura de prontuário com CID) |
 | ✅ | Prontuários eletrônicos com ciclo de vida controlado |
-| ✅ | Registro de evoluções clínicas com revisão do docente |
-| ✅ | Avaliação funcional estruturada |
+| ✅ | Registro de evoluções clínicas com revisão e coassinatura do Preceptor |
+| ✅ | Avaliação funcional estruturada em wizard de 3 partes |
+| ✅ | Histórico de testes/escalas: Avaliação Funcional, Escala de Sunny e Mini-BESTest |
 | ✅ | Metas SMART com acompanhamento de progresso |
 | ✅ | Medições e indicadores clínicos por meta |
+| ✅ | Relatórios fisioterapêuticos (PADRÃO UCB e COMPLETO) com assinatura digital + PDF |
+| ✅ | Caixas de entrada por perfil (rascunhos do Estagiário · pendentes do Preceptor · solicitações do Admin) |
 | ✅ | Dashboard personalizado por perfil de acesso |
 | ✅ | Inteligência epidemiológica e gráficos analíticos |
 | ✅ | Gestão de áreas clínicas, CIDs e indicadores |
 | ✅ | Página de perfil do usuário com troca de senha |
+| ✅ | Tema claro / escuro persistente |
+| ✅ | Painel de Monitoramento do sistema (runtime + DB + tráfego em tempo real) |
 
 ---
 

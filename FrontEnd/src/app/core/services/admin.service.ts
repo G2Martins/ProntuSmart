@@ -23,6 +23,10 @@ export class AdminService {
     return this.http.get<any>(`${this.apiUrl}/estatisticas`, { headers: this.getHeaders() });
   }
 
+  getMonitoramento() {
+    return this.http.get<any>(`${this.apiUrl}/monitoramento`, { headers: this.getHeaders() });
+  }
+
   getUsuarios(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/usuarios`, { headers: this.getHeaders() });
   }

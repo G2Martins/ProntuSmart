@@ -26,7 +26,7 @@
 
 ## Sobre
 
-API REST da plataforma ProntuSMART, responsável pela autenticação, controle de acesso por perfil (RBAC), persistência de dados clínicos e geração de indicadores analíticos. Construída com FastAPI e MongoDB em arquitetura modular em camadas, garantindo operações assíncronas em 100% do stack.
+API REST da plataforma ProntuSMART, responsável pela autenticação, controle de acesso por perfil (RBAC), persistência de dados clínicos, geração de relatórios fisioterapêuticos com assinatura digital, registro de testes/escalas funcionais e geração de indicadores analíticos. Construída com FastAPI e MongoDB em arquitetura modular em camadas, garantindo operações assíncronas em todo o stack.
 
 ---
 
@@ -41,6 +41,7 @@ API REST da plataforma ProntuSMART, responsável pela autenticação, controle d
 | Validação | Pydantic | 2.6.3+ |
 | Autenticação | python-jose (JWT) | 3.3.0 |
 | Hash de Senha | bcrypt | 4.1.2 |
+| Geração de PDF | ReportLab | — |
 | Banco de Dados | MongoDB | 4.4+ |
 
 ---
@@ -94,13 +95,19 @@ ACCESS_TOKEN_EXPIRE_MINUTES=120
 
 ### 5. Seed do Banco de Dados
 
-Popula as dimensões iniciais (áreas, indicadores, status) e cria o usuário administrador padrão:
+Popula áreas clínicas, indicadores e cria três contas-base. **Não cria pacientes** — o banco fica pronto para uso real, sem dados fictícios. A coleção `dim_cid` é preservada (base oficial CID-10).
 
 ```bash
 python -m src.utils.seed
 ```
 
-Credenciais padrão geradas: **matrícula:** `admin` | **senha:** `admin123`
+Contas criadas pela seed (todas com senha `ucb@1234`):
+
+| Matrícula | Nome | Perfil | Área |
+|:---|:---|:---|:---|
+| `admin01` | Administrador Sistema | Administrador | — |
+| `prec01`  | Velluma | Preceptor (Docente) | Neurologia Adulto |
+| `est01`   | Emellyn Lima | Estagiária | Neurologia Adulto |
 
 ### 6. Iniciar o Servidor
 
@@ -118,119 +125,161 @@ Documentação Swagger em **`http://localhost:8000/docs`**
 ```
 BackEnd/
 │
-├── src/                          # Código-fonte principal
+├── src/
 │   │
-│   ├── main.py                   # Entry point: instancia FastAPI, registra routers e configura CORS
+│   ├── main.py                       # FastAPI bootstrap, middleware de métricas, CORS, lifespan
 │   │
 │   ├── API/
 │   │   └── v1/
-│   │       ├── router.py         # Agrega todos os routers de domínio sob o prefixo /api/v1
-│   │       └── routes/           # Endpoints organizados por domínio de negócio
-│   │           ├── auth.py       # Login, registro de usuários e endpoint GET /auth/me
-│   │           ├── pacientes.py  # CRUD de pacientes (busca, cadastro, edição, soft delete)
-│   │           ├── prontuarios.py # Abertura, listagem e visão completa de prontuários
-│   │           ├── evolucoes.py  # Registro imutável de sessões de atendimento
-│   │           ├── metas_smart.py # Criação e rastreamento de metas SMART por prontuário
-│   │           ├── medicoes.py   # Registro de medições e cálculo automático de progresso
-│   │           ├── indicadores.py # CRUD de indicadores clínicos (admin) e lookup público
-│   │           ├── areas.py      # Gestão de áreas clínicas (ortopedia, neurologia, etc.)
-│   │           ├── cids.py       # Gestão de códigos CID-10 para diagnósticos
-│   │           ├── dashboard.py  # Endpoints de analytics e inteligência epidemiológica
-│   │           └── admin.py      # Operações administrativas: estatísticas e gestão de usuários
+│   │       ├── router.py             # Agrega routers de domínio sob /api/v1
+│   │       └── routes/
+│   │           ├── auth.py           # Login, /auth/me, troca de senha, /auth/registrar (público)
+│   │           ├── pacientes.py      # CRUD de pacientes
+│   │           ├── prontuarios.py    # Triagem (apenas Estagiário) e visão de prontuários
+│   │           ├── evolucoes.py      # Sessões de atendimento + revisão pelo Preceptor
+│   │           ├── metas_smart.py    # CRUD de metas SMART
+│   │           ├── medicoes.py       # Registro de medições e progresso
+│   │           ├── indicadores.py    # CRUD de indicadores clínicos
+│   │           ├── areas.py          # Áreas clínicas
+│   │           ├── cids.py           # Códigos CID-10
+│   │           ├── dashboard.py      # Inteligência epidemiológica
+│   │           ├── relatorios.py     # Relatórios fisioterapêuticos com assinatura digital + PDF
+│   │           ├── testes.py         # Testes/escalas: Avaliação Funcional, Sunny, Mini-BESTest
+│   │           └── admin.py          # Gestão de usuários, solicitações de cadastro e monitoramento
 │   │
-│   ├── core/                     # Infraestrutura central compartilhada por toda a aplicação
-│   │   ├── config.py             # Leitura e validação das variáveis de ambiente via pydantic-settings
-│   │   ├── database.py           # Conexão assíncrona com MongoDB via Motor (connection pooling)
-│   │   └── security.py           # Criação e verificação de JWT, hash bcrypt, OAuth2PasswordBearer
+│   ├── core/
+│   │   ├── config.py                 # Variáveis de ambiente via pydantic-settings
+│   │   ├── database.py               # Conexão Motor com MongoDB (lifespan async)
+│   │   ├── security.py               # JWT + bcrypt + dependency get_current_user
+│   │   └── monitor.py                # RuntimeMonitor: métricas em memória (uptime, RPS, P95, erros)
 │   │
-│   ├── models/                   # Modelos de dados Pydantic para serialização BSON ↔ JSON
-│   │   ├── base.py               # MongoBaseModel: converte ObjectId para string, define timestamps
-│   │   ├── dim_usuario.py        # Dimensão de usuários (estagiários, docentes, administradores)
-│   │   ├── dim_paciente.py       # Dimensão de pacientes atendidos pela clínica
-│   │   ├── dim_area.py           # Dimensão de áreas clínicas (ex: Fisioterapia Ortopédica)
-│   │   ├── dim_cid.py            # Dimensão de códigos diagnósticos CID-10
-│   │   ├── dim_indicador.py      # Dimensão de indicadores funcionais (força, dor EVA, etc.)
-│   │   ├── dim_status.py         # Enums de status: perfis de usuário, status de prontuário e meta
-│   │   ├── fato_prontuario.py    # Fato: prontuário do paciente (número UCB, sessões, status)
-│   │   ├── fato_meta_smart.py    # Fato: metas SMART com 5 componentes e progresso calculado
-│   │   ├── fato_evolucao.py      # Fato: registro imutável de cada sessão de atendimento
-│   │   └── fato_medicao.py       # Fato: medição de indicador vinculada a uma meta SMART
+│   ├── models/                       # Modelos Pydantic / BSON
+│   │   ├── base.py                   # MongoBaseModel: ObjectId↔string, timestamps
+│   │   ├── dim_usuario.py            # Estagiário, Docente (Preceptor), Administrador
+│   │   ├── dim_paciente.py
+│   │   ├── dim_area.py
+│   │   ├── dim_cid.py                # Base oficial CID-10 (preservada na seed)
+│   │   ├── dim_indicador.py          # Limites mín/máx + direção de melhora
+│   │   ├── dim_status.py             # Enums de status (prontuário, meta, evolução)
+│   │   ├── dim_solicitacao.py        # Solicitação pública de cadastro com fluxo de aprovação
+│   │   ├── fato_prontuario.py        # Triagem + Avaliação Funcional + Síntese
+│   │   ├── fato_meta_smart.py
+│   │   ├── fato_evolucao.py
+│   │   ├── fato_medicao.py
+│   │   ├── fato_relatorio.py         # Relatórios com tipos PADRÃO/COMPLETO + assinaturas digitais
+│   │   └── fato_teste.py             # Testes/escalas aplicadas ao paciente (genérico por tipo)
 │   │
-│   ├── schemas/                  # Schemas de validação de entrada e saída (request/response)
-│   │   ├── auth.py               # LoginRequest, TokenResponse, schemas de troca de senha
-│   │   ├── usuario.py            # UsuarioCreate, UsuarioUpdate, UsuarioResponse
-│   │   ├── paciente.py           # PacienteCreate, PacienteUpdate, PacienteResponse
-│   │   ├── prontuario.py         # ProntuarioCreate, ProntuarioResponse (com dados desnormalizados)
-│   │   ├── evolucao.py           # EvolucaoCreate, EvolucaoResponse
-│   │   ├── meta_smart.py         # MetaSMARTCreate, MetaSMARTResponse (com progresso_percentual)
-│   │   ├── medicao.py            # MedicaoCreate, MedicaoResponse
-│   │   ├── indicador.py          # IndicadorCreate, IndicadorUpdate, IndicadorResponse
-│   │   ├── area.py               # AreaCreate, AreaUpdate, AreaResponse
-│   │   └── cid.py                # CIDCreate, CIDUpdate, CIDResponse
+│   ├── schemas/                      # Validação request/response
+│   │   ├── auth.py
+│   │   ├── usuario.py
+│   │   ├── paciente.py
+│   │   ├── prontuario.py
+│   │   ├── evolucao.py
+│   │   ├── meta_smart.py
+│   │   ├── medicao.py
+│   │   ├── indicador.py
+│   │   ├── area.py
+│   │   ├── cid.py
+│   │   ├── relatorio.py
+│   │   ├── teste.py
+│   │   └── solicitacao.py
 │   │
-│   ├── services/                 # Camada de lógica de negócio (desacoplada dos endpoints)
-│   │   ├── auth_service.py       # Autenticação, criação de usuários e verificação de perfil
-│   │   ├── paciente_service.py   # CRUD de pacientes com validações (CPF único, soft delete)
-│   │   ├── prontuario_service.py # Ciclo de vida do prontuário: abertura, visão completa, alta
-│   │   ├── evolucao_service.py   # Criação de evoluções, contagem de pendentes por docente
-│   │   ├── meta_smart_service.py # Criação de metas SMART e atualização de status/progresso
-│   │   ├── medicao_service.py    # Registro de medições e recalculo de progresso da meta
-│   │   ├── indicador_service.py  # CRUD de indicadores com controle de ativação
-│   │   └── dashboard_service.py  # Agregações analíticas para dashboards e epidemiologia
+│   ├── services/                     # Lógica de negócio desacoplada dos endpoints
+│   │   ├── auth_service.py
+│   │   ├── paciente_service.py
+│   │   ├── prontuario_service.py
+│   │   ├── evolucao_service.py
+│   │   ├── meta_smart_service.py
+│   │   ├── medicao_service.py
+│   │   ├── indicador_service.py
+│   │   ├── indicador_limits.py       # Validação de limites mín/máx por indicador
+│   │   ├── dashboard_service.py
+│   │   └── relatorio_pdf_service.py  # Geração de PDF (PADRÃO modelo UCB e COMPLETO)
 │   │
-│   └── utils/                    # Utilitários auxiliares
-│       ├── helpers.py            # calcular_progresso() por direção de melhora, gerar_numero_prontuario()
-│       └── seed.py               # Popula dimensões iniciais e cria o usuário administrador padrão
+│   └── utils/
+│       ├── helpers.py
+│       └── seed.py                   # Seed enxuta: áreas + indicadores + 3 contas (sem pacientes)
 │
 ├── tests/
-│   └── test_auth.py              # Testes unitários do fluxo de autenticação
+│   └── test_auth.py
 │
-├── .env.example                  # Template de variáveis de ambiente (não contém credenciais reais)
-├── .gitignore                    # Exclui venv/, .env, __pycache__, arquivos gerados
-├── requirements.txt              # Lista de dependências Python com versões fixas
-└── README.md                     # Este arquivo
+├── .env.example
+├── .gitignore
+├── requirements.txt
+└── README.md
 ```
 
 ### Modelo de Dados: Esquema em Estrela
 
 O banco segue um padrão **dimensional** que separa referências de transações:
 
-- **Dimensões (`dim_*`)** — Dados de referência relativamente estáticos (usuários, pacientes, áreas, CIDs, indicadores). Baixa cardinalidade, alta reutilização.
-- **Fatos (`fato_*`)** — Eventos e transações clínicas (prontuários, metas, evoluções, medições). Crescem continuamente. Conectam-se às dimensões por ID.
+- **Dimensões (`dim_*`)** — Dados de referência relativamente estáticos: usuários, pacientes, áreas, CIDs, indicadores, solicitações de cadastro. Baixa cardinalidade, alta reutilização.
+- **Fatos (`fato_*`)** — Eventos clínicos que crescem continuamente: prontuários, metas, evoluções, medições, relatórios e testes aplicados.
+
+> Nota: o enum interno do perfil docente é `Docente` (preservado por compatibilidade no banco), mas a interface exibe sempre o termo **Preceptor**, que é como a clínica chama o supervisor.
 
 ---
 
 ## Endpoints Principais
 
-### Autenticação
+### Autenticação e Cadastro
 | Método | Rota | Descrição | Acesso |
 |:---|:---|:---|:---|
 | `POST` | `/api/v1/auth/login` | Login com matrícula e senha, retorna JWT | Público |
-| `POST` | `/api/v1/auth/register` | Registrar novo usuário | Administrador |
-| `GET` | `/api/v1/auth/me` | Retorna dados do usuário autenticado | Autenticado |
-| `POST` | `/api/v1/auth/trocar-senha` | Troca de senha na sessão | Autenticado |
+| `POST` | `/api/v1/auth/registrar` | Submete solicitação pública de cadastro (passa por aprovação do Admin) | Público |
+| `GET`  | `/api/v1/auth/me` | Retorna dados do usuário autenticado | Autenticado |
+| `POST` | `/api/v1/auth/trocar-senha` | Troca de senha temporária para definitiva | Autenticado |
 
-### Pacientes
+### Pacientes e Prontuários
 | Método | Rota | Descrição | Acesso |
 |:---|:---|:---|:---|
-| `GET` | `/api/v1/pacientes` | Listar pacientes (com busca por nome/CPF) | Estagiário+ |
-| `POST` | `/api/v1/pacientes` | Cadastrar novo paciente | Docente+ |
-| `GET` | `/api/v1/pacientes/{id}` | Buscar paciente por ID | Estagiário+ |
-| `PATCH` | `/api/v1/pacientes/{id}` | Atualizar dados cadastrais | Docente+ |
-
-### Prontuários
-| Método | Rota | Descrição | Acesso |
-|:---|:---|:---|:---|
-| `POST` | `/api/v1/prontuarios` | Abrir prontuário e vincular estagiário | Docente+ |
-| `GET` | `/api/v1/prontuarios/meus` | Listar prontuários do usuário autenticado | Estagiário+ |
-| `GET` | `/api/v1/prontuarios/{id}` | Visão completa do prontuário | Estagiário+ |
+| `GET`  | `/api/v1/pacientes` | Listar pacientes (com busca) | Autenticado |
+| `POST` | `/api/v1/pacientes` | Cadastrar novo paciente | Autenticado |
+| `POST` | `/api/v1/prontuarios` | **Triagem** — abrir prontuário | **Apenas Estagiário** |
+| `GET`  | `/api/v1/prontuarios/meus` | Lista por perfil (Estagiário vê seus + da área) | Autenticado |
+| `GET`  | `/api/v1/prontuarios/{id}` | Visão completa do prontuário | Autenticado |
+| `PATCH`| `/api/v1/prontuarios/{id}/avaliacao` | Atualiza avaliação funcional + síntese | Estagiário |
 
 ### Evoluções, Metas e Medições
 | Método | Rota | Descrição |
 |:---|:---|:---|
-| `POST` | `/api/v1/evolucoes` | Registrar sessão de atendimento (imutável após criação) |
-| `POST` | `/api/v1/metas-smart` | Criar meta SMART vinculada ao prontuário |
-| `POST` | `/api/v1/medicoes` | Registrar medição e recalcular progresso da meta |
+| `POST`  | `/api/v1/evolucoes` | Registrar sessão (estagiário) |
+| `PATCH` | `/api/v1/evolucoes/{id}/revisar` | Aprovar / devolver evolução (Preceptor) |
+| `GET`   | `/api/v1/evolucoes/pendentes/count` | Contagem de evoluções pendentes |
+| `POST`  | `/api/v1/metas-smart` | Criar meta SMART |
+| `POST`  | `/api/v1/medicoes` | Registrar medição e atualizar progresso |
+
+### Relatórios Fisioterapêuticos
+| Método | Rota | Descrição |
+|:---|:---|:---|
+| `POST`  | `/api/v1/relatorios` | Criar rascunho (PADRÃO escolhe Preceptor designado) |
+| `GET`   | `/api/v1/relatorios/meus` | Listar relatórios respeitando RBAC |
+| `GET`   | `/api/v1/relatorios/docentes-disponiveis/{prontuario_id}` | Sugerir Preceptores que já revisaram evoluções |
+| `POST`  | `/api/v1/relatorios/{id}/assinar` | Assinatura digital com reentrada de senha + hash SHA256 |
+| `GET`   | `/api/v1/relatorios/{id}/pdf` | Streaming do PDF (PADRÃO ou COMPLETO) |
+| `DELETE`| `/api/v1/relatorios/{id}` | Cancela rascunho |
+
+### Testes e Escalas
+| Método | Rota | Descrição |
+|:---|:---|:---|
+| `POST`  | `/api/v1/testes` | Aplicar teste (Avaliação Funcional / Sunny / MiniBest) |
+| `GET`   | `/api/v1/testes/prontuario/{prontuario_id}` | Histórico de testes do prontuário |
+| `GET`   | `/api/v1/testes/{id}` | Detalhes de um teste |
+| `PATCH` | `/api/v1/testes/{id}` | Editar teste (apenas o autor) |
+| `DELETE`| `/api/v1/testes/{id}` | Excluir teste |
+
+### Administração
+| Método | Rota | Descrição |
+|:---|:---|:---|
+| `GET`    | `/api/v1/admin/estatisticas` | KPIs leves para dashboard do Admin |
+| `GET`    | `/api/v1/admin/monitoramento` | Snapshot completo: runtime, tráfego, banco, negócio, autenticação |
+| `GET`    | `/api/v1/admin/usuarios` | Listar usuários com filtros |
+| `POST`   | `/api/v1/admin/usuarios` | Criar usuário (manual) |
+| `PUT`    | `/api/v1/admin/usuarios/{id}` | Atualizar usuário |
+| `PATCH`  | `/api/v1/admin/usuarios/{id}/reset-password` | Reset com troca obrigatória no próximo login |
+| `GET`    | `/api/v1/admin/solicitacoes` | Caixa de entrada de cadastros pendentes |
+| `PATCH`  | `/api/v1/admin/solicitacoes/{id}/aprovar` | Aprovar (com edição opcional) e criar usuário |
+| `PATCH`  | `/api/v1/admin/solicitacoes/{id}/recusar` | Recusar com motivo |
 
 ---
 
@@ -240,14 +289,34 @@ O banco segue um padrão **dimensional** que separa referências de transações
 
 | Perfil | Permissões Principais |
 |:---|:---|
-| **Administrador** | CRUD de usuários, áreas, CIDs, indicadores; acesso a todas as estatísticas |
-| **Docente** | Abrir prontuários, vincular estagiários, revisar e assinar evoluções |
-| **Estagiário** | Registrar evoluções e medições em seus prontuários vinculados |
+| **Administrador** | CRUD de usuários, áreas, CIDs, indicadores; aprovação de solicitações de cadastro; monitoramento profundo do sistema |
+| **Preceptor** (enum interno: `Docente`) | Supervisiona estagiários, revisa e coassina evoluções, assina relatórios padrão |
+| **Estagiário** | **Faz triagem** (criação de prontuário), registra evoluções/medições/testes nos seus prontuários e da sua área |
 
 ### Fluxo JWT
 1. `POST /auth/login` retorna `access_token` (HS256, 120 min de validade).
-2. O cliente armazena o token e o envia em cada requisição: `Authorization: Bearer <token>`.
-3. O backend decodifica o token, busca o usuário no MongoDB e verifica o perfil.
+2. O cliente envia em cada requisição: `Authorization: Bearer <token>`.
+3. O backend decodifica, busca o usuário no MongoDB e injeta como dependência via `get_current_user`.
+
+### Fluxo de Cadastro Público
+1. Usuário envia `POST /auth/registrar` com seus dados — gera registro `Pendente` em `dim_solicitacao_cadastro`.
+2. Admin visualiza a solicitação na caixa de entrada do painel.
+3. Admin pode **editar** os campos antes de aprovar — ao aprovar, gera o `DimUsuario` definitivo.
+4. Em caso de recusa, o motivo fica registrado para auditoria.
+
+---
+
+## Monitoramento
+
+O endpoint `GET /admin/monitoramento` retorna um snapshot agregado em tempo real:
+
+- **Runtime:** uptime da API, versão do Python, plataforma, arquitetura.
+- **Tráfego HTTP:** total de requisições, P95 / P99, RPS, distribuição por status (2xx/3xx/4xx/5xx), por método, top endpoints, endpoints mais lentos, últimas requisições, últimos erros.
+- **Banco MongoDB:** versão, uptime, conexões ativas/disponíveis, opcounters, memória residente/virtual, bytes I/O, tamanho de dados/storage/índices, lista detalhada de coleções com contagem de documentos.
+- **Negócio:** solicitações de cadastro pendentes, evoluções pendentes de revisão, relatórios em trânsito, contagem de usuários por perfil.
+- **Autenticação:** logins de sucesso vs falha, taxa de sucesso.
+
+As métricas de tráfego são coletadas pelo middleware HTTP em `core/monitor.py` (em memória — reseta a cada restart).
 
 ---
 
@@ -270,9 +339,10 @@ Para testar endpoints autenticados no Swagger: clique em **Authorize**, cole o t
 |:---|:---|:---|
 | `Failed to connect to MongoDB` | Connection string inválida ou IP não liberado | Verifique `MONGODB_URL` e o IP whitelist no Atlas |
 | `401 Unauthorized` | Token expirado ou ausente | Re-autentique via `/auth/login` |
+| `403 Forbidden` na triagem | Apenas Estagiário pode triar | Faça login com perfil Estagiário |
 | `422 Unprocessable Entity` | Payload não passa na validação Pydantic | Consulte o Swagger (`/docs`) para a estrutura esperada |
 | `ModuleNotFoundError` | Dependências não instaladas | Execute `pip install -r requirements.txt` com o venv ativo |
-| Matrícula já cadastrada | Tentativa de registro duplicado | Escolha uma matrícula diferente |
+| Solicitação pendente duplicada | Já existe solicitação pendente com mesma matrícula/email | Aguarde o Admin processar a anterior |
 
 ---
 

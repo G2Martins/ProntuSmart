@@ -54,6 +54,92 @@
     </div>
   </div>
 
+  <!-- ── Caixa do Estagiário ────────────────────────────────── -->
+  <ng-container *ngIf="perfil === 'Estagiario'">
+    <div class="bg-white shadow-sm rounded-lg border overflow-hidden"
+         [ngClass]="rascunhosParaAssinar.length > 0 ? 'border-purple-200' : 'border-gray-100'">
+      <div class="px-6 py-4 flex items-center gap-3 flex-wrap"
+           [ngClass]="rascunhosParaAssinar.length > 0
+             ? 'bg-gradient-to-r from-purple-50 to-white border-b border-purple-100'
+             : 'bg-gray-50 border-b border-gray-100'">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center"
+             [ngClass]="rascunhosParaAssinar.length > 0 ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-500'">
+          <iconify-icon icon="ph:signature-bold" class="text-xl"></iconify-icon>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h3 class="font-bold text-gray-800 flex items-center gap-2">
+            Aguardando minha assinatura
+            <span class="text-xs font-bold px-2 py-0.5 rounded-full"
+                  [ngClass]="rascunhosParaAssinar.length > 0 ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-600'">
+              {{ statRascunhosMeus }}
+            </span>
+          </h3>
+          <p class="text-xs text-gray-500">Rascunhos seus que ainda não foram assinados — sem sua assinatura, o preceptor não recebe.</p>
+        </div>
+        <span *ngIf="statMeusEmTramite > 0"
+              class="text-xs px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 font-semibold flex items-center gap-1">
+          <iconify-icon icon="ph:hourglass-medium-bold"></iconify-icon>
+          {{ statMeusEmTramite }} aguardando preceptor
+        </span>
+      </div>
+
+      <div *ngIf="isLoadingRelatorios" class="py-8 text-center text-gray-400">
+        <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-2xl text-purple-400 mb-1"></iconify-icon>
+        <p class="text-sm">Carregando seus relatórios...</p>
+      </div>
+
+      <div *ngIf="!isLoadingRelatorios && rascunhosParaAssinar.length === 0"
+        class="py-8 text-center text-gray-400">
+        <iconify-icon icon="ph:check-circle-bold" class="text-4xl text-green-400 mb-1"></iconify-icon>
+        <p class="text-sm font-semibold text-gray-600">Nenhum rascunho pendente.</p>
+        <p class="text-xs">Crie um novo relatório na aba "Emitir Novo Relatório".</p>
+      </div>
+
+      <ul *ngIf="!isLoadingRelatorios && rascunhosParaAssinar.length > 0"
+          class="divide-y divide-gray-100">
+        <li *ngFor="let r of rascunhosParaAssinar"
+            class="p-5 hover:bg-purple-50/40 transition-colors flex items-center gap-4 flex-wrap">
+          <div class="w-11 h-11 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold uppercase shrink-0">
+            {{ (r.nome_paciente || '?').charAt(0) }}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-mono text-xs text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded">
+                {{ r.numero_relatorio }}
+              </span>
+              <span class="text-xs font-semibold px-2 py-0.5 rounded-full border" [ngClass]="getTipoBadge(r.tipo)">
+                {{ r.tipo }}
+              </span>
+              <span class="text-xs font-semibold px-2 py-0.5 rounded-full border bg-gray-100 text-gray-700 border-gray-200 inline-flex items-center gap-1">
+                <iconify-icon icon="ph:pencil-bold"></iconify-icon> Rascunho
+              </span>
+            </div>
+            <p class="font-semibold text-gray-800 text-sm mt-0.5 truncate">{{ r.nome_paciente || '—' }}</p>
+            <p class="text-xs text-gray-500 truncate">
+              <span *ngIf="r.numero_prontuario" class="text-gray-400 font-mono">{{ r.numero_prontuario }}</span>
+              <span *ngIf="r.nome_docente" class="ml-2">
+                <iconify-icon icon="ph:chalkboard-teacher-bold" class="text-blue-400 align-middle"></iconify-icon>
+                Preceptor designado: <span class="font-medium">{{ r.nome_docente }}</span>
+              </span>
+              <span *ngIf="!r.nome_docente" class="ml-2 text-amber-600">
+                <iconify-icon icon="ph:warning-circle-bold" class="align-middle"></iconify-icon>
+                Selecione um preceptor antes de assinar
+              </span>
+            </p>
+            <p class="text-xs text-purple-600 mt-0.5">
+              Criado em {{ r.criado_em | date:'dd/MM/yyyy · HH:mm' }}
+            </p>
+          </div>
+          <button (click)="abrirRelatorio(r)"
+            class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-4 py-2 rounded-lg shadow flex items-center gap-1.5 shrink-0 transition-colors">
+            <iconify-icon icon="ph:signature-bold"></iconify-icon>
+            Revisar e Assinar
+          </button>
+        </li>
+      </ul>
+    </div>
+  </ng-container>
+
   <!-- ── Visão do Preceptor ─────────────────────────────────── -->
   <ng-container *ngIf="perfil === 'Docente'">
 

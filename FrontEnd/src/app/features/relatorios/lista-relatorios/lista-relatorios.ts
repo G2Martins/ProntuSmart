@@ -197,6 +197,28 @@ export class ListaRelatoriosComponent implements OnInit {
     return this.aguardandoMinhaAssinatura.length;
   }
 
+  // Caixa do Estagiário: rascunhos próprios pendentes de assinatura
+  get rascunhosParaAssinar(): any[] {
+    if (this.perfil !== 'Estagiario' || !this.meuId) return [];
+    return this.relatorios.filter(r =>
+      r.estagiario_id === this.meuId
+      && r.status === 'Rascunho'
+      && !r.assinatura_estagiario
+    );
+  }
+
+  // Devolvidos / aguardando preceptor designado (acompanhamento próprio)
+  get meusEmTramite(): any[] {
+    if (this.perfil !== 'Estagiario' || !this.meuId) return [];
+    return this.relatorios.filter(r =>
+      r.estagiario_id === this.meuId
+      && r.status === 'Aguardando Assinatura do Docente'
+    );
+  }
+
+  get statRascunhosMeus(): number { return this.rascunhosParaAssinar.length; }
+  get statMeusEmTramite(): number { return this.meusEmTramite.length; }
+
   irParaAssinar(r: any) {
     this.router.navigate(['/relatorios/visualizar', r._id]);
   }

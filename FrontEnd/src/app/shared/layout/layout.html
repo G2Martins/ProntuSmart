@@ -58,6 +58,13 @@
         <iconify-icon icon="ph:book-bookmark-bold" class="text-xl mr-3"></iconify-icon> CIDs
       </a>
 
+      <a *ngIf="userProfile === 'Administrador'"
+         routerLink="/monitoramento"
+         routerLinkActive="bg-brand-800 dark:bg-slate-800"
+         class="flex items-center p-3 rounded hover:bg-brand-800 dark:hover:bg-slate-800 transition-colors cursor-pointer">
+        <iconify-icon icon="ph:pulse-bold" class="text-xl mr-3"></iconify-icon> Monitoramento
+      </a>
+
     </nav>
   </aside>
 

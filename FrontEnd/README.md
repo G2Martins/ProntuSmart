@@ -17,7 +17,7 @@
   &nbsp;&nbsp;
   <img src="https://img.shields.io/badge/RxJS-Reactive_Forms-B7178C?style=for-the-badge&logo=reactivex&logoColor=white" alt="RxJS">
   &nbsp;&nbsp;
-  <img src="https://img.shields.io/badge/Tests-Vitest-6E9F18?style=for-the-badge&logo=vitest&logoColor=white" alt="Vitest">
+  <img src="https://img.shields.io/badge/Tema-Claro_Escuro-374151?style=for-the-badge&logo=darkreader&logoColor=white" alt="Tema">
 </p>
 
 </div>
@@ -26,7 +26,7 @@
 
 ## Sobre
 
-SPA (Single Page Application) construída em Angular com componentes standalone e Tailwind CSS. Consome a API REST do backend ProntuSMART e oferece interfaces adaptadas por perfil: Estagiário, Docente e Administrador — com dashboard personalizado, gestão de prontuários e recursos de análise clínica.
+SPA (Single Page Application) construída em Angular com componentes standalone e Tailwind CSS. Consome a API REST do backend ProntuSMART e oferece interfaces adaptadas por perfil — **Estagiário, Preceptor e Administrador** — com dashboard personalizado, gestão de prontuários, registro de testes funcionais (Avaliação Funcional, Sunny, Mini-BESTest), emissão de relatórios com assinatura digital, fluxo de cadastro público com aprovação e painel de monitoramento do sistema.
 
 ---
 
@@ -38,10 +38,10 @@ SPA (Single Page Application) construída em Angular com componentes standalone 
 | Linguagem | TypeScript | 5+ |
 | Estilização | Tailwind CSS | 4+ |
 | Ícones | Iconify (Phosphor Icons) | — |
-| Formulários | Angular Reactive Forms | — |
+| Formulários | Angular Reactive Forms + Template Forms | — |
 | HTTP Client | Angular HttpClient + Interceptor | — |
 | Roteamento | Angular Router (lazy loading) | — |
-| Testes | Vitest | — |
+| Tema | Serviço próprio (claro / escuro persistente) | — |
 
 ---
 
@@ -69,13 +69,7 @@ O servidor recarrega automaticamente ao salvar qualquer arquivo fonte.
 ```bash
 ng build
 ```
-Artefatos gerados na pasta `dist/` com otimizações de performance aplicadas.
-
-### 5. Executar Testes
-```bash
-ng test
-```
-Testes unitários com Vitest.
+Artefatos gerados na pasta `dist/` com otimizações de performance (lazy chunks por feature).
 
 ---
 
@@ -84,75 +78,80 @@ Testes unitários com Vitest.
 ```
 src/
 │
-├── index.html                              # Ponto de entrada HTML da aplicação
-├── main.ts                                 # Bootstrap Angular: registra providers e inicia o app
-├── styles.scss                             # Estilos globais e diretivas Tailwind (@tailwind base, etc.)
+├── index.html                              # Ponto de entrada HTML
+├── main.ts                                 # Bootstrap Angular
+├── styles.scss                             # Estilos globais e diretivas Tailwind
 │
 ├── environments/
-│   ├── environment.ts                      # Configuração de produção (URL da API, flags de feature)
-│   └── environment.development.ts          # Configuração de desenvolvimento (URL local do backend)
+│   ├── environment.ts                      # Produção (URL da API)
+│   └── environment.development.ts          # Desenvolvimento (URL local)
 │
 └── app/
     │
-    ├── app.ts                              # Componente raiz da aplicação
-    ├── app.html                            # Template raiz (contém <router-outlet>)
-    ├── app.routes.ts                       # Definição de todas as rotas com lazy loading por feature
-    ├── app.config.ts                       # Providers globais: HttpClient, Router, Interceptors
+    ├── app.ts / app.html / app.config.ts   # Componente raiz e providers
+    ├── app.routes.ts                       # Rotas com lazy loading por feature
     │
-    ├── core/                               # Infraestrutura central — não contém UI
-    │   │
-    │   ├── guards/
-    │   │   └── auth-guard.ts               # Protege rotas: redireciona para /login se não autenticado
-    │   │
-    │   ├── interceptors/
-    │   │   └── auth.interceptor.ts         # Injeta o header Authorization: Bearer <token> em todas as requisições
-    │   │
-    │   └── services/                       # Serviços HTTP que consomem a API do backend
-    │       ├── auth.service.ts             # Login, logout, decodificação JWT, getUserProfile/Name/Id, getMe()
-    │       ├── admin.service.ts            # Gestão de usuários e estatísticas administrativas
-    │       ├── area.service.ts             # CRUD de áreas clínicas
-    │       ├── cid.service.ts              # Busca e gestão de códigos CID-10
-    │       ├── dashboard.service.ts        # Dados para dashboards e inteligência epidemiológica
-    │       ├── evolucao.service.ts         # Registro de evoluções e contagem de pendentes por docente
-    │       ├── indicador.service.ts        # CRUD de indicadores clínicos
-    │       ├── meta-smart.service.ts       # Criação e listagem de metas SMART
-    │       ├── paciente.service.ts         # Busca, cadastro e edição de pacientes
-    │       └── prontuario.service.ts       # Abertura, listagem e visão completa de prontuários
+    ├── core/                               # Infraestrutura (sem UI)
+    │   ├── guards/auth-guard.ts            # Protege rotas autenticadas
+    │   ├── interceptors/auth.interceptor.ts # Injeta Authorization: Bearer
+    │   └── services/                       # Clientes HTTP da API
+    │       ├── auth.service.ts             # Login, logout, JWT decode, /auth/me
+    │       ├── admin.service.ts            # Usuários, solicitações, monitoramento
+    │       ├── area.service.ts
+    │       ├── cid.service.ts
+    │       ├── dashboard.service.ts
+    │       ├── evolucao.service.ts
+    │       ├── indicador.service.ts
+    │       ├── meta-smart.service.ts
+    │       ├── paciente.service.ts
+    │       ├── prontuario.service.ts
+    │       ├── relatorio.service.ts        # Relatórios + assinatura + PDF
+    │       ├── teste.service.ts            # Testes/escalas aplicadas
+    │       └── theme.service.ts            # Modo claro/escuro persistente
     │
-    ├── features/                           # Módulos funcionais da aplicação (lazy loaded)
+    ├── features/                           # Módulos lazy loaded
     │   │
     │   ├── auth/
-    │   │   ├── login/                      # Tela de login: formulário de matrícula e senha com JWT
-    │   │   └── trocar-senha/               # Tela de troca de senha obrigatória no primeiro acesso
+    │   │   ├── login/                      # Tabs Entrar / Registrar-se (cadastro público)
+    │   │   └── trocar-senha/               # Troca obrigatória no primeiro acesso
     │   │
     │   ├── dashboard/
-    │   │   ├── painel-inicial/             # Dashboard principal: stats e ações contextuais por perfil
-    │   │   └── inteligencia-epidemiologica/ # Gráficos de produtividade, distribuição de diagnósticos e alertas
+    │   │   ├── painel-inicial/             # Painel por perfil + caixa de solicitações (Admin)
+    │   │   └── inteligencia-epidemiologica/
     │   │
     │   ├── pacientes/
-    │   │   ├── busca-pacientes/            # Listagem e busca de pacientes com filtros por nome e CPF
-    │   │   └── cadastro-paciente/          # Formulário de cadastro e edição de paciente (rota /novo e /editar/:id)
+    │   │   ├── busca-pacientes/
+    │   │   └── cadastro-paciente/          # Triagem integrada (Estagiário)
     │   │
     │   ├── prontuarios/
-    │   │   ├── visao-prontuario/           # Visão completa do prontuário: metas, evoluções, medições e gráficos
-    │   │   ├── insercao-evolucao/          # Formulário de registro de sessão de atendimento
-    │   │   ├── avaliacao-funcional/        # Formulário de avaliação funcional inicial do paciente
-    │   │   ├── insercao-meta-smart/        # Formulário de criação de meta SMART com 5 componentes
-    │   │   └── revisao-evolucoes/          # Fila de evoluções pendentes de revisão (perfil Docente)
+    │   │   ├── visao-prontuario/           # Abas: Evoluções · Metas · Gráficos · Testes · Ficha Detalhada
+    │   │   ├── insercao-evolucao/
+    │   │   ├── avaliacao-funcional/        # Wizard de 3 partes (Mobilidade / AVDs / Síntese)
+    │   │   ├── insercao-meta-smart/
+    │   │   ├── revisao-evolucoes/          # Caixa de revisão do Preceptor
+    │   │   ├── teste-sunny/                # Escala de Sunny (16 itens · 0-3)
+    │   │   └── teste-mini-best/            # Mini-BESTest (14 itens · 0-2 · cutoff de queda)
+    │   │
+    │   ├── relatorios/
+    │   │   ├── lista-relatorios/           # Caixas separadas por perfil + histórico
+    │   │   └── gerar-relatorio/            # Editor + preview de PDF + assinatura digital
     │   │
     │   ├── admin/
-    │   │   ├── gestao-usuarios/            # Listagem, cadastro e ativação/desativação de usuários
-    │   │   ├── gestao-areas/               # CRUD de áreas clínicas disponíveis na clínica
-    │   │   ├── gestao-cids/                # CRUD de códigos diagnósticos CID-10
-    │   │   └── gestao-indicadores/         # CRUD de indicadores clínicos com direção de melhora e unidade
+    │   │   ├── gestao-usuarios/
+    │   │   ├── gestao-areas/
+    │   │   ├── gestao-cids/
+    │   │   ├── gestao-indicadores/
+    │   │   └── monitoramento/              # Métricas de runtime + DB + tráfego em tempo real
     │   │
     │   └── perfil/
-    │       └── meu-perfil/                 # Página de perfil do usuário: dados, estatísticas e troca de senha
+    │       └── meu-perfil/                 # Dados, atividade, troca de senha
     │
-    └── shared/                             # Componentes e modelos reutilizáveis entre features
-        ├── layout/                         # Layout principal: sidebar de navegação, header com avatar e footer
-        └── models/
-            └── indicador.model.ts          # Interface TypeScript para o modelo de indicador clínico
+    └── shared/
+        ├── layout/                         # Sidebar (com aba Monitoramento), header, footer, tema
+        ├── models/
+        │   └── indicador.model.ts
+        └── utils/
+            └── indicador-limites.ts        # Helpers de validação de limites
 ```
 
 ---
@@ -163,49 +162,71 @@ Todas as rotas de feature são **lazy loaded** para otimizar o bundle inicial. O
 
 | Rota | Componente | Acesso |
 |:---|:---|:---|
-| `/login` | LoginComponent | Público |
+| `/login` | LoginComponent (com aba Registrar-se) | Público |
 | `/trocar-senha` | TrocarSenhaComponent | Público |
 | `/dashboard` | PainelInicialComponent | Autenticado |
 | `/dashboard/epidemiologia` | InteligenciaEpidemiologicaComponent | Autenticado |
 | `/pacientes` | BuscaPacientesComponent | Autenticado |
-| `/pacientes/novo` | CadastroPacienteComponent | Autenticado |
-| `/pacientes/editar/:id` | CadastroPacienteComponent | Autenticado |
+| `/pacientes/novo` · `/pacientes/editar/:id` | CadastroPacienteComponent | Autenticado |
 | `/prontuarios/visao/:id` | VisaoProntuario | Autenticado |
-| `/prontuarios/evoluir/:id` | InsercaoEvolucaoComponent | Autenticado |
-| `/prontuarios/avaliacao/:id` | AvaliacaoFuncionalComponent | Autenticado |
-| `/prontuarios/meta/:id` | InsercaoMetaSmartComponent | Autenticado |
-| `/prontuarios/revisao` | RevisaoEvolucoesComponent | Autenticado |
+| `/prontuarios/evoluir/:id` | InsercaoEvolucaoComponent | Estagiário |
+| `/prontuarios/avaliacao/:id` | AvaliacaoFuncionalComponent | Estagiário |
+| `/prontuarios/meta/:id` | InsercaoMetaSmartComponent | Estagiário |
+| `/prontuarios/revisao` | RevisaoEvolucoesComponent | Preceptor |
+| `/prontuarios/teste-sunny/:prontuarioId` | TesteSunnyComponent | Estagiário |
+| `/prontuarios/teste-sunny/visualizar/:id` | TesteSunnyComponent | Autenticado |
+| `/prontuarios/teste-mini-best/:prontuarioId` | TesteMiniBestComponent | Estagiário |
+| `/prontuarios/teste-mini-best/visualizar/:id` | TesteMiniBestComponent | Autenticado |
+| `/relatorios` | ListaRelatoriosComponent | Autenticado |
+| `/relatorios/novo/:prontuarioId` · `/relatorios/visualizar/:id` | GerarRelatorioComponent | Autenticado |
 | `/usuarios` | GestaoUsuariosComponent | Administrador |
 | `/indicadores` | GestaoIndicadoresComponent | Administrador |
 | `/areas` | GestaoAreasComponent | Administrador |
 | `/cids` | GestaoCidsComponent | Administrador |
+| `/monitoramento` | MonitoramentoComponent | Administrador |
 | `/meu-perfil` | MeuPerfilComponent | Autenticado |
+
+---
+
+## Visões por Perfil
+
+| Perfil | Visões principais |
+|:---|:---|
+| **Estagiário** | Painel com fila de avaliação · Triagem (cadastro de paciente + prontuário) · Avaliação Funcional · Metas SMART · Evoluções · Testes · Caixa de relatórios próprios para assinar |
+| **Preceptor** | Painel com pendências · Caixa de revisão de evoluções · Caixa de relatórios aguardando assinatura sua · Inteligência Epidemiológica |
+| **Administrador** | KPIs do sistema · Caixa de solicitações de cadastro · Gestão de Usuários / Áreas / CIDs / Indicadores · **Monitoramento** detalhado |
+
+> A clínica chama o supervisor docente de **Preceptor**. O enum interno do JWT segue `Docente` por compatibilidade com o backend, mas toda a UI exibe **Preceptor**.
 
 ---
 
 ## Autenticação no Frontend
 
-O `AuthService` decodifica o payload JWT localmente (sem requisição ao servidor) para leitura rápida de perfil e nome:
+O `AuthService` decodifica o payload JWT localmente para leitura rápida de perfil, nome e ID:
 
 ```typescript
 getUserProfile(): string  // 'Estagiario' | 'Docente' | 'Administrador'
 getUserName(): string     // Nome completo extraído do token
 getUserId(): string       // ObjectId do usuário (campo 'sub' do JWT)
-getMe(): Observable<any>  // GET /auth/me — dados completos do usuário autenticado
+needsPasswordChange(): boolean
+getMe(): Observable<any>  // GET /auth/me
 ```
 
-O `AuthInterceptor` adiciona automaticamente o header `Authorization: Bearer <token>` em toda requisição HTTP que não seja para `/auth/login`.
+O `AuthInterceptor` adiciona automaticamente o header `Authorization: Bearer <token>` em toda requisição HTTP autenticada.
+
+A tela de login traz a aba **Registrar-se**, que envia uma solicitação pública via `POST /auth/registrar`. O acesso só é liberado após aprovação do Administrador na caixa de solicitações do painel.
 
 ---
 
 ## Convenções de Desenvolvimento
 
-- **Componentes standalone**: todos os componentes usam `standalone: true` — sem NgModules.
-- **CUSTOM_ELEMENTS_SCHEMA**: necessário nos componentes que usam tags `<iconify-icon>`.
-- **ChangeDetectorRef**: usado manualmente em callbacks de `subscribe()` para atualizar a view.
-- **Reactive Forms**: todos os formulários usam `FormBuilder` e `Validators` — sem template-driven forms.
-- **Lazy Loading**: todas as features são importadas via `loadComponent()` no arquivo de rotas.
-- **Tailwind CSS**: estilização exclusivamente por classes utilitárias — sem CSS customizado por componente.
+- **Componentes standalone**: todos com `standalone: true` — sem NgModules.
+- **CUSTOM_ELEMENTS_SCHEMA**: necessário em componentes que usam tags `<iconify-icon>`.
+- **ChangeDetectorRef**: usado manualmente em callbacks de `subscribe()` para forçar render quando necessário.
+- **Reactive Forms** para formulários complexos; `FormsModule` apenas em campos pontuais (busca / observações).
+- **Lazy Loading**: todas as features via `loadComponent()` no `app.routes.ts`.
+- **Tailwind**: estilização exclusivamente por classes utilitárias; suporte a tema claro/escuro via classes `dark:`.
+- **Hints de depreciação `*ngIf` / `*ngFor`**: o codebase mantém o padrão atual; migração para control flow nativo (`@if` / `@for`) fica para refactor futuro.
 
 ---
 
