@@ -58,7 +58,23 @@ export const routes: Routes = [
       {
         path: 'prontuarios/avaliacao/:id',
         loadComponent: () => import('./features/prontuarios/avaliacao-funcional/avaliacao-funcional').then(m => m.AvaliacaoFuncionalComponent)
-      },  
+      },
+      {
+        path: 'prontuarios/teste-sunny/:prontuarioId',
+        loadComponent: () => import('./features/prontuarios/teste-sunny/teste-sunny').then(m => m.TesteSunnyComponent)
+      },
+      {
+        path: 'prontuarios/teste-sunny/visualizar/:id',
+        loadComponent: () => import('./features/prontuarios/teste-sunny/teste-sunny').then(m => m.TesteSunnyComponent)
+      },
+      {
+        path: 'prontuarios/teste-mini-best/:prontuarioId',
+        loadComponent: () => import('./features/prontuarios/teste-mini-best/teste-mini-best').then(m => m.TesteMiniBestComponent)
+      },
+      {
+        path: 'prontuarios/teste-mini-best/visualizar/:id',
+        loadComponent: () => import('./features/prontuarios/teste-mini-best/teste-mini-best').then(m => m.TesteMiniBestComponent)
+      },
       {
         path: 'prontuarios/meta/:id',
         loadComponent: () => import('./features/prontuarios/insercao-meta-smart/insercao-meta-smart').then(m => m.InsercaoMetaSmartComponent)

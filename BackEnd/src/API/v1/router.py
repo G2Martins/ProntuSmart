@@ -13,6 +13,7 @@ from src.API.v1.routes import (
     cids,
     dashboard,
     relatorios,
+    testes,
 )
 
 api_router = APIRouter()
@@ -29,3 +30,4 @@ api_router.include_router(areas.router, prefix="/areas", tags=["Áreas de Atendi
 api_router.include_router(cids.router, prefix="/cids", tags=["Classificação de Doenças (CID)"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["Inteligência e Dashboards"])
 api_router.include_router(relatorios.router, prefix="/relatorios", tags=["Relatórios Fisioterapêuticos"])
+api_router.include_router(testes.router,     prefix="/testes",     tags=["Testes e Escalas"])

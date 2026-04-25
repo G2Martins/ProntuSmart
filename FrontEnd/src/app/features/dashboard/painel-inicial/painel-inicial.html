@@ -1,7 +1,7 @@
 <div class="space-y-6">
   <div>
     <h2 class="text-2xl font-bold text-gray-800">{{ saudacao }}!</h2>
-    <p class="text-gray-600 mt-1">Aqui está o resumo do seu painel de {{ perfil }}.</p>
+    <p class="text-gray-600 mt-1">Aqui está o resumo do seu painel de {{ perfil === 'Docente' ? 'Preceptor' : perfil }}.</p>
   </div>
 
   <ng-container *ngIf="perfil === 'Administrador'">
@@ -120,6 +120,104 @@
         </div>
 
       </div>
+    </div>
+
+    <!-- ── Caixa de Solicitações de Cadastro ─────────────── -->
+    <div class="mt-8 bg-white shadow-sm rounded-lg border overflow-hidden"
+         [ngClass]="solicitacoes.length > 0 ? 'border-amber-200' : 'border-gray-100'">
+      <div class="px-6 py-4 flex items-center gap-3 flex-wrap"
+           [ngClass]="solicitacoes.length > 0
+             ? 'bg-gradient-to-r from-amber-50 to-white border-b border-amber-100'
+             : 'bg-gray-50 border-b border-gray-100'">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center"
+             [ngClass]="solicitacoes.length > 0 ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-500'">
+          <iconify-icon icon="ph:user-plus-bold" class="text-xl"></iconify-icon>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h3 class="font-bold text-gray-800 flex items-center gap-2">
+            Solicitações de Cadastro
+            <span *ngIf="!isLoadingSolicitacoes"
+                  class="text-xs font-bold px-2 py-0.5 rounded-full"
+                  [ngClass]="solicitacoes.length > 0 ? 'bg-amber-500 text-white' : 'bg-gray-200 text-gray-600'">
+              {{ solicitacoes.length }}
+            </span>
+          </h3>
+          <p class="text-xs text-gray-500">Pessoas pedindo acesso ao sistema. Edite os dados se necessário antes de aprovar.</p>
+        </div>
+        <button (click)="carregarSolicitacoes()"
+                class="text-xs text-gray-500 hover:text-blue-600 flex items-center gap-1 transition-colors">
+          <iconify-icon icon="ph:arrow-clockwise-bold"></iconify-icon>
+          Atualizar
+        </button>
+      </div>
+
+      <div *ngIf="feedbackSolicitacao"
+           class="bg-green-50 border-l-4 border-green-500 px-5 py-3 text-sm text-green-700 flex items-center gap-2">
+        <iconify-icon icon="ph:check-circle-bold"></iconify-icon>
+        {{ feedbackSolicitacao }}
+      </div>
+      <div *ngIf="erroSolicitacao"
+           class="bg-red-50 border-l-4 border-red-500 px-5 py-3 text-sm text-red-700 flex items-center gap-2">
+        <iconify-icon icon="ph:warning-circle-bold"></iconify-icon>
+        {{ erroSolicitacao }}
+      </div>
+
+      <div *ngIf="isLoadingSolicitacoes" class="py-8 text-center text-gray-400">
+        <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-2xl text-blue-400 mb-1"></iconify-icon>
+        <p class="text-sm">Carregando solicitações...</p>
+      </div>
+
+      <div *ngIf="!isLoadingSolicitacoes && solicitacoes.length === 0" class="py-8 text-center text-gray-400">
+        <iconify-icon icon="ph:check-circle-bold" class="text-4xl text-green-400 mb-1"></iconify-icon>
+        <p class="text-sm font-medium">Nenhuma solicitação pendente.</p>
+      </div>
+
+      <ul *ngIf="!isLoadingSolicitacoes && solicitacoes.length > 0" class="divide-y divide-gray-100">
+        <li *ngFor="let s of solicitacoes" class="p-5 flex items-start gap-4 flex-wrap hover:bg-amber-50/30 transition-colors">
+          <div class="w-11 h-11 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold uppercase shrink-0">
+            {{ (s.nome_completo || '?').charAt(0) }}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <p class="font-bold text-gray-800 text-sm">{{ s.nome_completo }}</p>
+              <span class="text-xs font-semibold px-2 py-0.5 rounded-full border"
+                    [ngClass]="s.perfil_solicitado === 'Docente'
+                      ? 'bg-blue-50 text-blue-700 border-blue-200'
+                      : 'bg-emerald-50 text-emerald-700 border-emerald-200'">
+                {{ s.perfil_solicitado === 'Docente' ? 'Preceptor' : 'Estagiário' }}
+              </span>
+              <span *ngIf="s.area_atendimento"
+                    class="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-100">
+                {{ s.area_atendimento }}
+              </span>
+            </div>
+            <div class="text-xs text-gray-500 mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+              <span><iconify-icon icon="ph:identification-card-bold" class="text-gray-400"></iconify-icon> {{ s.matricula }}</span>
+              <span><iconify-icon icon="ph:envelope-bold" class="text-gray-400"></iconify-icon> {{ s.email }}</span>
+              <span><iconify-icon icon="ph:clock-bold" class="text-gray-400"></iconify-icon> {{ s.criado_em | date:'dd/MM/yyyy · HH:mm' }}</span>
+            </div>
+            <p *ngIf="s.justificativa" class="text-xs text-gray-600 italic mt-1.5 bg-gray-50 border border-gray-100 rounded p-2">
+              "{{ s.justificativa }}"
+            </p>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-2 shrink-0">
+            <button (click)="abrirModalAprovar(s, true)"
+                    class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1 shadow transition-colors"
+                    title="Aprovar com os dados originais">
+              <iconify-icon icon="ph:check-bold"></iconify-icon> Aprovar direto
+            </button>
+            <button (click)="abrirModalAprovar(s)"
+                    class="border border-blue-300 text-blue-700 hover:bg-blue-50 text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1 transition-colors"
+                    title="Editar antes de aprovar">
+              <iconify-icon icon="ph:pencil-simple-bold"></iconify-icon> Editar e aprovar
+            </button>
+            <button (click)="abrirModalRecusar(s)"
+                    class="border border-red-300 text-red-600 hover:bg-red-50 text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1 transition-colors">
+              <iconify-icon icon="ph:x-bold"></iconify-icon> Recusar
+            </button>
+          </div>
+        </li>
+      </ul>
     </div>
 
     <div class="mt-8">
@@ -441,7 +539,7 @@
         class="bg-white shadow-sm rounded-lg border border-dashed border-gray-200 p-12 text-center">
         <iconify-icon icon="ph:folder-open-bold" class="text-6xl text-gray-300 mb-4"></iconify-icon>
         <p class="text-gray-600 font-semibold">Nenhum paciente vinculado ainda</p>
-        <p class="text-gray-400 text-sm mt-1">O docente supervisor irá atribuir pacientes a você através da triagem clínica.</p>
+        <p class="text-gray-400 text-sm mt-1">O preceptor supervisor irá atribuir pacientes a você através da triagem clínica.</p>
       </div>
 
     </div>
@@ -449,5 +547,105 @@
 
   <div *ngIf="!perfil" class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
     <p class="text-yellow-700">Não foi possível determinar o seu perfil de acesso. Por favor, faça login novamente.</p>
+  </div>
+
+  <!-- ══ MODAL: Aprovar Solicitação ══════════════════════════════════ -->
+  <div *ngIf="modalAprovarAberto" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto"
+       (click)="fecharModalAprovar()">
+    <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 space-y-5 my-8" (click)="$event.stopPropagation()">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
+          <iconify-icon icon="ph:check-circle-bold" class="text-2xl"></iconify-icon>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-800">Aprovar e Criar Usuário</h3>
+          <p class="text-sm text-gray-500">Você pode editar os dados antes de criar o acesso.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="sm:col-span-2">
+          <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Nome completo</label>
+          <input [(ngModel)]="editNome" type="text"
+                 class="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-green-400 outline-none">
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">E-mail</label>
+          <input [(ngModel)]="editEmail" type="email"
+                 class="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-green-400 outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Perfil</label>
+          <select [(ngModel)]="editPerfil"
+                  class="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white focus:ring-2 focus:ring-green-400 outline-none">
+            <option value="Estagiario">Estagiário</option>
+            <option value="Docente">Preceptor</option>
+            <option value="Administrador">Administrador</option>
+          </select>
+        </div>
+        <div *ngIf="editPerfil === 'Estagiario'">
+          <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Área</label>
+          <select [(ngModel)]="editArea"
+                  class="w-full rounded-lg border border-gray-300 p-2.5 text-sm bg-white focus:ring-2 focus:ring-green-400 outline-none">
+            <option value="">Selecione...</option>
+            <option *ngFor="let a of areasDisponiveis" [value]="a">{{ a }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div *ngIf="erroSolicitacao" class="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
+        {{ erroSolicitacao }}
+      </div>
+
+      <div class="flex gap-3 justify-end pt-2 border-t border-gray-100">
+        <button (click)="fecharModalAprovar()"
+                class="border border-gray-300 text-gray-600 hover:bg-gray-50 px-5 py-2 rounded-lg text-sm font-semibold transition-colors">
+          Cancelar
+        </button>
+        <button (click)="confirmarAprovacao()" [disabled]="isAprovando"
+                class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg text-sm font-bold shadow transition-colors disabled:opacity-50 flex items-center gap-2">
+          <iconify-icon *ngIf="isAprovando" icon="ph:spinner-gap-bold" class="animate-spin"></iconify-icon>
+          {{ isAprovando ? 'Aprovando...' : 'Aprovar e Criar Usuário' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: Recusar Solicitação ══════════════════════════════════ -->
+  <div *ngIf="modalRecusarAberto" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+       (click)="fecharModalRecusar()">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 space-y-5" (click)="$event.stopPropagation()">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+          <iconify-icon icon="ph:x-circle-bold" class="text-2xl"></iconify-icon>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-800">Recusar Solicitação</h3>
+          <p class="text-sm text-gray-500">{{ solicitacaoEmRecusa?.nome_completo }}</p>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">
+          Motivo da recusa <span class="text-red-500">*</span>
+        </label>
+        <textarea [(ngModel)]="motivoRecusa" rows="3"
+                  placeholder="Ex: Matrícula não consta na base institucional..."
+                  class="w-full rounded-lg border border-gray-300 p-3 text-sm focus:ring-2 focus:ring-red-400 outline-none resize-none"></textarea>
+      </div>
+      <div *ngIf="erroSolicitacao" class="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
+        {{ erroSolicitacao }}
+      </div>
+      <div class="flex gap-3 justify-end pt-2">
+        <button (click)="fecharModalRecusar()"
+                class="border border-gray-300 text-gray-600 hover:bg-gray-50 px-5 py-2 rounded-lg text-sm font-semibold transition-colors">
+          Voltar
+        </button>
+        <button (click)="confirmarRecusa()" [disabled]="isRecusando || !motivoRecusa.trim()"
+                class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg text-sm font-bold shadow transition-colors disabled:opacity-50 flex items-center gap-2">
+          <iconify-icon *ngIf="isRecusando" icon="ph:spinner-gap-bold" class="animate-spin"></iconify-icon>
+          {{ isRecusando ? 'Recusando...' : 'Confirmar Recusa' }}
+        </button>
+      </div>
+    </div>
   </div>
 </div>

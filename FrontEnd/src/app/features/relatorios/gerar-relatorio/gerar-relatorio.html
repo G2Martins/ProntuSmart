@@ -50,7 +50,7 @@
         <button *ngIf="podeAssinarComoDocente()" (click)="abrirModalAssinatura()"
           class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg flex items-center gap-2 text-sm font-bold shadow transition-colors">
           <iconify-icon icon="ph:seal-check-bold"></iconify-icon>
-          Assinar como Docente
+          Assinar como Preceptor
         </button>
       </div>
     </div>
@@ -152,24 +152,24 @@
             </div>
           </div>
 
-          <!-- Seleção de docente — apenas para o relatório padrão em modo criar -->
+          <!-- Seleção de preceptor — apenas para o relatório padrão em modo criar -->
           <div *ngIf="modo === 'criar' && tipoSelecionado === 'Padrao'"
             class="bg-blue-50/50 border border-blue-100 rounded-lg p-4 space-y-2">
             <label class="block text-sm font-semibold text-blue-800">
               <iconify-icon icon="ph:chalkboard-teacher-bold" class="mr-1 align-middle"></iconify-icon>
-              Docente que assinará este relatório <span class="text-red-500">*</span>
+              Preceptor que assinará este relatório <span class="text-red-500">*</span>
             </label>
             <p class="text-xs text-blue-600 leading-snug">
-              Sugerimos os docentes que já revisaram evoluções deste prontuário. Caso nenhum tenha
-              revisado ainda, você pode escolher qualquer docente ativo da clínica.
+              Sugerimos os preceptores que já revisaram evoluções deste prontuário. Caso nenhum tenha
+              revisado ainda, você pode escolher qualquer preceptor ativo da clínica.
             </p>
             <div *ngIf="isLoadingDocentes" class="text-xs text-gray-400 flex items-center gap-1 mt-2">
               <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin"></iconify-icon>
-              Carregando docentes disponíveis...
+              Carregando preceptores disponíveis...
             </div>
             <select *ngIf="!isLoadingDocentes" [(ngModel)]="docenteSelecionado"
               class="w-full rounded-md border border-gray-300 p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-              <option value="">— Selecione um docente —</option>
+              <option value="">— Selecione um preceptor —</option>
               <option *ngFor="let d of docentesDisponiveis" [value]="d._id">
                 {{ d.ja_revisou ? '⭐ ' : '' }}{{ d.nome_completo }} ({{ d.matricula }})
                 {{ d.ja_revisou ? '· já revisou evoluções deste paciente' : '' }}
@@ -177,7 +177,7 @@
             </select>
             <p *ngIf="!isLoadingDocentes && docentesDisponiveis.length === 0" class="text-xs text-amber-600 mt-1">
               <iconify-icon icon="ph:warning-bold"></iconify-icon>
-              Nenhum docente cadastrado no sistema.
+              Nenhum preceptor cadastrado no sistema.
             </p>
           </div>
 

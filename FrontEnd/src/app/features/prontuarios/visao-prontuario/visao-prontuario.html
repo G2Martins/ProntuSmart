@@ -179,10 +179,6 @@
           <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Comorbidades</p>
           <p class="text-gray-700">{{ prontuario.comorbidades }}</p>
         </div>
-        <div *ngIf="prontuario.dispositivo_auxiliar">
-          <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Dispositivo Auxiliar</p>
-          <p class="text-gray-700">{{ prontuario.dispositivo_auxiliar }}</p>
-        </div>
       </div>
     </div>
 
@@ -225,6 +221,18 @@
           <span *ngIf="!isLoadingGraficos && dadosGraficos.length > 0"
             class="ml-1 bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full">
             {{ dadosGraficos.length }}
+          </span>
+        </button>
+        <button (click)="abaAtiva = 'testes'"
+          class="px-6 py-4 text-sm font-semibold flex items-center gap-2 transition-colors border-b-2 -mb-px"
+          [ngClass]="abaAtiva === 'testes'
+            ? 'border-blue-600 text-blue-600'
+            : 'border-transparent text-gray-500 hover:text-gray-700'">
+          <iconify-icon icon="ph:test-tube-bold" class="text-base"></iconify-icon>
+          Testes
+          <span *ngIf="!isLoadingTestes && testesComAvalFuncional.length > 0"
+            class="ml-1 bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">
+            {{ testesComAvalFuncional.length }}
           </span>
         </button>
         <button (click)="abaAtiva = 'detalhado'"
@@ -321,7 +329,7 @@
                   class="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
                   <iconify-icon icon="ph:chat-circle-text-bold" class="text-amber-500 text-lg flex-shrink-0 mt-0.5"></iconify-icon>
                   <div>
-                    <p class="text-xs font-bold text-amber-700 mb-1">Anotação do Docente Supervisor</p>
+                    <p class="text-xs font-bold text-amber-700 mb-1">Anotação do Preceptor Supervisor</p>
                     <p class="text-sm text-amber-800">{{ ev.feedback_docente }}</p>
                   </div>
                 </div>
@@ -628,6 +636,103 @@
 
       </div>
 
+      <!-- ══ Aba: Testes ══════════════════════════════════════════════ -->
+      <div *ngIf="abaAtiva === 'testes'" class="p-6 space-y-5">
+
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h3 class="font-bold text-gray-800 text-lg flex items-center gap-2">
+              <iconify-icon icon="ph:test-tube-bold" class="text-amber-600 text-2xl"></iconify-icon>
+              Testes e Escalas Aplicadas
+            </h3>
+            <p class="text-sm text-gray-500">Histórico de avaliações funcionais e escalas validadas aplicadas ao paciente.</p>
+          </div>
+          <button *ngIf="perfil === 'Estagiario'" (click)="abrirNovoTeste()"
+            class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-bold shadow transition-colors">
+            <iconify-icon icon="ph:plus-bold"></iconify-icon>
+            Novo Teste
+          </button>
+        </div>
+
+        <div *ngIf="isLoadingTestes" class="py-10 text-center text-gray-400">
+          <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-3xl text-amber-400 mb-2"></iconify-icon>
+          <p>Carregando testes...</p>
+        </div>
+
+        <div *ngIf="!isLoadingTestes && testesComAvalFuncional.length === 0"
+          class="py-12 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
+          <iconify-icon icon="ph:test-tube-bold" class="text-6xl mb-3"></iconify-icon>
+          <p class="font-semibold text-gray-600 text-base">Nenhum teste aplicado ainda</p>
+          <p class="text-sm mt-1" *ngIf="perfil === 'Estagiario'">
+            Clique em "Novo Teste" para iniciar a primeira avaliação.
+          </p>
+        </div>
+
+        <div *ngIf="!isLoadingTestes && testesComAvalFuncional.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div *ngFor="let t of testesComAvalFuncional"
+               class="border border-gray-200 rounded-xl bg-white hover:border-amber-300 hover:shadow-md transition-all overflow-hidden cursor-pointer"
+               (click)="t._virtual ? abrirAvalFuncional() : abrirTeste(t)">
+
+            <div class="px-5 py-4 border-b border-gray-100 flex items-start gap-3">
+              <div class="w-12 h-12 rounded-lg flex items-center justify-center shrink-0"
+                   [ngClass]="tipoTesteCor(t.tipo)">
+                <iconify-icon [attr.icon]="tipoTesteIcone(t.tipo)" class="text-2xl"></iconify-icon>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-bold text-gray-800">{{ tipoTesteLabel(t.tipo) }}</p>
+                <p class="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                  <iconify-icon icon="ph:calendar-blank-bold" class="text-gray-400"></iconify-icon>
+                  {{ t.data_aplicacao | date:'dd/MM/yyyy · HH:mm' }}
+                </p>
+                <p *ngIf="t.nome_aplicador" class="text-xs text-gray-500 flex items-center gap-1">
+                  <iconify-icon icon="ph:student-bold" class="text-purple-400"></iconify-icon>
+                  {{ t.nome_aplicador }}
+                </p>
+              </div>
+              <button *ngIf="!t._virtual && perfil === 'Estagiario'"
+                      (click)="excluirTeste(t, $event)"
+                      class="text-gray-400 hover:text-red-500 p-1 rounded transition-colors shrink-0"
+                      title="Excluir teste">
+                <iconify-icon icon="ph:trash-bold" class="text-base"></iconify-icon>
+              </button>
+            </div>
+
+            <div class="px-5 py-3 grid grid-cols-2 gap-3 text-center">
+              <div *ngIf="t.pontuacao_total != null">
+                <p class="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Pontuação</p>
+                <p class="text-2xl font-extrabold"
+                   [ngClass]="t.tipo === 'MiniBest'
+                     ? (t.pontuacao_total >= 24 ? 'text-green-600' : t.pontuacao_total >= 20 ? 'text-amber-600' : 'text-red-600')
+                     : 'text-amber-600'">
+                  {{ t.pontuacao_total }}<span class="text-sm text-gray-400">/{{ t.pontuacao_maxima }}</span>
+                </p>
+              </div>
+              <div *ngIf="t.interpretacao" class="text-left" [ngClass]="t.pontuacao_total == null ? 'col-span-2' : ''">
+                <p class="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Interpretação</p>
+                <p class="text-sm font-semibold text-gray-700 leading-tight mt-1 line-clamp-3">{{ t.interpretacao }}</p>
+              </div>
+              <div *ngIf="t.pontuacao_total == null && !t.interpretacao" class="col-span-2 text-left">
+                <p class="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Status</p>
+                <p class="text-sm font-semibold text-emerald-600">Avaliação registrada</p>
+              </div>
+            </div>
+
+            <div *ngIf="!t._virtual && t.observacoes"
+                 class="px-5 py-3 bg-gray-50 border-t border-gray-100">
+              <p class="text-xs text-gray-600 italic line-clamp-2">"{{ t.observacoes }}"</p>
+            </div>
+
+            <div class="px-5 py-2.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+              <span class="text-xs text-gray-400">
+                {{ t._virtual ? 'Ver detalhes da avaliação funcional' : 'Ver detalhes' }}
+              </span>
+              <iconify-icon icon="ph:arrow-right-bold" class="text-amber-500"></iconify-icon>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
       <!-- ══ Aba: Ficha Detalhada ══════════════════════════════════════ -->
       <div *ngIf="abaAtiva === 'detalhado'" class="p-6 space-y-6">
 
@@ -710,14 +815,6 @@
               <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Objetivo do Paciente</p>
               <p class="text-gray-700 leading-relaxed">{{ fmt(prontuario.objetivo_paciente) }}</p>
             </div>
-            <div>
-              <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Tempo de Evolução</p>
-              <p class="text-gray-700">{{ fmt(prontuario.tempo_evolucao) }}</p>
-            </div>
-            <div>
-              <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Dispositivo Auxiliar</p>
-              <p class="text-gray-700">{{ fmt(prontuario.dispositivo_auxiliar) }}</p>
-            </div>
             <div class="sm:col-span-2">
               <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Comorbidades</p>
               <p class="text-gray-700 leading-relaxed">{{ fmt(prontuario.comorbidades) }}</p>
@@ -733,8 +830,25 @@
           </div>
         </div>
 
-        <!-- ── Seção: Avaliação Funcional (Tela 2) ──────────── -->
-        <div class="border border-gray-200 rounded-xl overflow-hidden">
+        <!-- ── Aviso: Avaliação Funcional movida para aba Testes ──── -->
+        <div class="border border-blue-200 rounded-xl bg-blue-50/40 p-4 flex items-start gap-3 flex-wrap">
+          <iconify-icon icon="ph:info-bold" class="text-blue-500 text-xl shrink-0 mt-0.5"></iconify-icon>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-bold text-blue-800">Avaliação Funcional</p>
+            <p class="text-xs text-blue-700">
+              {{ secaoAvaliacaoPreenchida()
+                ? 'A avaliação funcional foi consolidada como teste e movida para a aba Testes.'
+                : 'A avaliação funcional ainda não foi preenchida. Aplique pela aba Testes.' }}
+            </p>
+          </div>
+          <button (click)="abaAtiva = 'testes'"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition-colors shrink-0">
+            <iconify-icon icon="ph:test-tube-bold"></iconify-icon>
+            Ir para Testes
+          </button>
+        </div>
+
+        <div *ngIf="false" class="border border-gray-200 rounded-xl overflow-hidden">
           <div class="bg-blue-50 border-b border-blue-100 px-5 py-3 flex items-center justify-between">
             <div class="flex items-center gap-2">
               <iconify-icon icon="ph:person-simple-walk-bold" class="text-blue-600 text-lg"></iconify-icon>
@@ -1026,6 +1140,69 @@
         </div>
 
       </div>
+
+<!-- ══ MODAL: Novo Teste ═══════════════════════════════════════════ -->
+<div *ngIf="modalNovoTesteAberto"
+  class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto"
+  (click)="fecharNovoTeste()">
+  <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 space-y-5 my-8"
+    (click)="$event.stopPropagation()">
+
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center">
+          <iconify-icon icon="ph:test-tube-bold" class="text-2xl"></iconify-icon>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-800">Novo Teste</h3>
+          <p class="text-sm text-gray-500">Escolha o modelo de teste a ser aplicado.</p>
+        </div>
+      </div>
+      <button (click)="fecharNovoTeste()" class="text-gray-400 hover:text-gray-600">
+        <iconify-icon icon="ph:x-bold" class="text-xl"></iconify-icon>
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <button type="button" (click)="iniciarTeste('AvaliacaoFuncional')"
+              class="border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 rounded-xl p-4 text-left transition-all group">
+        <div class="w-12 h-12 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+          <iconify-icon icon="ph:clipboard-text-bold" class="text-2xl"></iconify-icon>
+        </div>
+        <p class="font-bold text-gray-800 text-sm">Avaliação Funcional</p>
+        <p class="text-xs text-gray-500 leading-snug mt-1">
+          Wizard de 3 partes: mobilidade, AVDs e síntese fisioterapêutica.
+        </p>
+      </button>
+
+      <button type="button" (click)="iniciarTeste('Sunny')"
+              class="border-2 border-gray-200 hover:border-amber-500 hover:bg-amber-50 rounded-xl p-4 text-left transition-all group">
+        <div class="w-12 h-12 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+          <iconify-icon icon="ph:sun-bold" class="text-2xl"></iconify-icon>
+        </div>
+        <p class="font-bold text-gray-800 text-sm">Escala de Sunny</p>
+        <p class="text-xs text-gray-500 leading-snug mt-1">
+          16 itens · funcionalidade global · pontuação 0–48.
+        </p>
+      </button>
+
+      <button type="button" (click)="iniciarTeste('MiniBest')"
+              class="border-2 border-gray-200 hover:border-purple-500 hover:bg-purple-50 rounded-xl p-4 text-left transition-all group">
+        <div class="w-12 h-12 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+          <iconify-icon icon="ph:scales-bold" class="text-2xl"></iconify-icon>
+        </div>
+        <p class="font-bold text-gray-800 text-sm">Mini-BESTest</p>
+        <p class="text-xs text-gray-500 leading-snug mt-1">
+          14 itens · equilíbrio dinâmico · cutoff de risco de queda.
+        </p>
+      </button>
+    </div>
+
+    <p class="text-xs text-gray-400 text-center pt-2 border-t border-gray-100">
+      O resultado será arquivado no histórico de testes deste paciente.
+    </p>
+  </div>
+</div>
 
 <!-- ══ MODAL: Editar Meta ══════════════════════════════════════════ -->
 <div *ngIf="modalEditarAberto"

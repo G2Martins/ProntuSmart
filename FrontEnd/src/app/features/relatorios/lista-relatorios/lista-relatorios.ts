@@ -29,7 +29,8 @@ export class ListaRelatoriosComponent implements OnInit {
   private cdr = inject(ChangeDetectorRef);
   protected router = inject(Router);
 
-  perfil = this.authService.getUserProfile();
+  perfil   = this.authService.getUserProfile();
+  meuId    = this.authService.getUserId();
 
   pacientes:  PacienteVinculado[] = [];
   relatorios: any[] = [];
@@ -44,7 +45,11 @@ export class ListaRelatoriosComponent implements OnInit {
 
   abaAtiva: 'novo' | 'historico' = 'novo';
 
+
   ngOnInit() {
+    if (this.perfil === 'Docente') {
+      this.abaAtiva = 'historico';
+    }
     this.carregarPacientes();
     this.carregarRelatorios();
   }
@@ -177,5 +182,22 @@ export class ListaRelatoriosComponent implements OnInit {
   }
   get statFinalizados(): number {
     return this.relatorios.filter(r => r.status === 'Finalizado').length;
+  }
+
+  // Caixa do Preceptor: relatórios aguardando assinatura DELE
+  get aguardandoMinhaAssinatura(): any[] {
+    if (this.perfil !== 'Docente' || !this.meuId) return [];
+    return this.relatorios.filter(r =>
+      r.status === 'Aguardando Assinatura do Docente'
+      && (r.docente_id === this.meuId || !r.docente_id)
+    );
+  }
+
+  get statMinhaAssinatura(): number {
+    return this.aguardandoMinhaAssinatura.length;
+  }
+
+  irParaAssinar(r: any) {
+    this.router.navigate(['/relatorios/visualizar', r._id]);
   }
 }

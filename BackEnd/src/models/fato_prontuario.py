@@ -26,10 +26,8 @@ class FatoProntuario(MongoBaseModel):
     diagnostico_fisioterapeutico:   Optional[str] = None
     queixa_principal:               Optional[str] = None
     objetivo_paciente:              Optional[str] = None
-    tempo_evolucao:                 Optional[str] = None
     comorbidades:                   Optional[str] = None
     medicamentos:                   Optional[str] = None
-    dispositivo_auxiliar:           Optional[str] = None  # "Nenhum","Bengala","Muleta","Andador","Cadeira de rodas","Outro"
     barreiras_ambientais:           Optional[str] = None
 
     # ── TELA 2: Avaliação Funcional — Mobilidade ─────────────

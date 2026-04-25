@@ -15,20 +15,48 @@
   </div>
 
   <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-    <div class="bg-white dark:bg-slate-900 py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-gray-100 dark:border-slate-800 transition-colors">
+    <div class="bg-white dark:bg-slate-900 shadow sm:rounded-lg border border-gray-100 dark:border-slate-800 transition-colors overflow-hidden">
 
-      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-6">
+      <!-- Tabs -->
+      <div class="flex border-b border-gray-200 dark:border-slate-800">
+        <button type="button" (click)="trocarAba('login')"
+          class="flex-1 px-4 py-3 text-sm font-semibold flex items-center justify-center gap-2 transition-colors border-b-2 -mb-px"
+          [ngClass]="abaAtiva === 'login'
+            ? 'border-brand-600 text-brand-700 dark:text-brand-300'
+            : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'">
+          <iconify-icon icon="ph:sign-in-bold"></iconify-icon>
+          Entrar
+        </button>
+        <button type="button" (click)="trocarAba('registrar')"
+          class="flex-1 px-4 py-3 text-sm font-semibold flex items-center justify-center gap-2 transition-colors border-b-2 -mb-px"
+          [ngClass]="abaAtiva === 'registrar'
+            ? 'border-brand-600 text-brand-700 dark:text-brand-300'
+            : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'">
+          <iconify-icon icon="ph:user-plus-bold"></iconify-icon>
+          Registrar-se
+        </button>
+      </div>
 
-        <div *ngIf="errorMessage" class="bg-red-50 dark:bg-red-950/40 border-l-4 border-red-500 p-4 mb-4">
-          <div class="flex items-center">
-            <iconify-icon icon="ph:warning-circle" class="text-red-500 mr-2 text-lg"></iconify-icon>
-            <p class="text-sm text-red-700 dark:text-red-300">{{ errorMessage }}</p>
-          </div>
+      <!-- Mensagens globais -->
+      <div *ngIf="errorMessage" class="bg-red-50 dark:bg-red-950/40 border-l-4 border-red-500 p-4 m-4">
+        <div class="flex items-center">
+          <iconify-icon icon="ph:warning-circle" class="text-red-500 mr-2 text-lg"></iconify-icon>
+          <p class="text-sm text-red-700 dark:text-red-300">{{ errorMessage }}</p>
         </div>
+      </div>
+      <div *ngIf="successMessage" class="bg-green-50 dark:bg-green-950/40 border-l-4 border-green-500 p-4 m-4">
+        <div class="flex items-center">
+          <iconify-icon icon="ph:check-circle-bold" class="text-green-500 mr-2 text-lg"></iconify-icon>
+          <p class="text-sm text-green-700 dark:text-green-300">{{ successMessage }}</p>
+        </div>
+      </div>
+
+      <!-- ── Aba: Entrar ──────────────────────────────────── -->
+      <form *ngIf="abaAtiva === 'login'" [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="p-6 sm:p-8 space-y-5">
 
         <div>
           <label for="matricula" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Usuario
+            Matrícula
           </label>
           <div class="mt-1 relative rounded-md shadow-sm">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -36,7 +64,8 @@
             </div>
             <input id="matricula" type="text" formControlName="matricula"
               class="focus:ring-brand-500 focus:border-brand-500 block w-full pl-10 sm:text-sm border-gray-300 dark:border-slate-700 rounded-md py-2 border bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-slate-500"
-              placeholder="Ex: admin01" [ngClass]="{'border-red-300': loginForm.get('matricula')?.invalid && loginForm.get('matricula')?.touched}">
+              placeholder="Ex: admin01"
+              [ngClass]="{'border-red-300': loginForm.get('matricula')?.invalid && loginForm.get('matricula')?.touched}">
           </div>
         </div>
 
@@ -50,26 +79,113 @@
             </div>
             <input id="senha" type="password" formControlName="senha"
               class="focus:ring-brand-500 focus:border-brand-500 block w-full pl-10 sm:text-sm border-gray-300 dark:border-slate-700 rounded-md py-2 border bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-slate-500"
-              placeholder="••••••••" [ngClass]="{'border-red-300': loginForm.get('senha')?.invalid && loginForm.get('senha')?.touched}">
+              placeholder="••••••••"
+              [ngClass]="{'border-red-300': loginForm.get('senha')?.invalid && loginForm.get('senha')?.touched}">
+          </div>
+        </div>
+
+        <button type="submit" [disabled]="loginForm.invalid || isLoading"
+          class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+          <ng-container *ngIf="!isLoading">Entrar no Sistema</ng-container>
+          <ng-container *ngIf="isLoading">
+            <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-xl mr-2"></iconify-icon>
+            Autenticando...
+          </ng-container>
+        </button>
+
+        <p class="text-xs text-center text-gray-500 dark:text-gray-400">
+          Ainda não tem acesso?
+          <button type="button" (click)="trocarAba('registrar')"
+            class="text-brand-600 dark:text-brand-300 font-semibold hover:underline">
+            Solicitar cadastro
+          </button>
+        </p>
+      </form>
+
+      <!-- ── Aba: Registrar-se ───────────────────────────── -->
+      <form *ngIf="abaAtiva === 'registrar'" [formGroup]="registroForm" (ngSubmit)="onRegistrar()" class="p-6 sm:p-8 space-y-4">
+
+        <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900 rounded-md p-3 text-xs text-blue-700 dark:text-blue-300 flex items-start gap-2">
+          <iconify-icon icon="ph:info-bold" class="text-base shrink-0 mt-0.5"></iconify-icon>
+          <p>Sua solicitação será revisada pelo Administrador. Você poderá entrar assim que for aprovada.</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome completo</label>
+          <input type="text" formControlName="nome_completo"
+            class="mt-1 w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-100 py-2 px-3 border focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+            placeholder="Ex: João Silva">
+          <span *ngIf="rf['nome_completo'].touched && rf['nome_completo'].invalid"
+            class="text-xs text-red-500 mt-1">Mínimo 3 caracteres.</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Matrícula</label>
+            <input type="text" formControlName="matricula"
+              class="mt-1 w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-100 py-2 px-3 border focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+              placeholder="Ex: ucb01234">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Perfil</label>
+            <select formControlName="perfil_solicitado"
+              class="mt-1 w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-100 py-2 px-3 border bg-white focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+              <option value="Estagiario">Estagiário</option>
+              <option value="Docente">Preceptor</option>
+            </select>
+          </div>
+        </div>
+
+        <div *ngIf="rf['perfil_solicitado'].value === 'Estagiario'">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Área de atendimento</label>
+          <select formControlName="area_atendimento"
+            class="mt-1 w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-100 py-2 px-3 border bg-white focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+            <option value="">Selecione...</option>
+            <option *ngFor="let a of areasDisponiveis" [value]="a">{{ a }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">E-mail</label>
+          <input type="email" formControlName="email"
+            class="mt-1 w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-100 py-2 px-3 border focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+            placeholder="seu@email.com">
+          <span *ngIf="rf['email'].touched && rf['email'].invalid"
+            class="text-xs text-red-500 mt-1">E-mail inválido.</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Senha</label>
+            <input type="password" formControlName="senha"
+              class="mt-1 w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-100 py-2 px-3 border focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+              placeholder="Mín. 6 caracteres">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Confirmar</label>
+            <input type="password" formControlName="confirmar_senha"
+              class="mt-1 w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-100 py-2 px-3 border focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+              placeholder="Repita a senha">
           </div>
         </div>
 
         <div>
-          <button type="submit" [disabled]="loginForm.invalid || isLoading"
-            class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-
-            <ng-container *ngIf="!isLoading">
-              Entrar no Sistema
-            </ng-container>
-
-            <ng-container *ngIf="isLoading">
-              <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-xl mr-2"></iconify-icon>
-              Autenticando...
-            </ng-container>
-
-          </button>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Justificativa <span class="text-gray-400">(opcional)</span></label>
+          <textarea rows="2" formControlName="justificativa"
+            class="mt-1 w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-100 py-2 px-3 border focus:ring-brand-500 focus:border-brand-500 sm:text-sm resize-none"
+            placeholder="Conte ao Admin por que precisa de acesso..."></textarea>
         </div>
+
+        <button type="submit" [disabled]="isLoading"
+          class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+          <ng-container *ngIf="!isLoading">Enviar solicitação</ng-container>
+          <ng-container *ngIf="isLoading">
+            <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-xl mr-2"></iconify-icon>
+            Enviando...
+          </ng-container>
+        </button>
       </form>
+
     </div>
   </div>
 </div>

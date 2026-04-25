@@ -20,7 +20,7 @@ async def criar_prontuario(
     current_user: dict = Depends(get_current_user)
 ):
     """Triagem — exclusivamente pelo Estagiário. estagiario_id definido pelo servidor."""
-    if current_user.get("perfil") not in [TipoPerfil.ESTAGIARIO, TipoPerfil.ADMINISTRADOR]:
+    if current_user.get("perfil") != TipoPerfil.ESTAGIARIO:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Apenas Estagiários podem realizar a triagem."

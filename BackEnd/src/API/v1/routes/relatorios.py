@@ -203,19 +203,19 @@ async def criar_relatorio(
     if payload.tipo == TipoRelatorio.PADRAO and not payload.docente_id:
         raise HTTPException(
             status_code=400,
-            detail="Selecione o docente que assinará o relatório padrão."
+            detail="Selecione o preceptor que assinará o relatório padrão."
         )
 
-    # Verifica se o docente existe e está ativo (caso fornecido)
+    # Verifica se o preceptor existe e está ativo (caso fornecido)
     if payload.docente_id:
         try:
             doc = await db.dim_usuario.find_one({"_id": ObjectId(payload.docente_id)})
             if not doc or doc.get("perfil") != TipoPerfil.DOCENTE or not doc.get("is_ativo"):
-                raise HTTPException(status_code=400, detail="Docente selecionado é inválido ou inativo.")
+                raise HTTPException(status_code=400, detail="Preceptor selecionado é inválido ou inativo.")
         except HTTPException:
             raise
         except Exception:
-            raise HTTPException(status_code=400, detail="Docente selecionado é inválido.")
+            raise HTTPException(status_code=400, detail="Preceptor selecionado é inválido.")
 
     # Numeração sequencial
     ano = datetime.now().year
@@ -369,12 +369,12 @@ async def assinar_relatorio(
         if not rel.get("assinatura_estagiario"):
             raise HTTPException(status_code=400, detail="O estagiário precisa assinar primeiro.")
         if rel.get("assinatura_docente"):
-            raise HTTPException(status_code=400, detail="Este relatório já foi assinado pelo docente.")
+            raise HTTPException(status_code=400, detail="Este relatório já foi assinado pelo preceptor.")
         # Apenas o docente designado pode assinar (admins ignoram essa restrição)
         if perfil == TipoPerfil.DOCENTE and rel.get("docente_id") and rel["docente_id"] != user_id:
             raise HTTPException(
                 status_code=403,
-                detail="Apenas o docente designado para este relatório pode assiná-lo."
+                detail="Apenas o preceptor designado para este relatório pode assiná-lo."
             )
         update_data["assinatura_docente"] = assinatura.model_dump()
         update_data["status"]       = StatusRelatorio.FINALIZADO

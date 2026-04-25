@@ -204,7 +204,7 @@ export class GerarRelatorioComponent implements OnInit {
 
     // Validação local: tipo padrão exige docente
     if (this.tipoSelecionado === 'Padrao' && !this.docenteSelecionado) {
-      this.errorMessage = 'Selecione o docente que assinará o relatório padrão.';
+      this.errorMessage = 'Selecione o preceptor que assinará o relatório padrão.';
       return;
     }
 
@@ -324,7 +324,7 @@ export class GerarRelatorioComponent implements OnInit {
         this.fecharModalAssinatura();
         this.successMessage = rel.status === 'Finalizado'
           ? 'Relatório assinado e finalizado com sucesso!'
-          : 'Sua assinatura foi registrada. Aguardando assinatura do docente.';
+          : 'Sua assinatura foi registrada. Aguardando assinatura do preceptor.';
         this.carregarPreviewPdf();
         this.cdr.detectChanges();
       },

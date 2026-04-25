@@ -1,0 +1,96 @@
+<div class="max-w-5xl mx-auto space-y-6">
+
+  <div class="flex items-center justify-between">
+    <div>
+      <button (click)="router.navigate(['/prontuarios/visao', prontuarioId])"
+        class="flex items-center text-gray-500 hover:text-blue-600 text-sm font-medium mb-2 transition-colors group">
+        <iconify-icon icon="ph:arrow-left-bold" class="mr-1 group-hover:-translate-x-1 transition-transform"></iconify-icon>
+        Voltar ao Prontuário
+      </button>
+      <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-3">
+        <iconify-icon icon="ph:sun-bold" class="text-amber-500 text-3xl"></iconify-icon>
+        Escala de Sunny
+      </h2>
+      <p class="text-gray-500 text-sm mt-1">Avaliação funcional global — 16 itens · pontuação 0–3 cada</p>
+    </div>
+    <div class="text-right">
+      <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Pontuação</p>
+      <p class="text-3xl font-extrabold"
+         [ngClass]="percentual >= 85 ? 'text-green-600' : percentual >= 60 ? 'text-amber-600' : percentual >= 35 ? 'text-orange-600' : 'text-red-600'">
+        {{ pontuacaoTotal }}<span class="text-base text-gray-400">/{{ pontuacaoMaxima }}</span>
+      </p>
+      <p class="text-xs text-gray-500">{{ percentual }}% · {{ interpretacao }}</p>
+    </div>
+  </div>
+
+  <div *ngIf="isFetching" class="bg-white rounded-lg shadow p-12 text-center">
+    <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-4xl text-amber-500 mb-3"></iconify-icon>
+    <p class="text-gray-500">Carregando dados...</p>
+  </div>
+
+  <form *ngIf="!isFetching" [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-5">
+
+    <!-- Legenda da escala -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+      <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Escala de pontuação</p>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div *ngFor="let e of escala"
+             class="border-2 rounded-lg p-2 text-center text-xs font-semibold"
+             [ngClass]="classeEscala(e.cor, true)">
+          <span class="block text-lg font-bold">{{ e.valor }}</span>
+          {{ e.label }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Seções -->
+    <div *ngFor="let secao of secoes"
+         class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+      <div class="bg-amber-50 border-b border-amber-100 px-6 py-4 flex items-center gap-2">
+        <iconify-icon [attr.icon]="secao.icone" class="text-amber-600 text-xl"></iconify-icon>
+        <h3 class="font-semibold text-amber-800">{{ secao.titulo }}</h3>
+      </div>
+      <div class="p-5 space-y-4">
+        <div *ngFor="let item of secao.itens"
+             class="border border-gray-100 rounded-lg p-4 hover:border-amber-200 transition-colors">
+          <div class="flex items-start justify-between gap-3 flex-wrap mb-3">
+            <div>
+              <p class="font-semibold text-gray-800 text-sm">{{ item.label }}</p>
+              <p class="text-xs text-gray-500">{{ item.descricao }}</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-4 gap-2">
+            <label *ngFor="let e of escala"
+                   class="border-2 rounded-lg p-2 text-center cursor-pointer transition-all"
+                   [ngClass]="classeEscala(e.cor, form.get(item.ctrl)?.value === e.valor)">
+              <input type="radio" [formControlName]="item.ctrl" [value]="e.valor" class="hidden">
+              <span class="block text-lg font-bold">{{ e.valor }}</span>
+              <span class="text-[10px]">{{ e.label }}</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Observações -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-5">
+      <label class="block text-sm font-semibold text-gray-700 mb-2">Observações clínicas</label>
+      <textarea [(ngModel)]="observacoes" [ngModelOptions]="{standalone: true}" rows="3"
+                placeholder="Notas adicionais sobre a aplicação do teste..."
+                class="w-full rounded-lg border border-gray-300 p-3 text-sm focus:ring-2 focus:ring-amber-400 outline-none resize-none"></textarea>
+    </div>
+
+    <div class="flex justify-between items-center pt-2">
+      <button type="button" (click)="router.navigate(['/prontuarios/visao', prontuarioId])"
+              class="border border-gray-300 text-gray-600 hover:bg-gray-50 px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors">
+        Cancelar
+      </button>
+      <button type="submit" [disabled]="isLoading || form.invalid"
+              class="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg font-bold flex items-center gap-2 shadow transition-colors">
+        <iconify-icon *ngIf="isLoading" icon="ph:spinner-gap-bold" class="animate-spin"></iconify-icon>
+        <iconify-icon *ngIf="!isLoading" icon="ph:floppy-disk-bold"></iconify-icon>
+        {{ isLoading ? 'Salvando...' : 'Salvar Escala de Sunny' }}
+      </button>
+    </div>
+  </form>
+</div>

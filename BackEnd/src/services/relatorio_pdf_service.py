@@ -162,7 +162,7 @@ def _bloco_assinaturas(relatorio: dict, estilos) -> list:
         ]
 
     col_est = _bloco("Estagiário", assin_est)
-    col_doc = _bloco("Fisioterapeuta Supervisor", assin_doc)
+    col_doc = _bloco("Preceptor Supervisor", assin_doc)
 
     # Constroi tabela 1×2 onde cada célula tem o stack de Paragraphs
     tabela = Table([[col_est, col_doc]], colWidths=[8 * cm, 8 * cm])
@@ -340,10 +340,8 @@ def gerar_pdf_completo(
         ("Diagnóstico fisioterapêutico", prontuario.get("diagnostico_fisioterapeutico")),
         ("Queixa principal",         prontuario.get("queixa_principal")),
         ("Objetivo do paciente",     prontuario.get("objetivo_paciente")),
-        ("Tempo de evolução",        prontuario.get("tempo_evolucao")),
         ("Comorbidades",             prontuario.get("comorbidades")),
         ("Medicamentos em uso",      prontuario.get("medicamentos")),
-        ("Dispositivo auxiliar",     prontuario.get("dispositivo_auxiliar")),
         ("Barreiras ambientais",     prontuario.get("barreiras_ambientais")),
     ]))
 
@@ -433,7 +431,7 @@ def gerar_pdf_completo(
                 (f"Sessão #{i}",  data_txt),
                 ("Status",        ev.get("status", "—")),
                 ("Medições",       med_txt),
-                ("Feedback docente", ev.get("feedback_docente") or "—"),
+                ("Feedback do preceptor", ev.get("feedback_docente") or "—"),
             ]))
             story.append(Spacer(1, 6))
 
@@ -441,7 +439,7 @@ def gerar_pdf_completo(
     story.append(Paragraph("Equipe Supervisora", styles["secao"]))
     if not docentes_revisores:
         story.append(Paragraph(
-            "Nenhuma evolução deste prontuário foi revisada por docente até o momento.",
+            "Nenhuma evolução deste prontuário foi revisada por preceptor até o momento.",
             styles["valor"]
         ))
     else:

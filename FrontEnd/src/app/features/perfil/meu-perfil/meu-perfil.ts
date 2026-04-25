@@ -104,7 +104,7 @@ export class MeuPerfilComponent implements OnInit {
         next: (prontuarios: any[]) => {
           const estagiarios = new Set(prontuarios.map(p => p.estagiario_id)).size;
           this.stats = [
-            { icone: 'ph:users-three-bold', label: 'Pacientes Supervisionados', valor: prontuarios.length, cor: 'blue'   },
+            { icone: 'ph:users-three-bold', label: 'Pacientes em Preceptoria',  valor: prontuarios.length, cor: 'blue'   },
             { icone: 'ph:student-bold',     label: 'Estagiários Vinculados',    valor: estagiarios,        cor: 'purple' },
           ];
           this.evolucaoService.contarPendentesPorDocente().subscribe({

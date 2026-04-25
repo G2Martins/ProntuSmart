@@ -13,10 +13,8 @@ class ProntuarioCreate(BaseModel):
     diagnostico_fisioterapeutico: Optional[str] = None
     queixa_principal:             Optional[str] = None
     objetivo_paciente:            Optional[str] = None
-    tempo_evolucao:               Optional[str] = None
     comorbidades:                 Optional[str] = None
     medicamentos:                 Optional[str] = None
-    dispositivo_auxiliar:         Optional[str] = None
     barreiras_ambientais:         Optional[str] = None
 
 class ProntuarioAvaliacaoUpdate(BaseModel):
@@ -86,10 +84,8 @@ class ProntuarioResponse(BaseModel):
     diagnostico_fisioterapeutico: Optional[str] = None
     queixa_principal:             Optional[str] = None
     objetivo_paciente:            Optional[str] = None
-    tempo_evolucao:               Optional[str] = None
     comorbidades:                 Optional[str] = None
     medicamentos:                 Optional[str] = None
-    dispositivo_auxiliar:         Optional[str] = None
     barreiras_ambientais:         Optional[str] = None
 
     # Tela 2

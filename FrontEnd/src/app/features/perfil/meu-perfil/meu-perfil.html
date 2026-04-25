@@ -46,7 +46,7 @@
             <iconify-icon
               [icon]="perfil === 'Administrador' ? 'ph:shield-star-bold' : perfil === 'Docente' ? 'ph:chalkboard-teacher-bold' : 'ph:student-bold'"
               class="inline-block align-middle mr-1 text-base"></iconify-icon>
-            {{ perfil }}
+            {{ perfil === 'Docente' ? 'Preceptor' : perfil }}
           </span>
         </div>
 

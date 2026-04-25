@@ -51,4 +51,28 @@ export class AdminService {
   resetarSenha(id: string) {
     return this.http.patch<{nova_senha: string}>(`${this.apiUrl}/usuarios/${id}/reset-password`, {}, { headers: this.getHeaders() });
   }
+
+  // ── Solicitações de cadastro ─────────────────────────────
+  listarSolicitacoes(status?: string): Observable<any[]> {
+    const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+    return this.http.get<any[]>(`${this.apiUrl}/solicitacoes${qs}`, { headers: this.getHeaders() });
+  }
+
+  contarSolicitacoesPendentes(): Observable<{ pendentes: number }> {
+    return this.http.get<{ pendentes: number }>(
+      `${this.apiUrl}/solicitacoes/contagem`, { headers: this.getHeaders() }
+    );
+  }
+
+  aprovarSolicitacao(id: string, edits: any) {
+    return this.http.patch<any>(
+      `${this.apiUrl}/solicitacoes/${id}/aprovar`, edits, { headers: this.getHeaders() }
+    );
+  }
+
+  recusarSolicitacao(id: string, motivo_recusa: string) {
+    return this.http.patch<any>(
+      `${this.apiUrl}/solicitacoes/${id}/recusar`, { motivo_recusa }, { headers: this.getHeaders() }
+    );
+  }
 }

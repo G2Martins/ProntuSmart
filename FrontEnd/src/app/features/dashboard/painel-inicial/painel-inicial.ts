@@ -1,5 +1,6 @@
 import { Component, inject, OnInit, CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { AdminService } from '../../../core/services/admin.service';
@@ -9,7 +10,7 @@ import { EvolucaoService } from '../../../core/services/evolucao.service';
 @Component({
   selector: 'app-painel-inicial',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './painel-inicial.html'
 })
@@ -47,12 +48,43 @@ export class PainelInicialComponent implements OnInit {
   filaAvaliacao:       any[] = [];
   prontuariosRecentes: any[] = [];
 
+  // ── Solicitações de cadastro ───────────────────────────
+  solicitacoes: any[] = [];
+  isLoadingSolicitacoes = false;
+  areasDisponiveis = [
+    'Saúde do Homem e da Mulher',
+    'Geriatria',
+    'Neurologia Adulto',
+    'Neuropediatria',
+    'Traumato-Ortopedia',
+    'Cardiorrespiratória',
+  ];
+
+  // Modal aprovar com edição
+  modalAprovarAberto = false;
+  solicitacaoEmAprovacao: any = null;
+  editNome  = '';
+  editEmail = '';
+  editPerfil = 'Estagiario';
+  editArea  = '';
+  isAprovando = false;
+
+  // Modal recusar
+  modalRecusarAberto = false;
+  solicitacaoEmRecusa: any = null;
+  motivoRecusa = '';
+  isRecusando = false;
+
+  feedbackSolicitacao = '';
+  erroSolicitacao = '';
+
   ngOnInit() {
     this.perfil = this.authService.getUserProfile();
     this.definirSaudacao();
 
     if (this.perfil === 'Administrador') {
       this.carregarEstatisticasAdmin();
+      this.carregarSolicitacoes();
     } else if (this.perfil === 'Docente') {
       this.carregarEstatisticasDocente();
     } else if (this.perfil === 'Estagiario') {
@@ -162,6 +194,104 @@ export class PainelInicialComponent implements OnInit {
     if (valor === undefined || valor === null) return '0';
     if (valor >= 1000) return (valor / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
     return valor.toString();
+  }
+
+  // ── Solicitações de cadastro ─────────────────────────────
+  carregarSolicitacoes() {
+    this.isLoadingSolicitacoes = true;
+    this.adminService.listarSolicitacoes('Pendente').subscribe({
+      next: (lista) => {
+        this.solicitacoes = lista || [];
+        this.isLoadingSolicitacoes = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.isLoadingSolicitacoes = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  abrirModalAprovar(s: any, modoRapido = false) {
+    this.solicitacaoEmAprovacao = s;
+    this.editNome   = s.nome_completo;
+    this.editEmail  = s.email;
+    this.editPerfil = s.perfil_solicitado;
+    this.editArea   = s.area_atendimento || '';
+    if (modoRapido) {
+      this.confirmarAprovacao();
+    } else {
+      this.modalAprovarAberto = true;
+      this.cdr.detectChanges();
+    }
+  }
+
+  fecharModalAprovar() {
+    this.modalAprovarAberto = false;
+    this.solicitacaoEmAprovacao = null;
+    this.cdr.detectChanges();
+  }
+
+  confirmarAprovacao() {
+    if (!this.solicitacaoEmAprovacao) return;
+    this.isAprovando = true;
+    this.erroSolicitacao = '';
+    const edits: any = {
+      nome_completo:     this.editNome,
+      email:             this.editEmail,
+      perfil_solicitado: this.editPerfil,
+      area_atendimento:  this.editPerfil === 'Estagiario' ? this.editArea : null,
+    };
+    this.adminService.aprovarSolicitacao(this.solicitacaoEmAprovacao._id, edits).subscribe({
+      next: (u) => {
+        this.isAprovando = false;
+        this.feedbackSolicitacao = `Usuário ${u.nome_completo} aprovado!`;
+        this.modalAprovarAberto = false;
+        this.solicitacaoEmAprovacao = null;
+        this.carregarSolicitacoes();
+        setTimeout(() => { this.feedbackSolicitacao = ''; this.cdr.detectChanges(); }, 4000);
+      },
+      error: (err) => {
+        this.isAprovando = false;
+        this.erroSolicitacao = err?.error?.detail || 'Erro ao aprovar.';
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  abrirModalRecusar(s: any) {
+    this.solicitacaoEmRecusa = s;
+    this.motivoRecusa = '';
+    this.modalRecusarAberto = true;
+    this.cdr.detectChanges();
+  }
+
+  fecharModalRecusar() {
+    this.modalRecusarAberto = false;
+    this.solicitacaoEmRecusa = null;
+    this.motivoRecusa = '';
+    this.cdr.detectChanges();
+  }
+
+  confirmarRecusa() {
+    if (!this.solicitacaoEmRecusa || !this.motivoRecusa.trim()) return;
+    this.isRecusando = true;
+    this.erroSolicitacao = '';
+    this.adminService.recusarSolicitacao(this.solicitacaoEmRecusa._id, this.motivoRecusa).subscribe({
+      next: () => {
+        this.isRecusando = false;
+        this.feedbackSolicitacao = 'Solicitação recusada.';
+        this.modalRecusarAberto = false;
+        this.solicitacaoEmRecusa = null;
+        this.carregarSolicitacoes();
+        setTimeout(() => { this.feedbackSolicitacao = ''; this.cdr.detectChanges(); }, 4000);
+      },
+      error: (err) => {
+        this.isRecusando = false;
+        this.erroSolicitacao = err?.error?.detail || 'Erro ao recusar.';
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   formatarData(data: string | Date): string {

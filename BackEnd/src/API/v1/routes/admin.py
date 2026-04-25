@@ -1,12 +1,17 @@
 import secrets
 import string
+from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from bson import ObjectId
 
 from src.core.database import get_database
 from src.core.security import get_current_user, get_password_hash
+from src.models.dim_solicitacao import StatusSolicitacao
 from src.models.dim_usuario import TipoPerfil, DimUsuario
+from src.schemas.solicitacao import (
+    SolicitacaoAprovar, SolicitacaoRecusar, SolicitacaoResponse,
+)
 from src.schemas.usuario import UsuarioCreate, UsuarioResponse, UsuarioUpdate
 
 router = APIRouter()
@@ -151,6 +156,116 @@ async def resetar_senha_usuario(usuario_id: str, db = Depends(get_database)):
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
         
     return {"nova_senha": nova_senha_temp}
+
+# ==========================================
+# 3. SOLICITAÇÕES DE CADASTRO (Caixa de Entrada)
+# ==========================================
+@router.get("/solicitacoes", response_model=List[SolicitacaoResponse], dependencies=[Depends(verificar_admin)])
+async def listar_solicitacoes(
+    status_filter: Optional[StatusSolicitacao] = Query(None, alias="status"),
+    db = Depends(get_database),
+):
+    filtro: dict = {}
+    if status_filter:
+        filtro["status"] = status_filter
+    else:
+        filtro["status"] = StatusSolicitacao.PENDENTE
+
+    cursor = db.dim_solicitacao_cadastro.find(filtro).sort("criado_em", -1)
+    solicitacoes = await cursor.to_list(length=200)
+    for s in solicitacoes:
+        s["_id"] = str(s["_id"])
+    return solicitacoes
+
+
+@router.get("/solicitacoes/contagem", dependencies=[Depends(verificar_admin)])
+async def contar_solicitacoes_pendentes(db = Depends(get_database)):
+    count = await db.dim_solicitacao_cadastro.count_documents({"status": StatusSolicitacao.PENDENTE})
+    return {"pendentes": count}
+
+
+@router.patch("/solicitacoes/{sol_id}/aprovar", response_model=UsuarioResponse, dependencies=[Depends(verificar_admin)])
+async def aprovar_solicitacao(
+    sol_id: str,
+    edits: SolicitacaoAprovar,
+    db = Depends(get_database),
+    current_user: dict = Depends(get_current_user),
+):
+    """Aprova solicitação criando o usuário definitivo. Admin pode editar campos."""
+    sol = await db.dim_solicitacao_cadastro.find_one({"_id": ObjectId(sol_id)})
+    if not sol:
+        raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
+    if sol.get("status") != StatusSolicitacao.PENDENTE:
+        raise HTTPException(status_code=400, detail="Esta solicitação já foi processada.")
+
+    # Aplica edições do admin (se enviadas)
+    nome    = (edits.nome_completo     or sol["nome_completo"]).strip()
+    email   = edits.email              or sol["email"]
+    perfil  = edits.perfil_solicitado  or sol["perfil_solicitado"]
+    area    = edits.area_atendimento   if edits.area_atendimento is not None else sol.get("area_atendimento")
+
+    if perfil == TipoPerfil.ESTAGIARIO and not area:
+        raise HTTPException(status_code=400, detail="Defina a área de atendimento para Estagiário.")
+
+    # Valida unicidade no momento da aprovação (estado pode ter mudado)
+    if await db.dim_usuario.find_one({"matricula": sol["matricula"]}):
+        raise HTTPException(status_code=400, detail="Matrícula já cadastrada por outro usuário.")
+    if await db.dim_usuario.find_one({"email": email}):
+        raise HTTPException(status_code=400, detail="E-mail já cadastrado por outro usuário.")
+
+    novo = DimUsuario(
+        nome_completo    = nome,
+        matricula        = sol["matricula"],
+        email            = email,
+        senha_hash       = sol["senha_hash"],
+        perfil           = perfil,
+        area_atendimento = area if perfil == TipoPerfil.ESTAGIARIO else None,
+        is_ativo         = True,
+        precisa_trocar_senha = False,
+    )
+    res = await db.dim_usuario.insert_one(novo.model_dump(by_alias=True, exclude_none=True))
+
+    await db.dim_solicitacao_cadastro.update_one(
+        {"_id": ObjectId(sol_id)},
+        {"$set": {
+            "status":         StatusSolicitacao.APROVADA,
+            "revisado_por_id": str(current_user["_id"]),
+            "revisado_em":    datetime.now(timezone.utc),
+            "atualizado_em":  datetime.now(timezone.utc),
+        }},
+    )
+
+    criado = await db.dim_usuario.find_one({"_id": res.inserted_id})
+    criado["_id"] = str(criado["_id"])
+    return criado
+
+
+@router.patch("/solicitacoes/{sol_id}/recusar", dependencies=[Depends(verificar_admin)])
+async def recusar_solicitacao(
+    sol_id: str,
+    payload: SolicitacaoRecusar,
+    db = Depends(get_database),
+    current_user: dict = Depends(get_current_user),
+):
+    """Recusa a solicitação registrando o motivo (não exclui o registro, mantém auditoria)."""
+    sol = await db.dim_solicitacao_cadastro.find_one({"_id": ObjectId(sol_id)})
+    if not sol:
+        raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
+    if sol.get("status") != StatusSolicitacao.PENDENTE:
+        raise HTTPException(status_code=400, detail="Esta solicitação já foi processada.")
+
+    await db.dim_solicitacao_cadastro.update_one(
+        {"_id": ObjectId(sol_id)},
+        {"$set": {
+            "status":         StatusSolicitacao.RECUSADA,
+            "motivo_recusa":  payload.motivo_recusa,
+            "revisado_por_id": str(current_user["_id"]),
+            "revisado_em":    datetime.now(timezone.utc),
+            "atualizado_em":  datetime.now(timezone.utc),
+        }},
+    )
+    return {"message": "Solicitação recusada."}
+
 
 @router.get("/estagiarios", response_model=List[UsuarioResponse])
 async def listar_estagiarios_ativos(db = Depends(get_database), current_user: dict = Depends(get_current_user)):

@@ -8,6 +8,7 @@ import { EvolucaoService } from '../../../core/services/evolucao.service';
 import { MetaSmartService } from '../../../core/services/meta-smart.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { IndicadorService } from '../../../core/services/indicador.service';
+import { TesteService, Teste, TipoTeste } from '../../../core/services/teste.service';
 import { Indicador } from '../../../shared/models/indicador.model';
 import { descreverLimitesIndicador, valorForaDoLimite } from '../../../shared/utils/indicador-limites';
 
@@ -29,20 +30,27 @@ export class VisaoProntuario implements OnInit {
   private authService       = inject(AuthService);
   private cdr               = inject(ChangeDetectorRef);
   private indicadorService  = inject(IndicadorService);
+  private testeService      = inject(TesteService);
 
   prontuario: any   = null;
   paciente: any     = null;
   evolucoes: any[]  = [];
   metas: any[]      = [];
   indicadores: Indicador[] = [];
+  testes: Teste[]   = [];
 
   isLoadingProntuario  = true;
   isLoadingEvolucoes   = true;
   isLoadingMetas       = true;
   isLoadingIndicadores = false;
+  isLoadingTestes      = true;
 
   perfil: string | null = '';
-  abaAtiva: 'evolucoes' | 'metas' | 'graficos' | 'detalhado' = 'evolucoes';
+  abaAtiva: 'evolucoes' | 'metas' | 'graficos' | 'testes' | 'detalhado' = 'evolucoes';
+
+  // Modal Novo Teste
+  modalNovoTesteAberto = false;
+  testeExpandidoId: string | null = null;
   coordenacaoItens = [
     { ctrl: 'coordenacao_decomposicao_movimentos', label: 'Decomposição de Movimentos' },
     { ctrl: 'coordenacao_ataxia_cerebelar', label: 'Ataxia Cerebelar' },
@@ -84,6 +92,109 @@ export class VisaoProntuario implements OnInit {
       this.carregarEvolucoes(id);
       this.carregarMetas(id);
       this.carregarIndicadores();
+      this.carregarTestes(id);
+    }
+  }
+
+  carregarTestes(prontuarioId: string) {
+    this.isLoadingTestes = true;
+    this.testeService.listarPorProntuario(prontuarioId).subscribe({
+      next: (lista) => {
+        this.testes = lista;
+        this.isLoadingTestes = false;
+        this.cdr.detectChanges();
+      },
+      error: () => { this.isLoadingTestes = false; this.cdr.detectChanges(); }
+    });
+  }
+
+  abrirNovoTeste() {
+    this.modalNovoTesteAberto = true;
+    this.cdr.detectChanges();
+  }
+
+  fecharNovoTeste() {
+    this.modalNovoTesteAberto = false;
+    this.cdr.detectChanges();
+  }
+
+  iniciarTeste(tipo: TipoTeste) {
+    this.modalNovoTesteAberto = false;
+    if (tipo === 'AvaliacaoFuncional') {
+      this.router.navigate(['/prontuarios/avaliacao', this.prontuario._id]);
+    } else if (tipo === 'Sunny') {
+      this.router.navigate(['/prontuarios/teste-sunny', this.prontuario._id]);
+    } else if (tipo === 'MiniBest') {
+      this.router.navigate(['/prontuarios/teste-mini-best', this.prontuario._id]);
+    }
+  }
+
+  abrirTeste(t: Teste) {
+    if (!t._id) return;
+    if (t.tipo === 'Sunny') {
+      this.router.navigate(['/prontuarios/teste-sunny/visualizar', t._id]);
+    } else if (t.tipo === 'MiniBest') {
+      this.router.navigate(['/prontuarios/teste-mini-best/visualizar', t._id]);
+    }
+  }
+
+  excluirTeste(t: Teste, ev: Event) {
+    ev.stopPropagation();
+    if (!t._id) return;
+    if (!confirm(`Excluir o teste ${this.tipoTesteLabel(t.tipo)}?`)) return;
+    this.testeService.excluir(t._id).subscribe({
+      next: () => this.carregarTestes(this.prontuario._id),
+      error: () => alert('Erro ao excluir teste.')
+    });
+  }
+
+  tipoTesteLabel(tipo: TipoTeste): string {
+    const map: Record<TipoTeste, string> = {
+      AvaliacaoFuncional: 'Avaliação Funcional',
+      Sunny:              'Escala de Sunny',
+      MiniBest:           'Mini-BESTest',
+    };
+    return map[tipo] || tipo;
+  }
+
+  tipoTesteIcone(tipo: TipoTeste): string {
+    const map: Record<TipoTeste, string> = {
+      AvaliacaoFuncional: 'ph:clipboard-text-bold',
+      Sunny:              'ph:sun-bold',
+      MiniBest:           'ph:scales-bold',
+    };
+    return map[tipo] || 'ph:test-tube-bold';
+  }
+
+  tipoTesteCor(tipo: TipoTeste): string {
+    const map: Record<TipoTeste, string> = {
+      AvaliacaoFuncional: 'bg-blue-100 text-blue-600',
+      Sunny:              'bg-amber-100 text-amber-600',
+      MiniBest:           'bg-purple-100 text-purple-600',
+    };
+    return map[tipo] || 'bg-gray-100 text-gray-600';
+  }
+
+  // "Avaliação Funcional" virtual — derivada do prontuário para listar como teste
+  get testesComAvalFuncional(): any[] {
+    const lista: any[] = [...this.testes];
+    if (this.secaoAvaliacaoPreenchida()) {
+      lista.unshift({
+        _id: 'avaliacao-funcional-virtual',
+        tipo: 'AvaliacaoFuncional' as TipoTeste,
+        data_aplicacao: this.prontuario?.atualizado_em || this.prontuario?.criado_em,
+        criado_em: this.prontuario?.atualizado_em || this.prontuario?.criado_em,
+        nome_aplicador: this.prontuario?.nome_estagiario,
+        interpretacao: this.prontuario?.problema_funcional_prioritario || null,
+        _virtual: true,
+      });
+    }
+    return lista;
+  }
+
+  abrirAvalFuncional() {
+    if (this.prontuario?._id) {
+      this.router.navigate(['/prontuarios/avaliacao', this.prontuario._id]);
     }
   }
 
@@ -322,7 +433,7 @@ export class VisaoProntuario implements OnInit {
     if (!this.prontuario) return 0;
     const campos = [
       'diagnostico_medico','diagnostico_fisioterapeutico','queixa_principal','objetivo_paciente',
-      'tempo_evolucao','comorbidades','medicamentos','dispositivo_auxiliar','barreiras_ambientais',
+      'comorbidades','medicamentos','barreiras_ambientais',
       'sedestacao','ortostatismo','transferencias','realiza_marcha','marcha_dispositivo','marcha_dispositivo_descricao',
       'funcao_mmss','funcao_mmii','equilibrio','risco_queda','dor','fadiga_funcional',
       'compreende_comandos','comunicacao_preservada',

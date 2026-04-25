@@ -1,0 +1,106 @@
+<div class="max-w-5xl mx-auto space-y-6">
+
+  <div class="flex items-center justify-between flex-wrap gap-4">
+    <div>
+      <button (click)="router.navigate(['/prontuarios/visao', prontuarioId])"
+        class="flex items-center text-gray-500 hover:text-blue-600 text-sm font-medium mb-2 transition-colors group">
+        <iconify-icon icon="ph:arrow-left-bold" class="mr-1 group-hover:-translate-x-1 transition-transform"></iconify-icon>
+        Voltar ao Prontuário
+      </button>
+      <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-3">
+        <iconify-icon icon="ph:scales-bold" class="text-purple-600 text-3xl"></iconify-icon>
+        Mini-BESTest
+      </h2>
+      <p class="text-gray-500 text-sm mt-1">Teste de equilíbrio · 14 itens · pontuação 0–2 cada · total 0–28</p>
+    </div>
+    <div class="text-right">
+      <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Pontuação Total</p>
+      <p class="text-3xl font-extrabold"
+         [ngClass]="pontuacaoTotal >= 24 ? 'text-green-600' : pontuacaoTotal >= 20 ? 'text-amber-600' : pontuacaoTotal >= 15 ? 'text-orange-600' : 'text-red-600'">
+        {{ pontuacaoTotal }}<span class="text-base text-gray-400">/{{ pontuacaoMaxima }}</span>
+      </p>
+      <p class="text-xs text-gray-500">{{ percentual }}% · {{ interpretacao }}</p>
+    </div>
+  </div>
+
+  <div *ngIf="isFetching" class="bg-white rounded-lg shadow p-12 text-center">
+    <iconify-icon icon="ph:spinner-gap-bold" class="animate-spin text-4xl text-purple-500 mb-3"></iconify-icon>
+    <p class="text-gray-500">Carregando dados...</p>
+  </div>
+
+  <form *ngIf="!isFetching" [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-5">
+
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+      <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Pontuação por item</p>
+      <div class="grid grid-cols-3 gap-2">
+        <div *ngFor="let e of escala"
+             class="border-2 rounded-lg p-2 text-center text-xs font-semibold"
+             [ngClass]="classeEscala(e.cor, true)">
+          <span class="block text-lg font-bold">{{ e.valor }}</span>
+          {{ e.label }}
+        </div>
+      </div>
+      <p class="text-[11px] text-gray-400 mt-2 italic">
+        Cutoff: ≤19/28 indica risco aumentado de queda. Adaptado da versão portuguesa europeia.
+      </p>
+    </div>
+
+    <!-- Seções -->
+    <div *ngFor="let secao of secoes"
+         class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+      <div class="px-6 py-4 flex items-center gap-2 border-b" [ngClass]="classeSecaoBg(secao.cor)">
+        <iconify-icon [attr.icon]="secao.icone" class="text-xl" [ngClass]="classeSecaoIcone(secao.cor)"></iconify-icon>
+        <h3 class="font-semibold flex-1">{{ secao.titulo }}</h3>
+        <span class="text-xs font-bold bg-white/80 px-2 py-0.5 rounded-full">
+          {{ pontuacaoSecao(secao) }}/{{ pontuacaoMaximaSecao(secao) }}
+        </span>
+      </div>
+      <div class="p-5 space-y-5">
+        <div *ngFor="let item of secao.itens"
+             class="border border-gray-100 rounded-lg p-4 hover:border-purple-200 transition-colors">
+          <div class="flex items-start gap-3 mb-3">
+            <span class="w-7 h-7 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-xs font-bold shrink-0">
+              {{ item.numero }}
+            </span>
+            <p class="font-semibold text-gray-800 text-sm flex-1">{{ item.label }}</p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <label *ngFor="let e of escala"
+                   class="border-2 rounded-lg p-3 cursor-pointer transition-all flex items-start gap-2"
+                   [ngClass]="classeEscala(e.cor, form.get(item.ctrl)?.value === e.valor)">
+              <input type="radio" [formControlName]="item.ctrl" [value]="e.valor" class="mt-0.5 text-purple-600">
+              <div class="flex-1">
+                <span class="block font-bold">{{ e.valor }} — {{ e.label }}</span>
+                <span class="text-[11px] block mt-0.5 leading-tight">
+                  <ng-container *ngFor="let d of item.descritores">
+                    <span *ngIf="d.valor === e.valor">{{ d.texto }}</span>
+                  </ng-container>
+                </span>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-5">
+      <label class="block text-sm font-semibold text-gray-700 mb-2">Observações clínicas</label>
+      <textarea [(ngModel)]="observacoes" [ngModelOptions]="{standalone: true}" rows="3"
+                placeholder="Notas sobre fatores ambientais, dispositivos auxiliares, etc..."
+                class="w-full rounded-lg border border-gray-300 p-3 text-sm focus:ring-2 focus:ring-purple-400 outline-none resize-none"></textarea>
+    </div>
+
+    <div class="flex justify-between items-center pt-2">
+      <button type="button" (click)="router.navigate(['/prontuarios/visao', prontuarioId])"
+              class="border border-gray-300 text-gray-600 hover:bg-gray-50 px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors">
+        Cancelar
+      </button>
+      <button type="submit" [disabled]="isLoading || form.invalid"
+              class="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg font-bold flex items-center gap-2 shadow transition-colors">
+        <iconify-icon *ngIf="isLoading" icon="ph:spinner-gap-bold" class="animate-spin"></iconify-icon>
+        <iconify-icon *ngIf="!isLoading" icon="ph:floppy-disk-bold"></iconify-icon>
+        {{ isLoading ? 'Salvando...' : 'Salvar Mini-BESTest' }}
+      </button>
+    </div>
+  </form>
+</div>
