@@ -2,7 +2,11 @@ import { Component, inject, OnInit, CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } 
 import { CommonModule } from '@angular/common';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
+import { Subject, debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs';
 import { PacienteService }    from '../../../core/services/paciente.service';
+import { ProntuarioService }  from '../../../core/services/prontuario.service';
+import { CidService }         from '../../../core/services/cid.service';
+import { AuthService }        from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-cadastro-paciente',
@@ -14,12 +18,16 @@ import { PacienteService }    from '../../../core/services/paciente.service';
 export class CadastroPacienteComponent implements OnInit {
   private fb                = inject(FormBuilder);
   private pacienteService   = inject(PacienteService);
+  private prontuarioService = inject(ProntuarioService);
+  private cidService        = inject(CidService);
+  private authService       = inject(AuthService);
   private router            = inject(Router);
   private route             = inject(ActivatedRoute);
   private cdr               = inject(ChangeDetectorRef);
 
   pacienteId: string | null = null;
   modoFormulario: 'criar' | 'editar' = 'criar';
+  perfil       = this.authService.getUserProfile();
   isLoading    = false;
   isFetching   = false;
   errorMessage = '';
@@ -37,6 +45,32 @@ export class CadastroPacienteComponent implements OnInit {
     "Cardiorrespiratória"
   ];
   sexosDisponiveis = ["Masculino", "Feminino"];
+
+  termoBuscaCid   = '';
+  cidsFiltrados: any[] = [];
+  cidSelecionado: any  = null;
+  buscandoCids         = false;
+  private cidSearch$   = new Subject<string>();
+
+  get mostrarTriagem(): boolean {
+    return this.modoFormulario === 'criar' && this.perfil === 'Estagiario';
+  }
+
+  get mostrarNenhumCidEncontrado(): boolean {
+    return this.termoBuscaCid.length >= 2
+      && !this.buscandoCids
+      && this.cidsFiltrados.length === 0
+      && !this.cidSelecionado;
+  }
+
+  get mostrarDicaBuscaCid(): boolean {
+    return this.termoBuscaCid.length < 2;
+  }
+
+  get cidInvalido(): boolean {
+    const cidControl = this.pacienteForm.get('cid_id');
+    return !!cidControl?.touched && !cidControl.value;
+  }
 
   validarDataNascimento(control: AbstractControl): ValidationErrors | null {
     if (!control.value) return null;
@@ -65,7 +99,8 @@ export class CadastroPacienteComponent implements OnInit {
     endereco_resumido:      [''],
     area_atendimento_atual: ['Neurologia Adulto', Validators.required],
     queixa_principal:       [''],
-    is_ativo:               [true]
+    is_ativo:               [true],
+    cid_id:                 ['']
   });
 
   get f() { return this.pacienteForm.controls; }
@@ -77,6 +112,45 @@ export class CadastroPacienteComponent implements OnInit {
       this.carregarPacienteParaEdicao();
     }
 
+    this.cidSearch$.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      switchMap(termo => {
+        if (!termo || termo.length < 2) return of([]);
+        this.buscandoCids = true;
+        return this.cidService.buscar(termo, 50);
+      })
+    ).subscribe({
+      next: (cids) => {
+        this.cidsFiltrados = cids;
+        this.buscandoCids  = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.buscandoCids = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  onBuscaCidChange(termo: string) {
+    this.termoBuscaCid = termo;
+    this.cidSelecionado = null;
+    this.pacienteForm.patchValue({ cid_id: '' });
+    this.cidSearch$.next(termo);
+  }
+
+  onBuscaCidInput(event: Event) {
+    const input = event.target as HTMLInputElement | null;
+    this.onBuscaCidChange(input?.value || '');
+  }
+
+  selecionarCidDaLista(cid: any) {
+    this.cidSelecionado = cid;
+    this.termoBuscaCid  = `[${cid.codigo}] ${cid.descricao}`;
+    this.cidsFiltrados  = [];
+    this.pacienteForm.patchValue({ cid_id: cid._id });
+    this.cdr.detectChanges();
   }
 
   onCpfInput(event: any) {
@@ -124,6 +198,12 @@ export class CadastroPacienteComponent implements OnInit {
   }
 
   onSubmit() {
+    if (this.mostrarTriagem && !this.pacienteForm.get('cid_id')?.value) {
+      this.pacienteForm.get('cid_id')?.markAsTouched();
+      this.errorMessage = 'Selecione o diagnóstico principal (CID-10) para abrir o prontuário.';
+      return;
+    }
+
     if (this.pacienteForm.invalid) {
       this.pacienteForm.markAllAsTouched();
       return;
@@ -133,7 +213,7 @@ export class CadastroPacienteComponent implements OnInit {
     this.errorMessage = '';
 
     const rawValue = this.pacienteForm.getRawValue();
-    const dadosPaciente = rawValue;
+    const { cid_id, ...dadosPaciente } = rawValue;
     dadosPaciente.email = dadosPaciente.email?.trim() || null;
 
     if (this.modoFormulario === 'editar') {
@@ -152,10 +232,30 @@ export class CadastroPacienteComponent implements OnInit {
     } else {
       // Criar paciente
       this.pacienteService.criar(dadosPaciente).subscribe({
-        next: () => {
-          this.isLoading = false;
-          alert('Paciente cadastrado com sucesso!');
-          this.router.navigate(['/pacientes']);
+        next: (paciente) => {
+          if (this.mostrarTriagem && cid_id) {
+            const dadosProntuario = {
+              paciente_id:      paciente._id,
+              cid_id:           cid_id,
+              area_atendimento: rawValue.area_atendimento_atual
+            };
+
+            this.prontuarioService.criar(dadosProntuario).subscribe({
+              next: (prontuario) => {
+                this.isLoading = false;
+                this.router.navigate(['/prontuarios/visao', prontuario._id]);
+              },
+              error: (err) => {
+                this.isLoading = false;
+                alert('Paciente cadastrado, mas erro ao abrir prontuário: ' + (err.error?.detail || 'Tente pela lista de pacientes.'));
+                this.router.navigate(['/pacientes']);
+              }
+            });
+          } else {
+            this.isLoading = false;
+            alert('Paciente cadastrado com sucesso!');
+            this.router.navigate(['/pacientes']);
+          }
         },
         error: (err) => {
           this.isLoading    = false;

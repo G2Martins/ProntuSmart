@@ -169,6 +169,51 @@
               placeholder="Descreva brevemente a queixa...">
           </div>
 
+          <div *ngIf="mostrarTriagem" class="md:col-span-2 relative">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              Diagnóstico Principal (CID-10) <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <input
+                type="text"
+                [value]="termoBuscaCid"
+                (input)="onBuscaCidInput($event)"
+                placeholder="Digite o código (ex: M54) ou a descrição da condição..."
+                class="w-full border border-gray-300 rounded-md p-2.5 focus:ring-2 focus:ring-blue-500 bg-white pr-10 outline-none"
+                autocomplete="off">
+              <div class="absolute right-3 top-3 text-gray-400">
+                <iconify-icon *ngIf="buscandoCids" icon="ph:spinner-gap-bold" class="animate-spin text-blue-500"></iconify-icon>
+                <iconify-icon *ngIf="!buscandoCids && cidSelecionado" icon="ph:check-circle-fill" class="text-green-500"></iconify-icon>
+              </div>
+            </div>
+
+            <div *ngIf="cidsFiltrados.length > 0"
+              class="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto">
+              <button
+                *ngFor="let cid of cidsFiltrados"
+                type="button"
+                (click)="selecionarCidDaLista(cid)"
+                class="w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors border-b border-gray-100 last:border-0">
+                <span class="font-mono font-bold text-blue-700 text-sm">{{ cid.codigo }}</span>
+                <span class="text-gray-700 text-sm ml-2">{{ cid.descricao }}</span>
+              </button>
+            </div>
+
+            <p *ngIf="mostrarNenhumCidEncontrado"
+              class="text-xs text-gray-400 mt-1">
+              Nenhum CID encontrado para "{{ termoBuscaCid }}".
+            </p>
+            <p *ngIf="mostrarDicaBuscaCid" class="text-xs text-gray-400 mt-1">
+              Digite ao menos 2 caracteres para buscar.
+            </p>
+            <span *ngIf="cidInvalido"
+              class="text-xs text-red-500 mt-1 flex items-center gap-1">
+              <iconify-icon icon="ph:warning-circle-bold" class="text-sm"></iconify-icon>
+              Selecione um CID da lista.
+            </span>
+            <input type="hidden" formControlName="cid_id">
+          </div>
+
           <!-- Status — só aparece em modo edição -->
           <div *ngIf="modoFormulario === 'editar'" class="md:col-span-2">
             <label class="block text-sm font-medium text-gray-700 mb-1">Status do Paciente</label>
@@ -192,7 +237,7 @@
           {{ isLoading
             ? 'Processando...'
             : (modoFormulario === 'criar'
-               ? 'Salvar Ficha do Paciente'
+               ? (mostrarTriagem ? 'Cadastrar e Abrir Prontuário' : 'Salvar Ficha do Paciente')
                : 'Atualizar Ficha') }}
         </button>
       </div>

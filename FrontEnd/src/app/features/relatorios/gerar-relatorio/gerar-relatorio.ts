@@ -56,6 +56,26 @@ export class GerarRelatorioComponent implements OnInit {
     consideracoes_finais:          '',
   };
 
+  private preencherSugestoesRelatorio() {
+    if (this.modo !== 'criar' && this.relatorio?.status !== 'Rascunho') return;
+
+    const diagnosticoClinico = this.prontuario?.cid_descricao || this.prontuario?.cid_codigo || '';
+    const queixaPrincipal = this.paciente?.queixa_principal || this.prontuario?.queixa_principal || '';
+    const diagnosticoFisioterapeutico = this.prontuario?.problema_funcional_prioritario || '';
+
+    if (!this.form.diagnostico_clinico && diagnosticoClinico) {
+      this.form.diagnostico_clinico = diagnosticoClinico;
+    }
+
+    if (!this.form.queixa_principal && queixaPrincipal) {
+      this.form.queixa_principal = queixaPrincipal;
+    }
+
+    if (!this.form.diagnostico_fisioterapeutico && diagnosticoFisioterapeutico) {
+      this.form.diagnostico_fisioterapeutico = diagnosticoFisioterapeutico;
+    }
+  }
+
   // Preview do PDF
   pdfUrl: SafeResourceUrl | null = null;
   isLoadingPdf = false;
@@ -87,6 +107,7 @@ export class GerarRelatorioComponent implements OnInit {
     this.prontuarioService.buscarPorId(this.prontuarioId).subscribe({
       next: (pront) => {
         this.prontuario = pront;
+        this.preencherSugestoesRelatorio();
         // Sugestões úteis
         if (pront.problema_funcional_prioritario) {
           this.form.objetivos_tratamento = `Abordar ${pront.problema_funcional_prioritario.toLowerCase()}, ${pront.prioridade_terapeutica || ''}`.trim();
@@ -99,6 +120,7 @@ export class GerarRelatorioComponent implements OnInit {
           this.pacienteService.buscarPorId(pront.paciente_id).subscribe({
             next: (pac) => {
               this.paciente = pac;
+              this.preencherSugestoesRelatorio();
               this.isLoading = false;
               this.cdr.detectChanges();
             }
@@ -162,10 +184,12 @@ export class GerarRelatorioComponent implements OnInit {
         this.prontuarioService.buscarPorId(rel.prontuario_id).subscribe({
           next: (pront) => {
             this.prontuario = pront;
+            this.preencherSugestoesRelatorio();
             if (pront.paciente_id) {
               this.pacienteService.buscarPorId(pront.paciente_id).subscribe({
                 next: (pac) => {
                   this.paciente = pac;
+                  this.preencherSugestoesRelatorio();
                   this.isLoading = false;
                   this.carregarPreviewPdf();
                   this.cdr.detectChanges();
