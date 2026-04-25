@@ -39,6 +39,14 @@
           <iconify-icon icon="ph:clipboard-text-bold" class="text-base"></iconify-icon>
           Avaliação Funcional
         </button>
+        <!-- Indicadores: só Estagiário — mantém o fluxo de evolução -->
+        <button
+          *ngIf="perfil === 'Estagiario'"
+          (click)="irParaNovaEvolucao()"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold shadow transition-colors">
+          <iconify-icon icon="ph:chart-line-bold" class="text-base"></iconify-icon>
+          Indicadores
+        </button>
         <!-- Nova Meta: só Estagiário -->
         <button
           *ngIf="perfil === 'Estagiario'"
@@ -46,14 +54,6 @@
           class="border border-purple-300 text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold transition-colors">
           <iconify-icon icon="ph:target-bold" class="text-base"></iconify-icon>
           Nova Meta SMART
-        </button>
-        <!-- Nova Evolução: só Estagiário — único botão -->
-        <button
-          *ngIf="perfil === 'Estagiario'"
-          (click)="irParaNovaEvolucao()"
-          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold shadow transition-colors">
-          <iconify-icon icon="ph:file-plus-bold" class="text-base"></iconify-icon>
-          Nova Evolução
         </button>
       </div>
     </div>
@@ -229,7 +229,7 @@
           <iconify-icon icon="ph:clipboard-text-bold" class="text-6xl mb-4"></iconify-icon>
           <p class="font-semibold text-gray-600 text-lg">Nenhuma evolução registrada</p>
           <p class="text-sm mt-1" *ngIf="perfil === 'Estagiario'">
-            Clique em "Nova Evolução" para registrar a primeira sessão.
+            Clique em "Indicadores" para registrar a primeira sessão.
           </p>
         </div>
 
@@ -319,8 +319,8 @@
                   </div>
                   <button (click)="irParaNovaEvolucao()"
                     class="flex-shrink-0 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition-colors whitespace-nowrap">
-                    <iconify-icon icon="ph:file-plus-bold"></iconify-icon>
-                    Nova Evolução
+                    <iconify-icon icon="ph:chart-line-bold"></iconify-icon>
+                    Indicadores
                   </button>
                 </div>
               </div>
