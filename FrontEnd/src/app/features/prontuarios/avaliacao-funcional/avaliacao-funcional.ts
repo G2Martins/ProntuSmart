@@ -72,11 +72,6 @@ export class AvaliacaoFuncionalComponent implements OnInit {
     avd_locomocao:   [''],
     avd_alimentacao: [''],
     avd_banheiro:    [''],
-    // Participação
-    atividade_mais_impactada: [''],
-    principal_limitacao:      [''],
-    teste_escala_principal:   [''],
-    valor_teste_inicial:      [''],
     // Tela 3 — Síntese
     problema_funcional_prioritario: [''],
     atividade_comprometida:         [''],
