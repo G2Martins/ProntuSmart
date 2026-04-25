@@ -1,7 +1,13 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
 from typing import Optional
 from datetime import datetime
 from src.models.dim_paciente import AreaEspecializada, SexoBiologico
+
+def normalizar_email_opcional(value):
+    if isinstance(value, str):
+        value = value.strip()
+        return value or None
+    return value
 
 class PacienteBase(BaseModel):
     nome_completo: str = Field(..., min_length=3, max_length=150)
@@ -15,6 +21,8 @@ class PacienteBase(BaseModel):
     queixa_principal: Optional[str] = None
     is_ativo: bool = True
 
+    _normalizar_email = field_validator("email", mode="before")(normalizar_email_opcional)
+
 class PacienteCreate(PacienteBase):
     pass
 
@@ -27,6 +35,8 @@ class PacienteUpdate(BaseModel):
     area_atendimento_atual: Optional[AreaEspecializada] = None
     queixa_principal: Optional[str] = None
     is_ativo: Optional[bool] = None
+
+    _normalizar_email = field_validator("email", mode="before")(normalizar_email_opcional)
 
 class PacienteResponse(PacienteBase):
     id: str = Field(alias="_id")

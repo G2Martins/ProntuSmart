@@ -198,6 +198,7 @@ export class CadastroPacienteComponent implements OnInit {
 
     const rawValue = this.pacienteForm.getRawValue();
     const { cid_id, ...dadosPaciente } = rawValue;
+    dadosPaciente.email = dadosPaciente.email?.trim() || null;
 
     if (this.modoFormulario === 'editar') {
       this.pacienteService.atualizar(this.pacienteId!, dadosPaciente).subscribe({
