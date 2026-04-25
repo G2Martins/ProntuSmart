@@ -87,10 +87,6 @@ export class GerarRelatorioComponent implements OnInit {
     this.prontuarioService.buscarPorId(this.prontuarioId).subscribe({
       next: (pront) => {
         this.prontuario = pront;
-        // Pré-preenche o formulário a partir do prontuário
-        this.form.diagnostico_clinico          = pront.diagnostico_medico || '';
-        this.form.queixa_principal             = pront.queixa_principal   || '';
-        this.form.diagnostico_fisioterapeutico = pront.diagnostico_fisioterapeutico || '';
         // Sugestões úteis
         if (pront.problema_funcional_prioritario) {
           this.form.objetivos_tratamento = `Abordar ${pront.problema_funcional_prioritario.toLowerCase()}, ${pront.prioridade_terapeutica || ''}`.trim();

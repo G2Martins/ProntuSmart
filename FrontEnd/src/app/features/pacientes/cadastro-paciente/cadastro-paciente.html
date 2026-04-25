@@ -6,7 +6,7 @@
         {{ modoFormulario === 'criar' ? 'Nova Ficha de Paciente' : 'Atualização Cadastral' }}
       </h2>
       <p class="text-gray-600">
-        {{ mostrarTriagem ? 'Preencha os dados do paciente e abra o prontuário em uma única etapa.' : 'Preencha os dados sócio-demográficos do paciente.' }}
+        Preencha os dados sócio-demográficos do paciente.
       </p>
     </div>
     <a routerLink="/pacientes"
@@ -183,69 +183,6 @@
         </div>
       </div>
 
-      <!-- ── Triagem / Abertura de Prontuário (só para Estagiário) ── -->
-      <div *ngIf="mostrarTriagem" class="bg-blue-50 -mx-8 px-8 py-6 border-t border-blue-100">
-        <div class="flex items-center gap-2 mb-4 border-b border-blue-200 pb-3">
-          <iconify-icon icon="ph:stethoscope-bold" class="text-blue-600 text-xl"></iconify-icon>
-          <h4 class="text-sm font-bold text-blue-700 uppercase tracking-wider">
-            Abertura de Prontuário (Triagem)
-          </h4>
-          <span class="text-xs text-blue-500 font-normal ml-1">— obrigatório para criar o prontuário</span>
-        </div>
-
-        <div class="relative">
-          <label class="block text-sm font-medium text-gray-700 mb-1">
-            Diagnóstico Principal (CID-10) <span class="text-red-500">*</span>
-          </label>
-
-          <div class="relative">
-            <input
-              type="text"
-              [value]="termoBuscaCid"
-              (input)="onBuscaCidChange($any($event.target).value)"
-              placeholder="Digite o código (ex: M54) ou a descrição da condição..."
-              class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 bg-white pr-10 outline-none"
-              autocomplete="off">
-            <div class="absolute right-3 top-3 text-gray-400">
-              <iconify-icon *ngIf="buscandoCids"    icon="ph:spinner-gap-bold"   class="animate-spin text-blue-500"></iconify-icon>
-              <iconify-icon *ngIf="!buscandoCids && cidSelecionado" icon="ph:check-circle-fill" class="text-green-500"></iconify-icon>
-            </div>
-          </div>
-
-          <!-- Dropdown de resultados -->
-          <div *ngIf="cidsFiltrados.length > 0"
-            class="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto">
-            <button
-              *ngFor="let cid of cidsFiltrados"
-              type="button"
-              (click)="selecionarCidDaLista(cid)"
-              class="w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors border-b border-gray-100 last:border-0">
-              <span class="font-mono font-bold text-blue-700 text-sm">{{ cid.codigo }}</span>
-              <span class="text-gray-700 text-sm ml-2">{{ cid.descricao }}</span>
-            </button>
-          </div>
-
-          <p *ngIf="termoBuscaCid.length >= 2 && !buscandoCids && cidsFiltrados.length === 0 && !cidSelecionado"
-            class="text-xs text-gray-400 mt-1">
-            Nenhum CID encontrado para "{{ termoBuscaCid }}".
-          </p>
-          <p *ngIf="termoBuscaCid.length < 2" class="text-xs text-gray-400 mt-1">
-            Digite ao menos 2 caracteres para buscar.
-          </p>
-          <span *ngIf="f['cid_id'].touched && !f['cid_id'].value"
-            class="text-xs text-red-500 mt-1 flex items-center gap-1">
-            <iconify-icon icon="ph:warning-circle-bold" class="text-sm"></iconify-icon>
-            Selecione um CID da lista.
-          </span>
-          <input type="hidden" formControlName="cid_id">
-        </div>
-
-        <p class="text-xs text-blue-600 mt-4 flex items-center gap-1.5">
-          <iconify-icon icon="ph:info-bold"></iconify-icon>
-          Após salvar, você será direcionado diretamente ao prontuário recém-criado.
-        </p>
-      </div>
-
       <!-- ── Botões ─────────────────────────────────────── -->
       <div class="flex justify-end gap-4 pt-2">
         <button type="submit" [disabled]="isLoading"
@@ -255,7 +192,7 @@
           {{ isLoading
             ? 'Processando...'
             : (modoFormulario === 'criar'
-               ? (mostrarTriagem ? 'Cadastrar e Abrir Prontuário' : 'Salvar Ficha do Paciente')
+               ? 'Salvar Ficha do Paciente'
                : 'Atualizar Ficha') }}
         </button>
       </div>

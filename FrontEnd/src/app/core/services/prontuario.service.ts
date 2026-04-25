@@ -14,7 +14,7 @@ export class ProntuarioService {
     return new HttpHeaders().set('Authorization', `Bearer ${this.authService.getToken()}`);
   }
 
-  criarTriagem(dados: any): Observable<any> {
+  criar(dados: any): Observable<any> {
     return this.http.post<any>(this.apiUrl, dados, { headers: this.getHeaders() });
   }
 

@@ -19,11 +19,11 @@ async def criar_prontuario(
     db = Depends(get_database),
     current_user: dict = Depends(get_current_user)
 ):
-    """Triagem — exclusivamente pelo Estagiário. estagiario_id definido pelo servidor."""
+    """Abertura de prontuário pelo Estagiário. estagiario_id definido pelo servidor."""
     if current_user.get("perfil") != TipoPerfil.ESTAGIARIO:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Apenas Estagiários podem realizar a triagem."
+            detail="Apenas Estagiários podem abrir prontuários."
         )
 
     existente = await db.fato_prontuario.find_one({

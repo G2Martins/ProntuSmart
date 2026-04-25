@@ -151,37 +151,6 @@
       </div>
     </div>
 
-    <!-- ── Dados Clínicos Iniciais (se preenchidos) ───────── -->
-    <div *ngIf="prontuario.diagnostico_medico || prontuario.diagnostico_fisioterapeutico"
-      class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-      <div class="bg-gray-50 border-b border-gray-100 px-6 py-3 flex items-center gap-2">
-        <iconify-icon icon="ph:stethoscope-bold" class="text-gray-500 text-lg"></iconify-icon>
-        <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Dados Clínicos Iniciais</h3>
-      </div>
-      <div class="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-        <div *ngIf="prontuario.diagnostico_medico">
-          <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Diagnóstico Médico</p>
-          <p class="text-gray-700">{{ prontuario.diagnostico_medico }}</p>
-        </div>
-        <div *ngIf="prontuario.diagnostico_fisioterapeutico">
-          <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Diagnóstico Fisioterapêutico</p>
-          <p class="text-gray-700">{{ prontuario.diagnostico_fisioterapeutico }}</p>
-        </div>
-        <div *ngIf="prontuario.queixa_principal">
-          <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Queixa Principal</p>
-          <p class="text-gray-700">{{ prontuario.queixa_principal }}</p>
-        </div>
-        <div *ngIf="prontuario.objetivo_paciente">
-          <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Objetivo do Paciente</p>
-          <p class="text-gray-700">{{ prontuario.objetivo_paciente }}</p>
-        </div>
-        <div *ngIf="prontuario.comorbidades">
-          <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Comorbidades</p>
-          <p class="text-gray-700">{{ prontuario.comorbidades }}</p>
-        </div>
-      </div>
-    </div>
-
     <!-- ── Tabs ───────────────────────────────────────────── -->
     <div class="bg-white shadow-sm rounded-lg border border-gray-100 overflow-hidden">
 
@@ -744,7 +713,7 @@
             </div>
             <div>
               <h3 class="font-bold text-gray-800 text-lg">Ficha Clínica Completa</h3>
-              <p class="text-xs text-gray-500">Consolidação dos dados de triagem, avaliação funcional e síntese fisioterapêutica.</p>
+              <p class="text-xs text-gray-500">Consolidação da avaliação funcional e síntese fisioterapêutica.</p>
             </div>
           </div>
           <div class="text-right">
@@ -782,50 +751,6 @@
                 {{ prontuario.cid_descricao }}
               </p>
               <p *ngIf="!prontuario.cid_codigo" class="text-gray-400 italic">CID não localizado</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── Seção: Triagem (Tela 1) ───────────────────────── -->
-        <div class="border border-gray-200 rounded-xl overflow-hidden">
-          <div class="bg-amber-50 border-b border-amber-100 px-5 py-3 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <iconify-icon icon="ph:clipboard-text-bold" class="text-amber-600 text-lg"></iconify-icon>
-              <h4 class="font-semibold text-amber-800 text-sm uppercase tracking-wider">Triagem & Dados Iniciais</h4>
-            </div>
-            <span class="text-xs px-2 py-1 rounded-full font-semibold border"
-              [ngClass]="secaoTriagemPreenchida() ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-500 border-gray-200'">
-              {{ secaoTriagemPreenchida() ? 'Preenchida' : 'Não preenchida' }}
-            </span>
-          </div>
-          <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-5 text-sm">
-            <div>
-              <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Diagnóstico Médico</p>
-              <p class="text-gray-700 leading-relaxed">{{ fmt(prontuario.diagnostico_medico) }}</p>
-            </div>
-            <div>
-              <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Diagnóstico Fisioterapêutico</p>
-              <p class="text-gray-700 leading-relaxed">{{ fmt(prontuario.diagnostico_fisioterapeutico) }}</p>
-            </div>
-            <div>
-              <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Queixa Principal</p>
-              <p class="text-gray-700 leading-relaxed">{{ fmt(prontuario.queixa_principal) }}</p>
-            </div>
-            <div>
-              <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Objetivo do Paciente</p>
-              <p class="text-gray-700 leading-relaxed">{{ fmt(prontuario.objetivo_paciente) }}</p>
-            </div>
-            <div class="sm:col-span-2">
-              <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Comorbidades</p>
-              <p class="text-gray-700 leading-relaxed">{{ fmt(prontuario.comorbidades) }}</p>
-            </div>
-            <div class="sm:col-span-2">
-              <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Medicamentos em uso</p>
-              <p class="text-gray-700 leading-relaxed">{{ fmt(prontuario.medicamentos) }}</p>
-            </div>
-            <div class="sm:col-span-2">
-              <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Barreiras Ambientais</p>
-              <p class="text-gray-700 leading-relaxed">{{ fmt(prontuario.barreiras_ambientais) }}</p>
             </div>
           </div>
         </div>
@@ -1019,32 +944,6 @@
                 </div>
               </div>
               <p class="text-[10px] text-gray-400 mt-2 italic">Legenda: I = Independente · S = Supervisão · AP = Ajuda Parcial · D = Dependente</p>
-            </div>
-
-            <!-- Participação & Testes -->
-            <div>
-              <h5 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                <iconify-icon icon="ph:users-three-bold" class="text-blue-500"></iconify-icon>
-                Participação & Testes Aplicados
-              </h5>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                <div class="border border-gray-100 rounded-lg p-3">
-                  <p class="text-xs text-gray-400 mb-1">Atividade mais impactada</p>
-                  <p class="text-gray-700">{{ fmt(prontuario.atividade_mais_impactada) }}</p>
-                </div>
-                <div class="border border-gray-100 rounded-lg p-3">
-                  <p class="text-xs text-gray-400 mb-1">Principal limitação</p>
-                  <p class="text-gray-700">{{ fmt(prontuario.principal_limitacao) }}</p>
-                </div>
-                <div class="border border-gray-100 rounded-lg p-3">
-                  <p class="text-xs text-gray-400 mb-1">Teste / Escala aplicada</p>
-                  <p class="text-gray-700">{{ fmt(prontuario.teste_escala_principal) }}</p>
-                </div>
-                <div class="border border-gray-100 rounded-lg p-3">
-                  <p class="text-xs text-gray-400 mb-1">Valor inicial do teste</p>
-                  <p class="text-gray-700 font-mono">{{ fmt(prontuario.valor_teste_inicial) }}</p>
-                </div>
-              </div>
             </div>
 
           </div>

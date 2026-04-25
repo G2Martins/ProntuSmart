@@ -406,12 +406,6 @@ export class VisaoProntuario implements OnInit {
   }
 
   // ── Completude da ficha clínica ──────────────────────────
-  secaoTriagemPreenchida(): boolean {
-    if (!this.prontuario) return false;
-    return !!(this.prontuario.diagnostico_medico || this.prontuario.diagnostico_fisioterapeutico ||
-              this.prontuario.queixa_principal   || this.prontuario.objetivo_paciente);
-  }
-
   secaoAvaliacaoPreenchida(): boolean {
     if (!this.prontuario) return false;
     return !!(this.prontuario.sedestacao || this.prontuario.ortostatismo || this.prontuario.transferencias ||
@@ -432,15 +426,12 @@ export class VisaoProntuario implements OnInit {
   percentualPreenchimento(): number {
     if (!this.prontuario) return 0;
     const campos = [
-      'diagnostico_medico','diagnostico_fisioterapeutico','queixa_principal','objetivo_paciente',
-      'comorbidades','medicamentos','barreiras_ambientais',
       'sedestacao','ortostatismo','transferencias','realiza_marcha','marcha_dispositivo','marcha_dispositivo_descricao',
       'funcao_mmss','funcao_mmii','equilibrio','risco_queda','dor','fadiga_funcional',
       'compreende_comandos','comunicacao_preservada',
       'coordenacao_decomposicao_movimentos','coordenacao_ataxia_cerebelar','coordenacao_dismetria',
       'coordenacao_nistagmo','coordenacao_rechaco_stewart_holmes',
       'avd_banho','avd_vestir','avd_higiene','avd_locomocao','avd_alimentacao','avd_banheiro',
-      'atividade_mais_impactada','principal_limitacao','teste_escala_principal','valor_teste_inicial',
       'problema_funcional_prioritario','atividade_comprometida','impacto_independencia','prioridade_terapeutica'
     ];
     const preenchidos = campos.filter(c => {

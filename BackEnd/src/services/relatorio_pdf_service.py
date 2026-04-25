@@ -4,8 +4,8 @@ Geração de PDFs de Relatórios Fisioterapêuticos.
 Dois formatos:
 - PADRÃO  → Modelo institucional UCB (uma página, com marca d'água oficial e
             assinaturas digitais ao final).
-- COMPLETO → Snapshot técnico de todos os dados registrados (triagem,
-             avaliação funcional, síntese, evoluções, metas, indicadores).
+- COMPLETO → Snapshot técnico de todos os dados registrados (avaliação
+             funcional, síntese, evoluções, metas, indicadores).
 """
 from io import BytesIO
 from datetime import date, datetime
@@ -207,8 +207,8 @@ def gerar_pdf_padrao(
     nome   = paciente.get("nome_completo", "—")
     sexo   = _genero_extenso(paciente.get("sexo"))
     idade  = _calcular_idade(paciente.get("data_nascimento"))
-    diag_med = relatorio.get("diagnostico_clinico") or prontuario.get("diagnostico_medico") or "—"
-    queixa   = relatorio.get("queixa_principal")    or prontuario.get("queixa_principal")  or "—"
+    diag_med = relatorio.get("diagnostico_clinico") or "—"
+    queixa   = relatorio.get("queixa_principal") or "—"
 
     apresentacao = (
         f"Paciente <b>{nome}</b>, sexo {sexo}, {idade} anos, "
@@ -219,7 +219,7 @@ def gerar_pdf_padrao(
     story.append(Paragraph(apresentacao, styles["corpo"]))
 
     # ── Diagnóstico fisioterapêutico ────────────────────────
-    diag_fisio = relatorio.get("diagnostico_fisioterapeutico") or prontuario.get("diagnostico_fisioterapeutico") or "—"
+    diag_fisio = relatorio.get("diagnostico_fisioterapeutico") or "—"
     story.append(Paragraph(
         f"Na avaliação foi observado que o(a) paciente apresenta o seguinte "
         f"diagnóstico fisioterapêutico: {diag_fisio}.",
@@ -331,18 +331,6 @@ def gerar_pdf_completo(
         ("Telefone",          paciente.get("telefone_contato", "—")),
         ("E-mail",            paciente.get("email") or "—"),
         ("Endereço",          paciente.get("endereco_resumido") or "—"),
-    ]))
-
-    # ── Triagem (Tela 1) ────────────────────────────────────
-    story.append(Paragraph("Triagem & Dados Iniciais", styles["secao"]))
-    story.append(_kv_table([
-        ("Diagnóstico médico",       prontuario.get("diagnostico_medico")),
-        ("Diagnóstico fisioterapêutico", prontuario.get("diagnostico_fisioterapeutico")),
-        ("Queixa principal",         prontuario.get("queixa_principal")),
-        ("Objetivo do paciente",     prontuario.get("objetivo_paciente")),
-        ("Comorbidades",             prontuario.get("comorbidades")),
-        ("Medicamentos em uso",      prontuario.get("medicamentos")),
-        ("Barreiras ambientais",     prontuario.get("barreiras_ambientais")),
     ]))
 
     # ── Avaliação Funcional (Tela 2) ────────────────────────

@@ -21,15 +21,6 @@ class FatoProntuario(MongoBaseModel):
     total_sessoes:      int = Field(default=0)
     data_ultima_evolucao: Optional[datetime] = None
 
-    # ── TELA 1: Dados Clínicos Iniciais ──────────────────────
-    diagnostico_medico:             Optional[str] = None
-    diagnostico_fisioterapeutico:   Optional[str] = None
-    queixa_principal:               Optional[str] = None
-    objetivo_paciente:              Optional[str] = None
-    comorbidades:                   Optional[str] = None
-    medicamentos:                   Optional[str] = None
-    barreiras_ambientais:           Optional[str] = None
-
     # ── TELA 2: Avaliação Funcional — Mobilidade ─────────────
     sedestacao:    Optional[str] = None  # "Independente","Com apoio","Dependente"
     ortostatismo:  Optional[str] = None  # "Independente","Supervisão","Ajuda física","Não realiza"
@@ -69,12 +60,6 @@ class FatoProntuario(MongoBaseModel):
     avd_locomocao:    Optional[str] = None
     avd_alimentacao:  Optional[str] = None
     avd_banheiro:     Optional[str] = None
-
-    # Participação
-    atividade_mais_impactada:  Optional[str] = None
-    principal_limitacao:       Optional[str] = None
-    teste_escala_principal:    Optional[str] = None
-    valor_teste_inicial:       Optional[str] = None
 
     # ── TELA 3: Síntese Fisioterapêutica ─────────────────────
     problema_funcional_prioritario: Optional[str] = None

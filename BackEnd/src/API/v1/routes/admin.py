@@ -426,7 +426,7 @@ async def recusar_solicitacao(
 
 @router.get("/estagiarios", response_model=List[UsuarioResponse])
 async def listar_estagiarios_ativos(db = Depends(get_database), current_user: dict = Depends(get_current_user)):
-    """Rota pública (qualquer logado) para listar estagiários ativos — usada no modal de triagem."""
+    """Rota pública (qualquer logado) para listar estagiários ativos."""
     if current_user.get("perfil") not in [TipoPerfil.ADMINISTRADOR, TipoPerfil.DOCENTE]:
         raise HTTPException(status_code=403, detail="Acesso negado.")
     

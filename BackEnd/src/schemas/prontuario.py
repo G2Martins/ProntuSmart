@@ -4,18 +4,10 @@ from datetime import datetime
 from src.models.dim_status import StatusProntuario
 
 class ProntuarioCreate(BaseModel):
-    """Dados mínimos para abrir triagem (Estagiário). estagiario_id é preenchido pelo servidor."""
+    """Dados mínimos para abrir prontuário. estagiario_id é preenchido pelo servidor."""
     paciente_id:      str
     cid_id:           str
     area_atendimento: str
-    # Dados clínicos iniciais opcionais na triagem
-    diagnostico_medico:           Optional[str] = None
-    diagnostico_fisioterapeutico: Optional[str] = None
-    queixa_principal:             Optional[str] = None
-    objetivo_paciente:            Optional[str] = None
-    comorbidades:                 Optional[str] = None
-    medicamentos:                 Optional[str] = None
-    barreiras_ambientais:         Optional[str] = None
 
 class ProntuarioAvaliacaoUpdate(BaseModel):
     """Atualiza Tela 2 (Avaliação Funcional) e Tela 3 (Síntese)."""
@@ -53,11 +45,6 @@ class ProntuarioAvaliacaoUpdate(BaseModel):
     avd_locomocao:   Optional[str] = None
     avd_alimentacao: Optional[str] = None
     avd_banheiro:    Optional[str] = None
-    # Participação
-    atividade_mais_impactada: Optional[str] = None
-    principal_limitacao:      Optional[str] = None
-    teste_escala_principal:   Optional[str] = None
-    valor_teste_inicial:      Optional[str] = None
     # Síntese (Tela 3)
     problema_funcional_prioritario: Optional[str] = None
     atividade_comprometida:         Optional[str] = None
@@ -78,15 +65,6 @@ class ProntuarioResponse(BaseModel):
     status:            StatusProntuario
     total_sessoes:     int
     data_ultima_evolucao: Optional[datetime] = None
-
-    # Tela 1
-    diagnostico_medico:           Optional[str] = None
-    diagnostico_fisioterapeutico: Optional[str] = None
-    queixa_principal:             Optional[str] = None
-    objetivo_paciente:            Optional[str] = None
-    comorbidades:                 Optional[str] = None
-    medicamentos:                 Optional[str] = None
-    barreiras_ambientais:         Optional[str] = None
 
     # Tela 2
     sedestacao: Optional[str] = None
@@ -116,11 +94,6 @@ class ProntuarioResponse(BaseModel):
     avd_locomocao: Optional[str] = None
     avd_alimentacao: Optional[str] = None
     avd_banheiro: Optional[str] = None
-    atividade_mais_impactada: Optional[str] = None
-    principal_limitacao: Optional[str] = None
-    teste_escala_principal: Optional[str] = None
-    valor_teste_inicial: Optional[str] = None
-
     # Tela 3
     problema_funcional_prioritario: Optional[str] = None
     atividade_comprometida: Optional[str] = None

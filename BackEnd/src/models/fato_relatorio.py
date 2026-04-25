@@ -7,7 +7,7 @@ from src.models.base import MongoBaseModel
 
 class TipoRelatorio(str, Enum):
     PADRAO   = "Padrao"     # Modelo UCB (texto formal de uma página)
-    COMPLETO = "Completo"   # Snapshot total: triagem + avaliação + evoluções + metas + indicadores
+    COMPLETO = "Completo"   # Snapshot total: avaliação + evoluções + metas + indicadores
 
 
 class StatusRelatorio(str, Enum):
