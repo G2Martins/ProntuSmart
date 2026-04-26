@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, OnInit, CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -51,6 +51,52 @@ export class VisaoProntuario implements OnInit {
   // Modal Novo Teste
   modalNovoTesteAberto = false;
   testeExpandidoId: string | null = null;
+
+  // Popover de campos faltantes na Ficha Detalhada
+  popoverFaltantesAberto = false;
+
+  private readonly camposFichaCompleta: { campo: string; label: string; secao: string; requerSe?: string }[] = [
+    { campo: 'sedestacao',                            label: 'Sedestação',                    secao: 'Avaliação Funcional' },
+    { campo: 'ortostatismo',                          label: 'Ortostatismo',                  secao: 'Avaliação Funcional' },
+    { campo: 'transferencias',                        label: 'Transferências',                secao: 'Avaliação Funcional' },
+    { campo: 'realiza_marcha',                        label: 'Realiza marcha',                secao: 'Marcha' },
+    { campo: 'marcha_dispositivo',                    label: 'Uso de dispositivo',            secao: 'Marcha' },
+    { campo: 'marcha_dispositivo_descricao',          label: 'Descrição do dispositivo',      secao: 'Marcha', requerSe: 'marcha_dispositivo' },
+    { campo: 'funcao_mmss',                           label: 'Função MMSS',                   secao: 'Função Motora' },
+    { campo: 'funcao_mmii',                           label: 'Função MMII',                   secao: 'Função Motora' },
+    { campo: 'equilibrio',                            label: 'Equilíbrio',                    secao: 'Função Motora' },
+    { campo: 'risco_queda',                           label: 'Risco de queda',                secao: 'Função Motora' },
+    { campo: 'dor',                                   label: 'Dor',                           secao: 'Sintomas' },
+    { campo: 'fadiga_funcional',                      label: 'Fadiga funcional',              secao: 'Sintomas' },
+    { campo: 'compreende_comandos',                   label: 'Compreende comandos',           secao: 'Cognição & Comunicação' },
+    { campo: 'comunicacao_preservada',                label: 'Comunicação preservada',        secao: 'Cognição & Comunicação' },
+    { campo: 'avd_banho',                             label: 'AVD — Banho',                   secao: 'AVDs' },
+    { campo: 'avd_vestir',                            label: 'AVD — Vestir',                  secao: 'AVDs' },
+    { campo: 'avd_higiene',                           label: 'AVD — Higiene',                 secao: 'AVDs' },
+    { campo: 'avd_locomocao',                         label: 'AVD — Locomoção',               secao: 'AVDs' },
+    { campo: 'avd_alimentacao',                       label: 'AVD — Alimentação',             secao: 'AVDs' },
+    { campo: 'avd_banheiro',                          label: 'AVD — Banheiro',                secao: 'AVDs' },
+    { campo: 'problema_funcional_prioritario',        label: 'Problema funcional prioritário', secao: 'Síntese Fisioterapêutica' },
+    { campo: 'atividade_comprometida',                label: 'Atividade comprometida',        secao: 'Síntese Fisioterapêutica' },
+    { campo: 'impacto_independencia',                 label: 'Impacto na independência',      secao: 'Síntese Fisioterapêutica' },
+    { campo: 'prioridade_terapeutica',                label: 'Prioridade terapêutica',        secao: 'Síntese Fisioterapêutica' },
+  ];
+
+  private readonly gruposFichaCompleta: { chave: string; secao: string; label: string; campos: string[] }[] = [
+    {
+      chave: 'coordenacao',
+      secao: 'Coordenação',
+      label: 'Selecionar ao menos 1 item de Coordenação',
+      campos: [
+        'coordenacao_decomposicao_movimentos',
+        'coordenacao_ataxia_cerebelar',
+        'coordenacao_dismetria',
+        'coordenacao_nistagmo',
+        'coordenacao_rechaco_stewart_holmes',
+      ],
+    },
+  ];
+
   coordenacaoItens = [
     { ctrl: 'coordenacao_decomposicao_movimentos', label: 'Decomposição de Movimentos' },
     { ctrl: 'coordenacao_ataxia_cerebelar', label: 'Ataxia Cerebelar' },
@@ -423,22 +469,77 @@ export class VisaoProntuario implements OnInit {
               this.prontuario.impacto_independencia          || this.prontuario.prioridade_terapeutica);
   }
 
+  private camposFichaRequeridos(): { campo: string; label: string; secao: string }[] {
+    if (!this.prontuario) return [];
+    return this.camposFichaCompleta.filter(c => {
+      if (!c.requerSe) return true;
+      return this.prontuario[c.requerSe] === true;
+    });
+  }
+
+  private campoEstaPreenchido(campo: string): boolean {
+    const v = this.prontuario?.[campo];
+    return v !== null && v !== undefined && v !== '';
+  }
+
+  private grupoEstaPreenchido(g: { campos: string[] }): boolean {
+    if (!this.prontuario) return false;
+    return g.campos.some(c => this.prontuario[c] === true);
+  }
+
   percentualPreenchimento(): number {
     if (!this.prontuario) return 0;
-    const campos = [
-      'sedestacao','ortostatismo','transferencias','realiza_marcha','marcha_dispositivo','marcha_dispositivo_descricao',
-      'funcao_mmss','funcao_mmii','equilibrio','risco_queda','dor','fadiga_funcional',
-      'compreende_comandos','comunicacao_preservada',
-      'coordenacao_decomposicao_movimentos','coordenacao_ataxia_cerebelar','coordenacao_dismetria',
-      'coordenacao_nistagmo','coordenacao_rechaco_stewart_holmes',
-      'avd_banho','avd_vestir','avd_higiene','avd_locomocao','avd_alimentacao','avd_banheiro',
-      'problema_funcional_prioritario','atividade_comprometida','impacto_independencia','prioridade_terapeutica'
-    ];
-    const preenchidos = campos.filter(c => {
-      const v = this.prontuario[c];
-      return v !== null && v !== undefined && v !== '';
-    }).length;
-    return Math.round((preenchidos / campos.length) * 100);
+    const lista  = this.camposFichaRequeridos();
+    const grupos = this.gruposFichaCompleta;
+    const total  = lista.length + grupos.length;
+    if (!total) return 0;
+    const camposOk = lista.filter(c => this.campoEstaPreenchido(c.campo)).length;
+    const gruposOk = grupos.filter(g => this.grupoEstaPreenchido(g)).length;
+    return Math.round(((camposOk + gruposOk) / total) * 100);
+  }
+
+  getCamposFaltantes(): { secao: string; campos: string[] }[] {
+    if (!this.prontuario) return [];
+    const grupos = new Map<string, string[]>();
+
+    for (const c of this.camposFichaRequeridos()) {
+      if (this.campoEstaPreenchido(c.campo)) continue;
+      if (!grupos.has(c.secao)) grupos.set(c.secao, []);
+      grupos.get(c.secao)!.push(c.label);
+    }
+
+    for (const g of this.gruposFichaCompleta) {
+      if (this.grupoEstaPreenchido(g)) continue;
+      if (!grupos.has(g.secao)) grupos.set(g.secao, []);
+      grupos.get(g.secao)!.push(g.label);
+    }
+
+    return Array.from(grupos.entries()).map(([secao, campos]) => ({ secao, campos }));
+  }
+
+  totalCamposFaltantes(): number {
+    if (!this.prontuario) return 0;
+    const camposFalt = this.camposFichaRequeridos().filter(c => !this.campoEstaPreenchido(c.campo)).length;
+    const gruposFalt = this.gruposFichaCompleta.filter(g => !this.grupoEstaPreenchido(g)).length;
+    return camposFalt + gruposFalt;
+  }
+
+  toggleFaltantes(ev?: Event) {
+    ev?.stopPropagation();
+    this.popoverFaltantesAberto = !this.popoverFaltantesAberto;
+    this.cdr.detectChanges();
+  }
+
+  fecharFaltantes() {
+    if (this.popoverFaltantesAberto) {
+      this.popoverFaltantesAberto = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  @HostListener('document:click')
+  onDocumentClick() {
+    this.fecharFaltantes();
   }
 
   calcularIdade(dataNascimento: string): number {
